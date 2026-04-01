@@ -31,6 +31,8 @@ let resizeHandle = null;
 let startX = 0;
 let startY = 0;
 
+let lastUndo = null;
+
 /* ================= DOM ================= */
 
 const thumbs = document.getElementById("thumbs");
@@ -149,6 +151,23 @@ canvas.addEventListener("mousedown", e => {
   const { x, y } = toCanvas(e);
   let hit = false;
 
+  resizeHandle = null;
+
+  // ✅ Check resize handles first (topmost box)
+  for (let i = boxes.length - 1; i >= 0; i--) {
+    const b = boxes[i];
+    if (hitCorner(b, x, y)) {
+      selectedBox = i;
+      resizing = true;
+      startX = x;
+      startY = y;
+      hit = true;
+      redraw();
+      return;
+    }
+  }
+
+  // ✅ Then check dragging
   for (let i = boxes.length - 1; i >= 0; i--) {
     if (inside(boxes[i], x, y)) {
       selectedBox = i;
@@ -161,22 +180,34 @@ canvas.addEventListener("mousedown", e => {
     }
   }
 
+  // ✅ Clicked empty space
   if (!hit) {
     selectedBox = -1;
     redraw();
   }
 
+  // ✅ Start drawing new box
   if (mode === "draw" && !hit) {
     if (!classSelect.value) return alert("Select class first");
     drawing = true;
     startX = x;
     startY = y;
   }
-});
+});   
 
 canvas.addEventListener("mousemove", e => {
   const { x, y } = toCanvas(e);
 
+  // ✅ Resize
+  if (resizing && selectedBox !== -1) {
+    const b = boxes[selectedBox];
+    b.w = Math.max(MIN_BOX_SIZE, x - b.x);
+    b.h = Math.max(MIN_BOX_SIZE, y - b.y);
+    redraw();
+    return;
+  }
+
+  // ✅ Drag
   if (dragging && selectedBox !== -1) {
     const b = boxes[selectedBox];
     b.x += x - startX;
@@ -187,6 +218,7 @@ canvas.addEventListener("mousemove", e => {
     return;
   }
 
+  // ✅ Draw preview
   if (drawing) {
     redraw();
     drawBox(startX, startY, x - startX, y - startY, classSelect.value, true);
@@ -210,8 +242,10 @@ canvas.addEventListener("mouseup", e => {
 
     boxes.push({ x: fx, y: fy, w, h, label: classSelect.value });
   }
-
-  drawing = dragging = false;
+  resizing = false;
+  dragging = false;
+  drawing = false;
+  resizeHandle = null;  
   redraw();
 });
 
@@ -279,6 +313,11 @@ saveYoloBtn.onclick = () => {
       }
 
       statusText.textContent = "✅ Saved";
+      
+      lastUndo = {
+        image: currentImage,
+        index: currentIndex
+      };
 
       /* ✅ 1. Remove the saved image from thumbnails */
       thumbs.removeChild(thumbs.children[currentIndex]);
@@ -291,7 +330,55 @@ saveYoloBtn.onclick = () => {
 
       /* ✅ 3. Auto-load next image */
       loadNextImageAfterSave();
-    });
-
+    });    
 };
 
+/* ================= YOLO UNDO ================= */
+function undoLastSave() {
+  if (!lastUndo) {
+    alert("Nothing to undo");
+    return;
+  }
+
+  fetch("/api/undo-last-save", {
+    method: "POST"
+  })
+    .then(r => r.json())
+    .then(res => {
+      if (res.error) {
+        alert("Undo failed");
+        return;
+      }
+
+      /* ✅ Restore image into gallery data */
+      const restoreIndex = Math.min(lastUndo.index, images.length);
+      images.splice(restoreIndex, 0, lastUndo.image);
+
+      /* ✅ Restore thumbnail */
+      const thumb = document.createElement("img");
+      thumb.src = `/photos/${lastUndo.image}`;
+      thumb.onclick = () => loadImage(restoreIndex);
+
+      thumbs.insertBefore(
+        thumb,
+        thumbs.children[restoreIndex] || null
+      );
+
+      /* ✅ Reload the image in center */
+      loadImage(restoreIndex);
+
+      lastUndo = null;
+      statusText.textContent = "↩ Undo successful";
+    })
+    .catch(err => {
+      console.error(err);
+      alert("Undo failed");
+    });
+}
+
+window.addEventListener("keydown", e => {
+  if (e.ctrlKey && e.key === "z") {
+    e.preventDefault();
+    undoLastSave();
+  }
+});
