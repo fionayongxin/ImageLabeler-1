@@ -3,55 +3,58 @@ const fs = require("fs");
 const path = require("path");
 
 const app = express();
-
 app.use(express.json({ limit: "10mb" }));
 app.use(express.static("public"));
+app.use("/photos", express.static("photos"));
 
-// Ensure photos folder exists
+/* ---------- DIRECTORIES ---------- */
 const photosDir = path.join(__dirname, "photos");
-if (!fs.existsSync(photosDir)) {
-  fs.mkdirSync(photosDir);
-}
+const labelsDir = path.join(__dirname, "labels");
+const yoloDir = path.join(labelsDir, "yolo");
 
-app.use("/photos", express.static(path.join(__dirname, "photos")));
+[photosDir, labelsDir, yoloDir].forEach(dir => {
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+});
 
-// API to save photo
-app.post("/api/save-photo", (req, res) => {
-  const { image } = req.body;
+/* ---------- LIST PHOTOS ---------- */
+app.get("/api/photos", (req, res) => {
+  const files = fs.readdirSync(photosDir)
+    .filter(f => f.endsWith(".png"))
+    .sort((a, b) => b.localeCompare(a));
+  res.json(files);
+});
 
-  if (!image) {
-    return res.status(400).json({ error: "No image data" });
+/* ---------- SAVE YOLO LABELS ---------- */
+app.post("/api/save-yolo", (req, res) => {
+  const { image, width, height, boxes, classMap } = req.body;
+
+  if (!image || !width || !height || !Array.isArray(boxes)) {
+    return res.status(400).json({ error: "Invalid YOLO data" });
   }
 
-  const base64Data = image.replace(/^data:image\/png;base64,/, "");
-  const filename = `photo_${Date.now()}.png`;
-  const filepath = path.join(photosDir, filename);
+  const baseName = path.parse(image).name;
 
-  fs.writeFile(filepath, base64Data, "base64", err => {
-    if (err) {
-      console.error(err);
-      return res.status(500).json({ error: "Failed to save image" });
-    }
+  const lines = boxes.map(b => {
+    const classId = classMap[b.label];
+    if (classId === undefined) return null;
 
-    res.json({ status: "ok", filename });
-  });
+    const xc = (b.x + b.w / 2) / width;
+    const yc = (b.y + b.h / 2) / height;
+    const w  = b.w / width;
+    const h  = b.h / height;
+
+    return `${classId} ${xc.toFixed(6)} ${yc.toFixed(6)} ${w.toFixed(6)} ${h.toFixed(6)}`;
+  }).filter(Boolean);
+
+  fs.writeFileSync(
+    path.join(yoloDir, `${baseName}.txt`),
+    lines.join("\n")
+  );
+
+  res.json({ status: "ok", file: `${baseName}.txt` });
 });
 
-app.get("/api/photos", (req, res) => {
-  fs.readdir(photosDir, (err, files) => {
-    if (err) {
-      return res.status(500).json({ error: "Failed to read photos" });
-    }
-
-    const images = files
-      .filter(f => f.endsWith(".png"))
-      .sort((a, b) => b.localeCompare(a)); // newest first
-
-    res.json(images);
-  });
-});
-
-
+/* ---------- START SERVER ---------- */
 app.listen(3000, () => {
-  console.log("Running at http://localhost:3000");
+  console.log("✅ Server running at http://localhost:3000");
 });

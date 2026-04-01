@@ -1,24 +1,21 @@
-/* =====================================================
-   CONFIG
-   ===================================================== */
+/* ================= CONFIG ================= */
 
-// Minimum allowed box size (pixels)
 const MIN_BOX_SIZE = 20;
-
-// ✅ LINE THICKNESS SETTINGS (ADJUST HERE)
-const NORMAL_LINE_WIDTH   = 3;
+const NORMAL_LINE_WIDTH = 3;
 const SELECTED_LINE_WIDTH = 6;
-const PREVIEW_LINE_WIDTH  = 2;
-
-// Resize handle size
+const PREVIEW_LINE_WIDTH = 2;
 const HANDLE_SIZE = 10;
 
-/* =====================================================
-   STATE
-   ===================================================== */
+/* ================= COLOR ================= */
+const BOX_COLORS = {
+  ok: "#22c55e",        // green
+  defect: "#ef4444",   // red
+  scratch: "#fb923c"   // orange
+};
 
-let mode = "read"; // "read" | "draw"
+/* ================= STATE ================= */
 
+let mode = "read";
 let images = [];
 let currentIndex = -1;
 let currentImage = null;
@@ -34,9 +31,7 @@ let resizeHandle = null;
 let startX = 0;
 let startY = 0;
 
-/* =====================================================
-   DOM
-   ===================================================== */
+/* ================= DOM ================= */
 
 const thumbs = document.getElementById("thumbs");
 const img = document.getElementById("image");
@@ -48,28 +43,23 @@ const statusText = document.getElementById("status");
 
 const readBtn = document.getElementById("readModeBtn");
 const drawBtn = document.getElementById("drawModeBtn");
+const saveYoloBtn = document.getElementById("saveYoloBtn");
 
-/* =====================================================
-   MODE
-   ===================================================== */
+/* ================= MODE ================= */
 
 function setMode(m) {
   mode = m;
   readBtn.classList.toggle("active", m === "read");
   drawBtn.classList.toggle("active", m === "draw");
   canvas.className = m === "draw" ? "draw-mode" : "read-mode";
-  statusText.textContent = m === "draw"
-    ? "Draw mode"
-    : "Read mode";
+  statusText.textContent = m === "draw" ? "Draw mode" : "Read mode";
 }
 
 readBtn.onclick = () => setMode("read");
 drawBtn.onclick = () => setMode("draw");
 setMode("read");
 
-/* =====================================================
-   LOAD IMAGE LIST
-   ===================================================== */
+/* ================= LOAD IMAGES ================= */
 
 fetch("/api/photos")
   .then(r => r.json())
@@ -106,9 +96,7 @@ function loadImage(i) {
   img.src = `/photos/${currentImage}`;
 }
 
-/* =====================================================
-   GEOMETRY HELPERS
-   ===================================================== */
+/* ================= GEOMETRY ================= */
 
 function toCanvas(e) {
   const r = canvas.getBoundingClientRect();
@@ -120,65 +108,49 @@ function toCanvas(e) {
 
 function inside(b, x, y) {
   return (
-    x >= b.x &&
-    x <= b.x + b.w &&
-    y >= b.y &&
-    y <= b.y + b.h
+    x >= b.x && x <= b.x + b.w &&
+    y >= b.y && y <= b.y + b.h
   );
 }
 
-function hitCorner(b, x, y, size = HANDLE_SIZE) {
+function hitCorner(b, x, y, s = HANDLE_SIZE) {
   const corners = [
     ["tl", b.x, b.y],
-    ["tr", b.x + b.w, b.y],
-    ["bl", b.x, b.y + b.h],
     ["br", b.x + b.w, b.y + b.h]
   ];
-
-  for (const [name, cx, cy] of corners) {
-    if (
-      Math.abs(x - cx) <= size &&
-      Math.abs(y - cy) <= size
-    ) return name;
+  for (const [_, cx, cy] of corners) {
+    if (Math.abs(x - cx) <= s && Math.abs(y - cy) <= s) {
+      return true;
+    }
   }
-  return null;
+  return false;
 }
 
-/* =====================================================
-   MOUSE EVENTS
-   ===================================================== */
+/* ================= MOUSE ================= */
 
 canvas.addEventListener("mousedown", e => {
   const { x, y } = toCanvas(e);
+  let hit = false;
 
-  selectedBox = -1;
-  resizeHandle = null;
-
-  // Hit test: resize > drag
   for (let i = boxes.length - 1; i >= 0; i--) {
-    const b = boxes[i];
-    const handle = hitCorner(b, x, y);
-
-    if (handle) {
-      selectedBox = i;
-      resizing = true;
-      resizeHandle = handle;
-      return;
-    }
-
-    if (inside(b, x, y)) {
+    if (inside(boxes[i], x, y)) {
       selectedBox = i;
       dragging = true;
       startX = x;
       startY = y;
+      hit = true;
       redraw();
       return;
     }
   }
 
-  // New box
-  if (mode === "draw") {
-    if (!classSelect.value) return alert("Select a class first");
+  if (!hit) {
+    selectedBox = -1;
+    redraw();
+  }
+
+  if (mode === "draw" && !hit) {
+    if (!classSelect.value) return alert("Select class first");
     drawing = true;
     startX = x;
     startY = y;
@@ -188,7 +160,6 @@ canvas.addEventListener("mousedown", e => {
 canvas.addEventListener("mousemove", e => {
   const { x, y } = toCanvas(e);
 
-  // Move
   if (dragging && selectedBox !== -1) {
     const b = boxes[selectedBox];
     b.x += x - startX;
@@ -199,34 +170,6 @@ canvas.addEventListener("mousemove", e => {
     return;
   }
 
-  // Resize
-  if (resizing && selectedBox !== -1) {
-    const b = boxes[selectedBox];
-
-    if (resizeHandle === "br") {
-      b.w = Math.max(MIN_BOX_SIZE, x - b.x);
-      b.h = Math.max(MIN_BOX_SIZE, y - b.y);
-    }
-
-    if (resizeHandle === "tl") {
-      const newW = b.w + (b.x - x);
-      const newH = b.h + (b.y - y);
-
-      if (newW >= MIN_BOX_SIZE) {
-        b.x = x;
-        b.w = newW;
-      }
-      if (newH >= MIN_BOX_SIZE) {
-        b.y = y;
-        b.h = newH;
-      }
-    }
-
-    redraw();
-    return;
-  }
-
-  // Draw preview
   if (drawing) {
     redraw();
     drawBox(startX, startY, x - startX, y - startY, classSelect.value, true);
@@ -248,56 +191,31 @@ canvas.addEventListener("mouseup", e => {
     w = Math.max(MIN_BOX_SIZE, w);
     h = Math.max(MIN_BOX_SIZE, h);
 
-    boxes.push({
-      x: fx,
-      y: fy,
-      w,
-      h,
-      label: classSelect.value
-    });
+    boxes.push({ x: fx, y: fy, w, h, label: classSelect.value });
   }
 
-  drawing = false;
-  dragging = false;
-  resizing = false;
-  resizeHandle = null;
-
+  drawing = dragging = false;
   redraw();
 });
 
-/* =====================================================
-   DRAWING
-   ===================================================== */
+/* ================= DRAW ================= */
 
 function drawBox(x, y, w, h, label, preview = false, selected = false) {
-  const colors = {
-    ok: "#22c55e",
-    defect: "#ef4444",
-    scratch: "#fb923c"
-  };
+  const color = BOX_COLORS[label] || "#ffffff";
 
-  ctx.strokeStyle = colors[label] || "#ffffff";
-
-  if (preview) {
-    ctx.lineWidth = PREVIEW_LINE_WIDTH;
-  } else if (selected) {
-    ctx.lineWidth = SELECTED_LINE_WIDTH;
-  } else {
-    ctx.lineWidth = NORMAL_LINE_WIDTH;
-  }
+  ctx.strokeStyle = color;
+  ctx.lineWidth = preview
+    ? PREVIEW_LINE_WIDTH
+    : selected
+      ? SELECTED_LINE_WIDTH
+      : NORMAL_LINE_WIDTH;
 
   ctx.strokeRect(x, y, w, h);
 
-  ctx.fillStyle = ctx.strokeStyle;
+  // ✅ draw class name
+  ctx.fillStyle = color;
   ctx.font = "16px sans-serif";
   ctx.fillText(label, x + 6, y + 18);
-
-  // Resize handles
-  if (selected) {
-    const s = HANDLE_SIZE;
-    ctx.fillRect(x - s, y - s, s * 2, s * 2);
-    ctx.fillRect(x + w - s, y + h - s, s * 2, s * 2);
-  }
 }
 
 function redraw() {
@@ -307,9 +225,7 @@ function redraw() {
   );
 }
 
-/* =====================================================
-   DELETE
-   ===================================================== */
+/* ================= DELETE ================= */
 
 window.addEventListener("keydown", e => {
   if ((e.key === "Delete" || e.key === "Backspace") && selectedBox !== -1) {
@@ -319,17 +235,29 @@ window.addEventListener("keydown", e => {
   }
 });
 
-/* =====================================================
-   NAV + SAVE
-   ===================================================== */
+/* ================= YOLO SAVE ================= */
 
-document.getElementById("saveBtn").onclick = () => {
-  console.log("Image:", currentImage);
-  console.log("Boxes:", boxes);
+const CLASS_MAP = { ok: 0, defect: 1, scratch: 2 };
+
+saveYoloBtn.onclick = () => {
+  if (!currentImage) return alert("No image selected");
+  if (!boxes.length) return alert("No boxes");
+
+  fetch("/api/save-yolo", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      image: currentImage,
+      width: canvas.width,
+      height: canvas.height,
+      boxes,
+      classMap: CLASS_MAP
+    })
+  })
+    .then(r => r.json())
+    .then(res => {
+      statusText.textContent = res.error
+        ? "❌ Save failed"
+        : `✅ YOLO saved`;
+    });
 };
-
-document.getElementById("nextBtn").onclick = () =>
-  loadImage(currentIndex + 1);
-
-document.getElementById("prevBtn").onclick = () =>
-  loadImage(currentIndex - 1);

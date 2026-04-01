@@ -1,10 +1,11 @@
 <!DOCTYPE html>
+<title>InteractiveUI</title>
+
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <title>Labeler</title>
 
-  <!-- ✅ Load styles correctly -->
   <link rel="stylesheet" href="/css/base.css">
   <link rel="stylesheet" href="/css/labeler.css">
 </head>
@@ -13,25 +14,21 @@
 
 <div class="labeler-layout">
 
-  <!-- LEFT: thumbnails -->
   <aside class="thumb-panel">
     <h3>Images</h3>
     <div id="thumbs"></div>
   </aside>
 
-  <!-- CENTER + RIGHT -->
   <main class="work-panel">
     <h3 id="currentImage">No image selected</h3>
 
     <div class="label-workspace">
 
-      <!-- IMAGE AREA -->
       <section class="label-container">
         <img id="image" alt="">
         <canvas id="overlay" class="read-mode"></canvas>
       </section>
 
-      <!-- CONTROLS -->
       <aside class="label-controls">
 
         <h4>Mode</h4>
@@ -48,23 +45,15 @@
           <option value="scratch">Scratch</option>
         </select>
 
-        <button id="saveBtn">Save (console)</button>
+        <button id="saveYoloBtn">Save YOLO</button>
+        <p id="status"></p>
 
-        <div class="nav-buttons">
-          <button id="prevBtn" class="secondary">← Previous</button>
-          <button id="nextBtn" class="secondary">Next →</button>
-        </div>
-
-        <p id="status">Read mode</p>
       </aside>
 
     </div>
   </main>
-
 </div>
 
-<!-- ✅ Load JavaScript correctly -->
 <script src="/js/labeler.js"></script>
-
 </body>
 </html>
