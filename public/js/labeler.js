@@ -96,6 +96,23 @@ function loadImage(i) {
   img.src = `/photos/${currentImage}`;
 }
 
+/* ================= CLEANUP ================= */
+function loadNextImageAfterSave() {
+  if (images.length === 0) {
+    // No images left
+    img.src = "";
+    canvas.width = 0;
+    canvas.height = 0;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    document.getElementById("currentImage").textContent = "No image selected";
+    return;
+  }
+
+  // Load the image that now sits at the current index
+  const nextIndex = Math.min(currentIndex, images.length - 1);
+  loadImage(nextIndex);
+}
+
 /* ================= GEOMETRY ================= */
 
 function toCanvas(e) {
@@ -256,8 +273,25 @@ saveYoloBtn.onclick = () => {
   })
     .then(r => r.json())
     .then(res => {
-      statusText.textContent = res.error
-        ? "❌ Save failed"
-        : `✅ YOLO saved`;
+      if (res.error) {
+        statusText.textContent = "❌ Save failed";
+        return;
+      }
+
+      statusText.textContent = "✅ Saved";
+
+      /* ✅ 1. Remove the saved image from thumbnails */
+      thumbs.removeChild(thumbs.children[currentIndex]);
+      images.splice(currentIndex, 1);
+
+      /* ✅ 2. Reset annotation state (boxes only) */
+      boxes = [];
+      selectedBox = -1;
+      drawing = dragging = resizing = false;
+
+      /* ✅ 3. Auto-load next image */
+      loadNextImageAfterSave();
     });
+
 };
+

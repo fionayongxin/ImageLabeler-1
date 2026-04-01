@@ -7,14 +7,17 @@ app.use(express.json({ limit: "10mb" }));
 app.use(express.static("public"));
 app.use("/photos", express.static("photos"));
 
+
 /* ---------- DIRECTORIES ---------- */
 const photosDir = path.join(__dirname, "photos");
-const labelsDir = path.join(__dirname, "labels");
-const yoloDir = path.join(labelsDir, "yolo");
+const yoloImageDir = path.join(__dirname, "labels", "yolo", "image");
+const yoloLabelDir = path.join(__dirname, "labels", "yolo", "label");
 
-[photosDir, labelsDir, yoloDir].forEach(dir => {
+// Ensure directories exist
+[photosDir, yoloImageDir, yoloLabelDir].forEach(dir => {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 });
+``
 
 /* ---------- LIST PHOTOS ---------- */
 app.get("/api/photos", (req, res) => {
@@ -25,6 +28,7 @@ app.get("/api/photos", (req, res) => {
 });
 
 /* ---------- SAVE YOLO LABELS ---------- */
+
 app.post("/api/save-yolo", (req, res) => {
   const { image, width, height, boxes, classMap } = req.body;
 
@@ -34,7 +38,8 @@ app.post("/api/save-yolo", (req, res) => {
 
   const baseName = path.parse(image).name;
 
-  const lines = boxes.map(b => {
+  /* ---------- 1. CREATE YOLO LABEL ---------- */
+  const yoloLines = boxes.map(b => {
     const classId = classMap[b.label];
     if (classId === undefined) return null;
 
@@ -46,12 +51,25 @@ app.post("/api/save-yolo", (req, res) => {
     return `${classId} ${xc.toFixed(6)} ${yc.toFixed(6)} ${w.toFixed(6)} ${h.toFixed(6)}`;
   }).filter(Boolean);
 
-  fs.writeFileSync(
-    path.join(yoloDir, `${baseName}.txt`),
-    lines.join("\n")
-  );
+  const labelPath = path.join(yoloLabelDir, `${baseName}.txt`);
+  fs.writeFileSync(labelPath, yoloLines.join("\n"));
 
-  res.json({ status: "ok", file: `${baseName}.txt` });
+  /* ---------- 2. MOVE IMAGE OUT OF photos/ ---------- */
+  const srcImagePath = path.join(photosDir, image);
+  const dstImagePath = path.join(yoloImageDir, image);
+
+  if (!fs.existsSync(srcImagePath)) {
+    return res.status(404).json({ error: "Source image not found" });
+  }
+
+  fs.renameSync(srcImagePath, dstImagePath);
+
+  /* ---------- DONE ---------- */
+  res.json({
+    status: "ok",
+    imageMovedTo: "labels/yolo/image",
+    labelSavedTo: "labels/yolo/label"
+  });
 });
 
 /* ---------- START SERVER ---------- */
