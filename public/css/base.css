@@ -1,0 +1,52 @@
+/* =========================
+   GLOBAL BASE STYLES
+   ========================= */
+
+* {
+  box-sizing: border-box;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  min-height: 100vh;
+  background: #0f172a;   /* ✅ DARK BACKGROUND */
+  color: #e5e7eb;
+}
+
+/* Common elements */
+h1, h2, h3 {
+  margin-top: 0;
+}
+
+a {
+  color: #60a5fa;
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+button {
+  padding: 10px;
+  font-size: 16px;
+  background: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #1d4ed8;
+}
+
+button.secondary {
+  background: #1e293b;
+  border: 1px solid #334155;
+}
