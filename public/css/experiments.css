@@ -1,0 +1,54 @@
+/* ===============================
+   Table styling (Experiments)
+================================ */
+#experimentsTable {
+  width: 100%;
+  border-collapse: collapse;
+  color: #e5e7eb; /* ✅ light text */
+}
+
+#experimentsTable th {
+  text-align: left;
+  color: #9ca3af;
+  font-weight: 600;
+}
+
+#experimentsTable th,
+#experimentsTable td {
+  padding: 12px;
+  border-bottom: 1px solid #1f2937;
+}
+
+/* ===============================
+   Column sizing (Experiments)
+================================ */
+#experimentsTable th:nth-child(1),
+#experimentsTable td:nth-child(1) {
+  width: 30%;
+}
+
+#experimentsTable th:nth-child(2),
+#experimentsTable td:nth-child(2) {
+  width: 10%;
+}
+
+#experimentsTable th:nth-child(3),
+#experimentsTable td:nth-child(3) {
+  width: 10%;
+}
+
+#experimentsTable th:nth-child(4),
+#experimentsTable td:nth-child(4) {
+  width: 35%;
+}
+
+.status.running   { color: orange; }
+.status.completed { color: green; }
+.status.stopped   { color: #999; }
+.status.failed    { color: red; }
+
+button {
+  padding: 4px 8px;
+  margin-right: 4px;
+  cursor: pointer;
+}

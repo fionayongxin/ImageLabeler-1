@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Datasets</title>
+  <link rel="stylesheet" href="/css/base.css" />
+  <link rel="stylesheet" href="/css/datasets.css" />
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="nav-brand">Vision Trainer</div>
+  <ul class="nav-links">
+    <li><a href="/trainer">Training</a></li>
+    <li><a href="/experiments">Experiments</a></li>
+    <li><a href="/datasets" class="active">Datasets</a></li>
+    <li><a href="/settings">Settings</a></li>
+  </ul>
+</nav>
+
+<div class="trainer-container">
+
+  <h1>Datasets (Read‑Only)</h1>
+
+  <div class="dataset-toolbar">
+    <div class="dataset-info">
+      <label>Station</label>
+      <input id="station" value="station_01" readonly />
+
+      <label>Process</label>
+      <input id="process" value="final_inspection" readonly />
+    </div>
+
+    <button id="loadBtn">Load Images</button>
+  </div>
+
+  <div id="datasetStatus" class="dataset-status"></div>
+
+  <div id="gallery" class="gallery"></div>
+
+</div>
+
+<script src="/js/datasets.js"></script>
+</body>
+</html>

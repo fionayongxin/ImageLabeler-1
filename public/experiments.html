@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Experiments</title>
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/experiments.css">
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="nav-brand">Vision Trainer</div>
+  <ul class="nav-links">
+    <li><a href="/trainer">Training</a></li>
+    <li><a href="/experiments" class="active">Experiments</a></li>
+    <li><a href="/datasets">Datasets</a></li>
+    <li><a href="/settings">Settings</a></li>
+  </ul>
+</nav>
+
+<div class="trainer-container">
+  <h1>Experiments</h1>
+
+  <table id="experimentsTable">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Status</th>
+        <th>Model</th>
+        <th>Dataset</th>
+        <th>Epochs</th>
+        <th>Started At</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<script src="js/experiments.js"></script>
+</body>
+</html>

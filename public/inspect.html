@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Live PCB Inspection</title>
+  /css/base.css
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="nav-brand">Vision Trainer</div>
+  <ul class="nav-links">
+    <li>/trainerTraining</a></li>
+    <li>/experimentsExperiments</a></li>
+    <li>/datasetsDatasets</a></li>
+    <li>/inspectInspect</a></li>
+    <li>/settingsSettings</a></li>
+  </ul>
+</nav>
+
+<div class="trainer-container">
+  <h1>Live PCB Inspection</h1>
+
+  <div style="display:flex; gap:32px; margin-top:20px;">
+    <div>
+      <h3>Live Camera</h3>
+      <img
+        src="http://localhost:8000/video"
+        style="border:1px solid #333; width:640px;"
+      />
+    </div>
+
+    <div>
+      <h3>Required Classes</h3>
+
+      <label><input type="checkbox" value="T_Body"> T_Body</label><br>
+      <label><input type="checkbox" value="T_Bushing"> T_Bushing</label><br>
+      <label><input type="checkbox" value="T_SN_Label"> T_SN_Label</label><br>
+
+      <h3 style="margin-top:20px;">Confidence</h3>
+      <input
+        id="conf"
+        type="range"
+        min="0.2"
+        max="0.9"
+        step="0.05"
+        value="0.5"
+      >
+
+      <h2 id="result" style="margin-top:24px;">UNKNOWN</h2>
+    </div>
+  </div>
+</div>
+
+js/inspect.js>
+</body>
+</html>

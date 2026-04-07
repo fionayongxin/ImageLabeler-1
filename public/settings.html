@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Settings</title>
+
+  <!-- Shared base styles -->
+  <link rel="stylesheet" href="/css/base.css">
+
+  <!-- Settings page styles only -->
+  <link rel="stylesheet" href="/css/settings.css">
+</head>
+<body>
+
+  <!-- =========================
+       Top Navigation Bar
+  ========================== -->
+  <nav class="navbar">
+    <div class="nav-brand">Vision Trainer</div>
+    <ul class="nav-links">
+      <li><a href="/trainer">Training</a></li>
+      <li><a href="/experiments">Experiments</a></li>
+      <li><a href="/datasets">Datasets</a></li>
+      <li><a href="/settings" class="active">Settings</a></li>
+    </ul>
+  </nav>
+
+  <!-- =========================
+       Main Content
+  ========================== -->
+  <div class="trainer-container">
+    <h1>Settings</h1>
+
+    <!-- ===== System Info ===== -->
+    <h2>System</h2>
+    <div id="systemInfo" class="settings-kv">
+      Loading system information...
+    </div>
+
+    <!-- ===== Paths ===== -->
+    <h2>Paths</h2>
+    <div id="pathsInfo" class="settings-kv">
+      Loading paths...
+    </div>
+
+    <!-- ===== Environment ===== -->
+    <h2>Environment</h2>
+    <div id="envInfo" class="settings-kv">
+      Loading environment details...
+    </div>
+
+    <!-- ===== Training Defaults ===== -->
+    <h2>Training Defaults</h2>
+    <div id="defaultsInfo" class="settings-kv">
+      Loading training defaults...
+    </div>
+  </div>
+
+  <!-- =========================
+       Page Script
+  ========================== -->
+  <script src="/js/settings.js"></script>
+
+</body>
+</html>
