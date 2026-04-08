@@ -3,18 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <title>Live PCB Inspection</title>
-  /css/base.css
+  <link rel="stylesheet" href="css/base.css">
 </head>
 <body>
 
 <nav class="navbar">
   <div class="nav-brand">Vision Trainer</div>
   <ul class="nav-links">
-    <li>/trainerTraining</a></li>
-    <li>/experimentsExperiments</a></li>
-    <li>/datasetsDatasets</a></li>
-    <li>/inspectInspect</a></li>
-    <li>/settingsSettings</a></li>
+    <li><a href="/trainer">Training</a></li>
+    <li><a href="/experiments">Experiments</a></li>
+    <li><a href="/datasets">Datasets</a></li>
+    <li><a href="/inspect" class="active">Inspect</a></li>
+    <li><a href="/settings">Settings</a></li>
   </ul>
 </nav>
 
@@ -22,6 +22,7 @@
   <h1>Live PCB Inspection</h1>
 
   <div style="display:flex; gap:32px; margin-top:20px;">
+    <!-- CAMERA -->
     <div>
       <h3>Live Camera</h3>
       <img
@@ -30,12 +31,22 @@
       />
     </div>
 
+    <!-- CONTROLS -->
     <div>
       <h3>Required Classes</h3>
 
-      <label><input type="checkbox" value="T_Body"> T_Body</label><br>
-      <label><input type="checkbox" value="T_Bushing"> T_Bushing</label><br>
-      <label><input type="checkbox" value="T_SN_Label"> T_SN_Label</label><br>
+      <!-- MATCH YOUR YOLO CLASS NAMES EXACTLY -->
+      <label><input type="checkbox" class="req" value="T Body"> T Body</label><br>
+      <label><input type="checkbox" class="req" value="T Bushing"> T Bushing</label><br>
+      <label><input type="checkbox" class="req" value="T SN label"> T SN label</label><br>
+      <label><input type="checkbox" class="req" value="T Hole Plug"> T Hole Plug</label><br>
+
+      <h3 style="margin-top:20px;">Fail If Appears</h3>
+
+      <label><input type="checkbox" class="forbid" value="T Missing SN label"> T Missing SN label</label><br>
+      <label><input type="checkbox" class="forbid" value="T Missing Hole Plug"> T Missing Hole Plug</label><br>
+      <label><input type="checkbox" class="forbid" value="T Without Bushing"> T Without Bushing</label><br>
+      <label><input type="checkbox" class="forbid" value="Unassigned"> Unassigned</label><br>
 
       <h3 style="margin-top:20px;">Confidence</h3>
       <input
@@ -46,12 +57,17 @@
         step="0.05"
         value="0.5"
       >
+      <span id="confValue">0.50</span>
+
+      <div style="margin-top:20px;">
+        <button id="apply">Apply Criteria</button>
+      </div>
 
       <h2 id="result" style="margin-top:24px;">UNKNOWN</h2>
     </div>
   </div>
 </div>
 
-js/inspect.js>
+<script src="js/inspect.js"></script>
 </body>
 </html>

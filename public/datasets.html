@@ -21,22 +21,35 @@
 <div class="trainer-container">
 
   <h1>Datasets (Read‑Only)</h1>
+    <div class="dataset-toolbar">
+      <div class="dataset-info">
 
-  <div class="dataset-toolbar">
-    <div class="dataset-info">
-      <label>Station</label>
-      <input id="station" value="station_01" readonly />
+        <label>Station</label>
+        <select id="station">
+          <option value="ALL">All Stations</option>
+          <option value="station_01">station_01</option>
+          <option value="station_02">station_02</option>
+        </select>
 
-      <label>Process</label>
-      <input id="process" value="final_inspection" readonly />
+        <label>Process</label>
+        <select id="process">
+          <option value="ALL">All Processes</option>
+          <option value="final_inspection">final_inspection</option>
+          <option value="pre_inspection">pre_inspection</option>
+        </select>
+      </div>
+      <button id="loadBtn">Load Images</button>
     </div>
-
-    <button id="loadBtn">Load Images</button>
-  </div>
 
   <div id="datasetStatus" class="dataset-status"></div>
 
   <div id="gallery" class="gallery"></div>
+  
+  <div id="pageCounter" style="margin-top:8px; opacity:0.8;"></div>
+
+  <button id="loadMoreBtn" style="display:none;">
+    Load More
+  </button>
 
 </div>
 

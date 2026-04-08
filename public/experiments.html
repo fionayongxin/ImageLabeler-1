@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <title>Experiments</title>
-  <link rel="stylesheet" href="css/base.css">
-  <link rel="stylesheet" href="css/experiments.css">
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/experiments.css">
 </head>
 <body>
 
@@ -24,19 +24,56 @@
   <table id="experimentsTable">
     <thead>
       <tr>
-        <th>Name</th>
+        <th>Run Name</th>
         <th>Status</th>
         <th>Model</th>
-        <th>Dataset</th>
+        <th>Image Size</th>
         <th>Epochs</th>
+        <th>Dataset</th>
         <th>Started At</th>
         <th>Actions</th>
       </tr>
     </thead>
     <tbody></tbody>
   </table>
+  <div id="metricsPanel" class="metrics-panel">
+    <div class="metrics-header">
+      <h2>Training Metrics</h2>
+      <button id="closeMetrics" class="btn-secondary">Close</button>
+    </div>
+
+    <div class="metrics-summary">
+      <div class="metric-card">
+        <span class="label">Final Epoch</span>
+        <span class="value" id="finalEpoch">-</span>
+      </div>
+      <div class="metric-card">
+        <span class="label">Final Loss</span>
+        <span class="value" id="finalLoss">-</span>
+      </div>
+      <div class="metric-card">
+        <span class="label">Best mAP50</span>
+        <span class="value" id="bestMap">-</span>
+      </div>
+    </div>
+
+    <table class="metrics-table">
+      <thead>
+        <tr>
+          <th>Epoch</th>
+          <th>Loss</th>
+          <th>mAP50</th>
+        </tr>
+      </thead>
+      <tbody id="metricsTableBody"></tbody>
+    </table>
+  </div>
+
 </div>
 
-<script src="js/experiments.js"></script>
+
+</div>
+
+<script src="/js/experiments.js"></script>
 </body>
 </html>

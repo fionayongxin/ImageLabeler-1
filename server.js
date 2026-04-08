@@ -26,20 +26,69 @@ app.use("/training", express.static(TRAINING_ROOT));
 /* ======================================================
    DIRECTORIES
 ====================================================== */
+const photosDir = path.join(__dirname, "photos");
 const yoloImageDir = path.join(__dirname, "labels", "yolo", "image");
 const yoloLabelDir = path.join(__dirname, "labels", "yolo", "label");
-const photosDir = path.join(__dirname, "photos");
-[photosDir, TRAINING_ROOT].forEach(dir => {
+
+[
+  photosDir,
+  TRAINING_ROOT,
+  yoloImageDir,
+  yoloLabelDir,
+].forEach(dir => {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 });
-
 
 /* ======================================================
    STATE
 ====================================================== */
 let trainProcess = null;
 let activeRunName = null;
+let lastSaved = null;
 
+let inspectionResult = {
+  status: "UNKNOWN",
+  detected: [],
+  timestamp: null
+};
+
+let inspectionCriteria = {
+  required: [],
+  forbidden: [],
+  confidence: 0.5
+};
+
+/* ======================================================
+   HELPERS
+====================================================== */
+function parseMetricsCsv(csvPath) {
+  if (!fs.existsSync(csvPath)) return [];
+
+  const lines = fs.readFileSync(csvPath, "utf8").trim().split("\n");
+  if (lines.length < 2) return [];
+
+  const headers = lines[0].split(",");
+  const rows = lines.slice(1);
+
+  const epochIdx = headers.indexOf("epoch");
+  if (epochIdx === -1) return [];
+
+  const lossIdx = headers.indexOf("train/box_loss") !== -1
+    ? headers.indexOf("train/box_loss")
+    : headers.indexOf("train/loss");
+
+  const map50Key = headers.find(h => h.startsWith("metrics/mAP50"));
+  const map50Idx = map50Key ? headers.indexOf(map50Key) : -1;
+
+  return rows.map(line => {
+    const v = line.split(",");
+    return {
+      epoch: Number(v[epochIdx]) + 1,
+      loss: lossIdx !== -1 ? Number(v[lossIdx]) : null,
+      map50: map50Idx !== -1 ? Number(v[map50Idx]) : null
+    };
+  });
+}
 
 /* ======================================================
    PAGE ROUTES
@@ -52,18 +101,23 @@ app.get("/", (_, res) => res.redirect("/trainer"));
   );
 });
 
+app.get("/experiments/:name", (_, res) => {
+  res.sendFile(path.join(__dirname, "public", "experiments.html"));
+});
+
+
 /* ======================================================
    API ROUTES
 ====================================================== */
-/* ---------- LIST PHOTOS ---------- */
-app.get("/api/photos", (req, res) => {
+
+/* ---------- PHOTOS ---------- */
+app.get("/api/photos", (_, res) => {
   const files = fs.readdirSync(photosDir)
     .filter(f => f.toLowerCase().endsWith(".png"))
     .sort((a, b) => b.localeCompare(a));
   res.json(files);
 });
 
-/* ---------- SAVE PHOTO ---------- */
 app.post("/api/save-photo", (req, res) => {
   const { image } = req.body;
   if (!image?.startsWith("data:image")) {
@@ -77,7 +131,7 @@ app.post("/api/save-photo", (req, res) => {
   res.json({ filename });
 });
 
-/* ---------- LIST DATASETS ---------- */
+/* ---------- DATASETS ---------- */
 app.get("/api/datasets", (req, res) => {
   const { station, process } = req.query;
   if (!station || !process) return res.json([]);
@@ -92,7 +146,7 @@ app.get("/api/datasets", (req, res) => {
   );
 });
 
-/* ---------- SAVE YOLO ---------- */
+/* ---------- YOLO SAVE ---------- */
 app.post("/api/save-yolo", (req, res) => {
   const { image, width, height, boxes, classMap } = req.body;
 
@@ -124,28 +178,18 @@ app.post("/api/save-yolo", (req, res) => {
   fs.writeFileSync(labelPath, yoloLines.join("\n"));
   fs.renameSync(srcImagePath, dstImagePath);
 
-  lastSaved = {
-    image,
-    imageFrom: srcImagePath,
-    imageTo: dstImagePath,
-    labelPath
-  };
-
+  lastSaved = { image, labelPath };
   res.json({ status: "ok" });
 });
 
 /* ======================================================
    TRAINING
 ====================================================== */
-
-/* ---------- START TRAINING ---------- */
 app.post("/api/train/start", (req, res) => {
   const { station, process, model, epochs, imgsz, batch, runName } = req.body;
-  
+
   if (trainProcess) {
-    return res.status(409).json({
-      error: "Training already running"
-    });
+    return res.status(409).json({ error: "Training already running" });
   }
 
   if (!station || !process || !runName) {
@@ -154,9 +198,9 @@ app.post("/api/train/start", (req, res) => {
 
   const safe = s => String(s).replace(/[^a-zA-Z0-9_-]/g, "_");
   const safeRunName = safe(runName);
+
   const datasetRoot = path.join(DATASET_ROOT, safe(station), safe(process));
   const datasetYaml = path.join(datasetRoot, "dataset.yaml");
-
   if (!fs.existsSync(datasetYaml)) {
     return res.status(400).json({ error: "dataset.yaml not found" });
   }
@@ -168,22 +212,23 @@ app.post("/api/train/start", (req, res) => {
 
   fs.mkdirSync(runDir, { recursive: true });
   activeRunName = safeRunName;
-  trainProcess = spawn("python", [
-    "training/train.py",
-    "--data", datasetYaml,
-    "--model", model,
-    "--epochs", epochs,
-    "--imgsz", imgsz,
-    "--batch", batch,
-    "--name", safeRunName,
-    "--project", TRAINING_ROOT
-  ]);
 
-  trainProcess.stdout.on("data", d => console.log(d.toString()));
-  trainProcess.stderr.on("data", d => console.error(d.toString()));
+  trainProcess = spawn(
+    "python",
+    [
+      path.join(__dirname, "training", "train.py"),
+      "--data", datasetYaml,
+      "--model", model,
+      "--epochs", epochs,
+      "--imgsz", imgsz,
+      "--batch", batch,
+      "--name", safeRunName,
+      "--project", TRAINING_ROOT
+    ],
+    { stdio: "inherit" }
+  );
 
-  trainProcess.on("close", (code, signal) => {
-    console.log(`🧠 Training closed (code=${code}, signal=${signal})`);
+  trainProcess.on("close", () => {
     trainProcess = null;
     activeRunName = null;
   });
@@ -206,138 +251,56 @@ app.post("/api/train/start", (req, res) => {
   res.json({ status: "started", experiment: safeRunName });
 });
 
-/* ================================
-   TRAINING PROGRESS
-================================ */
-app.get("/api/train/progress", (req, res) => {
-  if (!trainProcess || !activeRunName) {
-    return res.json({ status: "idle" });
-  }
-
-  const runDir = path.join(TRAINING_ROOT, activeRunName);
-  const cfgPath = path.join(runDir, "run_config.json");
-  const csvPath = path.join(runDir, "results.csv");
-
-  if (!fs.existsSync(cfgPath)) {
-    return res.json({
-      status: "starting",
-      runName: activeRunName,
-      file: "results.csv"
-    });
-  }
-
-  const config = JSON.parse(fs.readFileSync(cfgPath, "utf8"));
-
-  if (!fs.existsSync(csvPath)) {
-    return res.json({
-      status: "starting",
-      runName: activeRunName,
-      file: "results.csv"
-    });
-  }
-
-  const lines = fs.readFileSync(csvPath, "utf8").trim().split("\n");
-  if (lines.length < 2) {
-    return res.json({
-      status: "starting",
-      runName: activeRunName,
-      file: "results.csv"
-    });
-  }
-
-  const headers = lines[0].split(",");
-  const values = lines[lines.length - 1].split(",");
-  const row = Object.fromEntries(
-    headers.map((h, i) => [h, Number(values[i])])
-  );
-
-  const epoch = row.epoch ?? 0;
-  const total = config.epochs;
-
-  const progress = Math.min(
-    100,
-    Math.round(((epoch + 1) / total) * 100)
-  );
-
-  res.json({
-    status: "running",
-    progress,
-    epoch: epoch + 1,
-    totalEpochs: total,
-    runName: activeRunName,
-    file: "results.csv"
-  });
-});
-
-/* ---------- STOP TRAINING ---------- */
-
 app.post("/api/train/stop", (_, res) => {
   if (!trainProcess) {
     return res.status(400).json({ error: "No training running" });
   }
 
-  console.log("🛑 Early stop requested");
   trainProcess.kill("SIGTERM");
-
-  trainProcess = null;
-  activeRunName = null; // ✅ reset
-
-  res.json({ status: "stopped" });
+  res.json({ status: "stopping" });
 });
 
-/* ================================
-   TRAINING METRICS (LOSS)
-================================ */
-app.get("/api/train/metrics", (req, res) => {
-  if (!activeRunName) {
-    return res.json([]);
+/* ---------- TRAINING PROGRESS ---------- */
+app.get("/api/train/progress", (_, res) => {
+  if (!trainProcess || !activeRunName) {
+    return res.json({ status: "idle" });
   }
 
   const runDir = path.join(TRAINING_ROOT, activeRunName);
   const csvPath = path.join(runDir, "results.csv");
+  const cfgPath = path.join(runDir, "run_config.json");
 
-  if (!fs.existsSync(csvPath)) {
-    return res.json([]);
+  if (!fs.existsSync(cfgPath) || !fs.existsSync(csvPath)) {
+    return res.json({ status: "starting", runName: activeRunName });
   }
 
-  const lines = fs.readFileSync(csvPath, "utf8").trim().split("\n");
-  if (lines.length < 2) {
-    return res.json([]);
-  }
+  const cfg = JSON.parse(fs.readFileSync(cfgPath, "utf8"));
+  const data = parseMetricsCsv(csvPath);
+  if (!data.length) return res.json({ status: "starting" });
 
-  const headers = lines[0].split(",");
-  const rows = lines.slice(1);
+  const last = data[data.length - 1];
+  const total = Number(cfg.epochs);
+  const progress = Math.min(100, Math.round((last.epoch / total) * 100));
 
-
-  const epochIdx = headers.indexOf("epoch");
-
-  const lossIdx = headers.includes("train/box_loss")
-    ? headers.indexOf("train/box_loss")
-    : headers.includes("train/loss")
-    ? headers.indexOf("train/loss")
-    : -1;
-
-  const map50Key = headers.find(h =>
-    h.startsWith("metrics/mAP50")
-  );
-  const map50Idx = map50Key
-    ? headers.indexOf(map50Key)
-    : -1;
-
-  if (epochIdx === -1) {
-    return res.json([]);
-  }
-
-  const data = rows.map(line => {
-    const v = line.split(",");
-    return {
-      epoch: Number(v[epochIdx]) + 1,
-      loss: lossIdx !== -1 ? Number(v[lossIdx]) : null,
-      map50: map50Idx !== -1 ? Number(v[map50Idx]) : null
-    };
+  res.json({
+    status: "running",
+    progress,
+    epoch: last.epoch,
+    totalEpochs: total,
+    runName: activeRunName
   });
+});
 
-  res.json(data);
+/* ---------- METRICS ---------- */
+app.get("/api/train/metrics", (_, res) => {
+  if (!activeRunName) return res.json([]);
+  const csv = path.join(TRAINING_ROOT, activeRunName, "results.csv");
+  res.json(parseMetricsCsv(csv));
+});
+
+app.get("/api/experiments/:name/metrics", (req, res) => {
+  const csv = path.join(TRAINING_ROOT, req.params.name, "results.csv");
+  res.json(parseMetricsCsv(csv));
 });
 
 /* ======================================================
@@ -368,20 +331,17 @@ app.get("/api/experiments", (_, res) => {
       else if (fs.existsSync(resultsCsv)) status = "stopped";
 
       const stats = fs.statSync(runDir);
-
       return {
         name,
         status,
-
-        // metadata
         config,
         startedAt,
         updatedAt: stats.mtime.toISOString(),
 
-        // ✅ THESE ARE REQUIRED FOR BUTTONS
         hasWeights: fs.existsSync(bestPt),
-        hasMetrics: fs.existsSync(metricsJson)
+        hasMetrics: fs.existsSync(resultsCsv)   // ✅ FIX
       };
+
     });
 
   res.json(experiments);
@@ -460,12 +420,12 @@ app.get("/api/dataset/images", (req, res) => {
    SETTINGS
 ====================================================== */
 app.get("/api/settings", (_, res) => {
-  let pythonVersion = "unknown";
-  let yoloVersion = "unknown";
+  let python = "unknown";
+  let yolo = "unknown";
   let cuda = false;
 
-  try { pythonVersion = execSync("python --version").toString().trim(); } catch {}
-  try { yoloVersion = execSync("yolo version").toString().trim(); } catch {}
+  try { python = execSync("python --version").toString().trim(); } catch {}
+  try { yolo = execSync("yolo version").toString().trim(); } catch {}
   try { execSync("nvidia-smi", { stdio: "ignore" }); cuda = true; } catch {}
 
   res.json({
@@ -479,11 +439,7 @@ app.get("/api/settings", (_, res) => {
       datasets: DATASET_ROOT,
       training: TRAINING_ROOT
     },
-    environment: {
-      python: pythonVersion,
-      yolo: yoloVersion,
-      cuda
-    }
+    environment: { python, yolo, cuda }
   });
 });
 
@@ -491,5 +447,5 @@ app.get("/api/settings", (_, res) => {
    START SERVER
 ====================================================== */
 app.listen(3000, () => {
-  console.log("✅ Server running at http://localhost:3000");
+  console.log("Server running at http://localhost:3000");
 });

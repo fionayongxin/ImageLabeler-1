@@ -1,25 +1,29 @@
 import os
 import cv2
+import time
+import requests
 from ultralytics import YOLO
-from flask import Flask, Response, jsonify, request
+from flask import Flask, Response, jsonify
 
 # ================================
 # Configuration
 # ================================
-
 MODEL_PATH = (
     "/home/user/Documents/h1-visual-inspection/interface/training/"
     "station_01-final_inspection-yolo26m_pt-20260403-140421/"
     "weights/best.pt"
 )
 
-CAMERA_INDEX = 0               # USB camera for demo
+CAMERA_INDEX = 0
+CRITERIA_URL = "http://localhost:3000/api/inspect/criteria"
+RESULT_URL = "http://localhost:3000/api/inspect/result"
+
 DEFAULT_CONFIDENCE = 0.5
+CRITERIA_REFRESH_SEC = 1.0
 
 # ================================
 # Safety check
 # ================================
-
 if not os.path.exists(MODEL_PATH):
     raise FileNotFoundError(f"YOLO model not found: {MODEL_PATH}")
 
@@ -28,76 +32,121 @@ print(f"✅ Using YOLO model: {MODEL_PATH}")
 # ================================
 # Init
 # ================================
-
 app = Flask(__name__)
 
 model = YOLO(MODEL_PATH)
+class_names = model.names
+
 cap = cv2.VideoCapture(CAMERA_INDEX)
+if not cap.isOpened():
+    raise RuntimeError("❌ Camera not accessible")
 
-required_classes = set()
-confidence_threshold = DEFAULT_CONFIDENCE
+criteria = {
+    "required": [],
+    "forbidden": [],
+    "confidence": DEFAULT_CONFIDENCE
+}
 
+last_fetch = 0
 last_status = {
-    "result": "UNKNOWN",
+    "status": "UNKNOWN",
     "detected": []
 }
 
 # ================================
-# Routes
+# Helper
 # ================================
+def fetch_criteria():
+    global criteria
+    try:
+        r = requests.get(CRITERIA_URL, timeout=0.5)
+        criteria = r.json()
+    except:
+        pass
 
-@app.route("/configure", methods=["POST"])
-def configure():
-    global required_classes, confidence_threshold
-    data = request.json
-
-    required_classes = set(data.get("required_classes", []))
-    confidence_threshold = float(data.get("confidence", DEFAULT_CONFIDENCE))
-
-    print(f"✅ Config updated | Required: {required_classes}, Conf: {confidence_threshold}")
-
-    return jsonify({"ok": True})
-
-
+# ================================
+# Video generator
+# ================================
 def generate_frames():
-    global last_status
+    global last_fetch, last_status
 
     while True:
         ret, frame = cap.read()
         if not ret:
             continue
 
-        result = model(frame, conf=confidence_threshold)[0]
-        names = model.names
+        # Refresh criteria
+        if time.time() - last_fetch > CRITERIA_REFRESH_SEC:
+            fetch_criteria()
+            last_fetch = time.time()
 
-        detected_classes = {
-            names[int(cls_id)]
-            for cls_id in result.boxes.cls
-        } if result.boxes is not None else set()
+        required = set(criteria.get("required", []))
+        forbidden = set(criteria.get("forbidden", []))
+        conf = float(criteria.get("confidence", DEFAULT_CONFIDENCE))
 
-        passed = required_classes.issubset(detected_classes)
+        result = model(frame, conf=conf, verbose=False)[0]
+
+        detected = set()
+        if result.boxes is not None:
+            for cls_id in result.boxes.cls:
+                detected.add(class_names[int(cls_id)])
+
+        # PASS / FAIL logic
+        missing_required = required - detected
+        detected_forbidden = forbidden & detected
+
+        if missing_required or detected_forbidden:
+            status = "FAIL"
+            color = (0, 0, 255)
+        else:
+            status = "PASS"
+            color = (0, 255, 0)
 
         last_status = {
-            "result": "PASS" if passed else "FAIL",
-            "detected": list(detected_classes)
+            "status": status,
+            "detected": list(detected)
         }
 
-        annotated = result.plot()
-        ret, buffer = cv2.imencode(".jpg", annotated)
+        # Send result to backend
+        try:
+            r = requests.post(
+                RESULT_URL,
+                json=last_status,
+                timeout=0.5
+            )
+            if r.status_code != 200:
+                print("❌ Result POST failed:", r.status_code, r.text)
+            else:
+                print("✅ Result POST:", last_status)
+        except Exception as e:
+            print("❌ Result POST exception:", e)
 
+        annotated = result.plot()
+
+        cv2.putText(
+            annotated,
+            f"STATUS: {status}",
+            (20, 40),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            1.2,
+            color,
+            3
+        )
+
+        ret, buffer = cv2.imencode(".jpg", annotated)
         if not ret:
             continue
 
-        frame_bytes = buffer.tobytes()
-
         yield (
             b"--frame\r\n"
-            b"Content-Type: image/jpeg\r\n\r\n"
-            + frame_bytes
-            + b"\r\n"
+            b"Content-Type: image/jpeg\r\n\r\n" +
+            buffer.tobytes() +
+            b"\r\n"
         )
 
-
+# ================================
+# Routes
+# ================================
 @app.route("/video")
 def video():
     return Response(
@@ -105,16 +154,13 @@ def video():
         mimetype="multipart/x-mixed-replace; boundary=frame"
     )
 
-
 @app.route("/status")
 def status():
     return jsonify(last_status)
 
-
 # ================================
 # Main
 # ================================
-
 if __name__ == "__main__":
     print("🚀 Starting inspection inference service...")
-    app.run(host="0.0.0.0", port=8000)
+    app.run(host="0.0.0.0", port=8000, threaded=True)
