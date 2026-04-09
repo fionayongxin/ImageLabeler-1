@@ -2,6 +2,11 @@ function renderKeyValue(containerId, data) {
   const container = document.getElementById(containerId);
   container.innerHTML = "";
 
+  if (!data || typeof data !== "object") {
+    container.textContent = "-";
+    return;
+  }
+
   Object.entries(data).forEach(([key, value]) => {
     const row = document.createElement("div");
     row.className = "settings-row";
@@ -24,7 +29,7 @@ async function loadSettings() {
   try {
     const res = await fetch("/api/settings");
     const data = await res.json();
-
+    console.log(data.system)
     renderKeyValue("systemInfo", data.system);
     renderKeyValue("pathsInfo", data.paths);
     renderKeyValue("envInfo", data.environment);

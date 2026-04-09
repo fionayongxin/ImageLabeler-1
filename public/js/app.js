@@ -35,4 +35,45 @@ function capture() {
       captureInfo.textContent = d.filename;
     });
 }
-``
+
+/* ===============================
+   LOAD LATEST CAPTURED IMAGES
+================================ */
+async function loadLatestImages(limit = 2) {
+  let res;
+  try {
+    res = await fetch("/api/photos/latest?limit=" + limit);
+  } catch {
+    return;
+  }
+
+  if (!res.ok) return;
+
+  const images = await res.json();
+  if (!Array.isArray(images)) return;
+
+  const container = document.getElementById("latestImages");
+  if (!container) return;
+
+  container.innerHTML = "";
+
+  const fragment = document.createDocumentFragment();
+
+  images.forEach(src => {
+    const img = document.createElement("img");
+    img.src = src;
+    img.loading = "lazy";
+    img.onclick = () => window.open(src, "_blank");
+    fragment.appendChild(img);
+  });
+
+  container.appendChild(fragment);
+}
+document.addEventListener("DOMContentLoaded", () => loadLatestImages());
+
+const captureBtn = document.getElementById("captureBtn");
+
+captureBtn.addEventListener("click", async () => {
+  capture();          // take & save photo
+  setTimeout(() => loadLatestImages(), 150);
+});

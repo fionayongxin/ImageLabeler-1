@@ -3,6 +3,7 @@ const fs = require("fs");
 const path = require("path");
 const { spawn, execSync } = require("child_process");
 const os = require("os");
+const console = require("console");
 
 /* ======================================================
    ROOTS
@@ -27,8 +28,8 @@ app.use("/training", express.static(TRAINING_ROOT));
    DIRECTORIES
 ====================================================== */
 const photosDir = path.join(__dirname, "photos");
-const yoloImageDir = path.join(__dirname, "labels", "yolo", "image");
-const yoloLabelDir = path.join(__dirname, "labels", "yolo", "label");
+const yoloImageDir = path.join(__dirname, "datasets", "station_01", "final_inspection", "images");
+const yoloLabelDir = path.join(__dirname, "datasets", "station_01", "final_inspection", "labels");
 
 [
   photosDir,
@@ -433,8 +434,8 @@ app.get("/api/settings", (_, res) => {
       hostname: os.hostname(),
       platform: os.platform(),
       arch: os.arch(),
-      node: process.version
-    },
+      node: process.version      
+    },    
     paths: {
       datasets: DATASET_ROOT,
       training: TRAINING_ROOT
@@ -442,6 +443,55 @@ app.get("/api/settings", (_, res) => {
     environment: { python, yolo, cuda }
   });
 });
+
+/* ===============================
+   LATEST CAPTURED IMAGES
+================================ */
+app.get("/api/photos/latest", (req, res) => {
+  const limit = Number(req.query.limit) || 5;
+
+  const dir = photosDir; // you already use this in /api/photos
+  if (!fs.existsSync(dir)) return res.json([]);
+
+  const files = fs.readdirSync(dir)
+    .filter(f => f.toLowerCase().endsWith(".png"))
+    .map(name => {
+      const full = path.join(dir, name);
+      return {
+        name,
+        time: fs.statSync(full).mtimeMs
+      };
+    })
+    .sort((a, b) => b.time - a.time)
+    .slice(0, limit)
+    .map(f => `/photos/${f.name}`);
+
+  res.json(files);
+});
+/* ---------- UNDO LAST SAVE ---------- */
+app.post("/api/undo-last-save", (req, res) => {
+  if (!lastSaved) {
+    return res.status(400).json({ error: "Nothing to undo" });
+  }
+
+  try {
+    const { imageFrom, imageTo, labelPath, image } = lastSaved;
+
+    if (fs.existsSync(imageTo)) {
+      fs.renameSync(imageTo, imageFrom);
+    }
+
+    if (fs.existsSync(labelPath)) {
+      fs.unlinkSync(labelPath);
+    }
+
+    lastSaved = null;
+    res.json({ status: "ok", image });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Undo failed" });
+  }
+}); 
 
 /* ======================================================
    START SERVER

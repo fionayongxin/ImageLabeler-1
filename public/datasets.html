@@ -21,35 +21,53 @@
 <div class="trainer-container">
 
   <h1>Datasets (Read‑Only)</h1>
-    <div class="dataset-toolbar">
-      <div class="dataset-info">
 
-        <label>Station</label>
-        <select id="station">
-          <option value="ALL">All Stations</option>
-          <option value="station_01">station_01</option>
-          <option value="station_02">station_02</option>
-        </select>
+  <!-- ================= Toolbar ================= -->
+  <div class="dataset-toolbar">
+    <div class="dataset-info">
 
-        <label>Process</label>
-        <select id="process">
-          <option value="ALL">All Processes</option>
-          <option value="final_inspection">final_inspection</option>
-          <option value="pre_inspection">pre_inspection</option>
-        </select>
-      </div>
-      <button id="loadBtn">Load Images</button>
+      <label>Station</label>
+      <select id="station">
+        <option value="ALL">All Stations</option>
+        <option value="station_01">station_01</option>
+        <option value="station_02">station_02</option>
+      </select>
+
+      <label>Process</label>
+      <select id="process">
+        <option value="ALL">All Processes</option>
+        <option value="final_inspection">final_inspection</option>
+        <option value="pre_inspection">pre_inspection</option>
+      </select>
     </div>
 
+    <!-- ✅ NO LOAD BUTTON (selection drives loading) -->
+  </div>
+
+  <!-- ================= Status ================= -->
   <div id="datasetStatus" class="dataset-status"></div>
 
-  <div id="gallery" class="gallery"></div>
-  
-  <div id="pageCounter" style="margin-top:8px; opacity:0.8;"></div>
+  <!-- ================= Scrollable Gallery ================= -->
+  <div class="datasets-gallery-wrapper">
+    <div id="gallery" class="gallery"></div>
+  </div>
 
-  <button id="loadMoreBtn" style="display:none;">
-    Load More
-  </button>
+  <!-- ================= Pagination (Reused from Experiments) ================= -->
+  <div class="table-pagination">
+    <button id="prevPage">Previous</button>
+
+    <span>Page</span>
+    <input
+      type="number"
+      id="pageInput"
+      min="1"
+      step="1"
+    />
+    <span id="pageInfo"></span>
+
+    <button id="nextPage">Next</button>
+    <button id="goPage">Go</button>
+  </div>
 
 </div>
 

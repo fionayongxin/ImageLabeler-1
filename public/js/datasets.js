@@ -1,58 +1,89 @@
+/* =========================================================
+   ELEMENTS
+========================================================= */
 const gallery = document.getElementById("gallery");
+const galleryWrapper = document.querySelector(".datasets-gallery-wrapper");
 const statusBox = document.getElementById("datasetStatus");
-const loadBtn = document.getElementById("loadBtn");
-const loadMoreBtn = document.getElementById("loadMoreBtn");
-const pageCounter = document.getElementById("pageCounter");
 
-const PAGE_SIZE = 50;
+const stationSelect = document.getElementById("station");
+const processSelect = document.getElementById("process");
+
+const prevBtn = document.getElementById("prevPage");
+const nextBtn = document.getElementById("nextPage");
+const pageInput = document.getElementById("pageInput");
+const pageInfo = document.getElementById("pageInfo");
+const goBtn = document.getElementById("goPage");
+
+/* =========================================================
+   STATE
+========================================================= */
+const PAGE_SIZE = 24;
+
 let allImages = [];
-let currentPage = 0;
+let currentPage = 1;
 
-// ✅ POC hard-coded values
+/* ✅ POC hard-coded values */
 const STATIONS = ["station_01", "station_02"];
 const PROCESSES = ["final_inspection", "pre_inspection"];
 
-function renderNextPage() {
-  const start = currentPage * PAGE_SIZE;
-  const end = Math.min(start + PAGE_SIZE, allImages.length);
+/* =========================================================
+   RENDER CURRENT PAGE (REPLACES CONTENT)
+========================================================= */
+function renderPage() {
+  gallery.innerHTML = "";
 
-  const pageImages = allImages.slice(start, end);
+  const fragment = document.createDocumentFragment();
+
+  const start = (currentPage - 1) * PAGE_SIZE;
+  const pageImages = allImages.slice(start, start + PAGE_SIZE);
 
   pageImages.forEach(({ src, title }) => {
     const img = document.createElement("img");
     img.src = src;
+    img.width = 180;
+    img.height = 180;
     img.loading = "lazy";
     img.title = title;
     img.onclick = () => window.open(src, "_blank");
-    gallery.appendChild(img);
+    fragment.appendChild(img);
   });
 
-  currentPage++;
-
-  // ✅ page counter
-  pageCounter.textContent = `${end} / ${allImages.length} images`;
-
-  if (end >= allImages.length) {
-    loadMoreBtn.style.display = "none";
-  }
+  gallery.appendChild(fragment);
+  galleryWrapper.scrollTop = 0;
+  updatePaginationUI();
 }
 
-loadBtn.onclick = async () => {
-  const station = document.getElementById("station").value;
-  const process = document.getElementById("process").value;
+/* =========================================================
+   PAGINATION UI (SAME LOGIC AS EXPERIMENTS)
+========================================================= */
+function updatePaginationUI() {
+  const totalPages = Math.max(1, Math.ceil(allImages.length / PAGE_SIZE));
 
-  pageCounter.textContent = "";
-  currentPage = 0;
+  pageInfo.textContent = `of ${totalPages}`;
+  pageInput.value = currentPage;
+  pageInput.max = totalPages;
 
-  gallery.innerHTML = "";
+  prevBtn.disabled = currentPage === 1;
+  nextBtn.disabled = currentPage === totalPages;
+}
+
+/* =========================================================
+   LOAD IMAGES (AUTO-TRIGGERED)
+========================================================= */
+async function loadImages() {
+  const station = stationSelect.value;
+  const process = processSelect.value;
+
+  /* reset state */
   statusBox.textContent = "Loading images...";
-  loadMoreBtn.style.display = "none";
-
+  gallery.innerHTML = "";
   allImages = [];
-  currentPage = 0;
+  currentPage = 1;
 
-  const stationsToLoad = station === "ALL" ? STATIONS : [station];
-  const processesToLoad = process === "ALL" ? PROCESSES : [process];
+  const stationsToLoad =
+    station === "ALL" ? STATIONS : [station];
+  const processesToLoad =
+    process === "ALL" ? PROCESSES : [process];
 
   try {
     for (const st of stationsToLoad) {
@@ -60,6 +91,8 @@ loadBtn.onclick = async () => {
         const res = await fetch(
           `/api/dataset/images?station=${encodeURIComponent(st)}&process=${encodeURIComponent(pr)}`
         );
+
+        if (!res.ok) continue;
 
         const images = await res.json();
         if (!Array.isArray(images)) continue;
@@ -75,18 +108,54 @@ loadBtn.onclick = async () => {
 
     if (allImages.length === 0) {
       statusBox.textContent = "No images found.";
+      updatePaginationUI();
       return;
     }
 
     statusBox.textContent = `${allImages.length} images found`;
-    loadMoreBtn.style.display = "inline-block";
-
-    renderNextPage(); // ✅ FIRST PAGE ONLY
+    renderPage();
 
   } catch (err) {
     console.error(err);
     statusBox.textContent = "Failed to load images.";
   }
-};
+}
 
-loadMoreBtn.onclick = renderNextPage;
+/* =========================================================
+   PAGINATION CONTROLS
+========================================================= */
+prevBtn.addEventListener("click", () => {
+  if (currentPage > 1) {
+    currentPage--;
+    renderPage();
+  }
+});
+
+nextBtn.addEventListener("click", () => {
+  const totalPages = Math.ceil(allImages.length / PAGE_SIZE);
+  if (currentPage < totalPages) {
+    currentPage++;
+    renderPage();
+  }
+});
+
+goBtn.addEventListener("click", () => {
+  const target = Number(pageInput.value);
+  const totalPages = Math.ceil(allImages.length / PAGE_SIZE);
+
+  if (target >= 1 && target <= totalPages) {
+    currentPage = target;
+    renderPage();
+  }
+});
+
+/* =========================================================
+   AUTO-LOAD ON SELECTION CHANGE
+========================================================= */
+stationSelect.addEventListener("change", loadImages);
+processSelect.addEventListener("change", loadImages);
+
+/* =========================================================
+   INITIAL LOAD (DEFAULT ALL / ALL)
+========================================================= */
+loadImages();

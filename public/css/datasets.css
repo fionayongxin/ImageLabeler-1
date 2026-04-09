@@ -1,12 +1,23 @@
 /* ===============================
+   MAIN LAYOUT CONTAINER
+   (THIS IS THE CRITICAL FIX)
+================================ */
+.trainer-container {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 52px); /* same as Experiments */
+  min-height: 0;
+}
+
+/* ===============================
    Toolbar
 ================================ */
 .dataset-toolbar {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  margin-bottom: 16px;
+  justify-content: flex-start; /* ✅ FIXED */
+  align-items: center;
   gap: 16px;
+  margin-bottom: 16px;
 }
 
 .dataset-info {
@@ -16,29 +27,18 @@
 }
 
 .dataset-info label {
-  color: #9ca3af;
+  color: var(--color-text-muted);
   font-size: 14px;
 }
 
-.dataset-info input {
-  background: #0f172a;
-  color: #e5e7eb;
-  border: 1px solid #374151;
+.dataset-info select {
+  background: var(--color-bg-app);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border-muted);
   padding: 6px 8px;
   width: 160px;
-}
-
-.dataset-toolbar button {
-  background: #2563eb;
-  color: white;
-  border: none;
-  padding: 8px 14px;
   border-radius: 6px;
-  cursor: pointer;
-}
-
-.dataset-toolbar button:hover {
-  background: #1d4ed8;
+  font-size: 13px;
 }
 
 /* ===============================
@@ -46,8 +46,20 @@
 ================================ */
 .dataset-status {
   margin-bottom: 12px;
-  color: #9ca3af;
+  color: var(--color-text-muted);
   font-size: 14px;
+}
+
+/* ===============================
+   SCROLLABLE GALLERY WRAPPER
+   (ONLY THIS SCROLLS)
+================================ */
+.datasets-gallery-wrapper {
+  flex: 1;          /* ✅ REQUIRED */
+  min-height: 0;    /* ✅ REQUIRED */
+  overflow-y: auto;
+
+  padding-right: 6px;
 }
 
 /* ===============================
@@ -59,16 +71,99 @@
   gap: 14px;
 }
 
+/* ===============================
+   Image Tile
+================================ */
 .gallery img {
   width: 100%;
   height: 180px;
+
   object-fit: cover;
   border-radius: 8px;
+
   cursor: zoom-in;
-  border: 1px solid #1f2937;
+  border: 1px solid var(--color-border-default);
   background: #020617;
 }
 
 .gallery img:hover {
-  outline: 2px solid #3b82f6;
+  outline: 2px solid var(--color-accent-primary);
+  outline-offset: 2px;
+}
+
+/* ===============================
+   PAGINATION (REUSED STYLE)
+================================ */
+.table-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 10px;
+  padding: 8px 12px;
+  margin: 12px auto 0;
+
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--color-border-default);
+  border-radius: 999px;
+  width: fit-content;
+}
+
+.table-pagination button {
+  padding: 6px 14px;
+  min-width: 88px;
+
+  font-size: 13px;
+  font-weight: 600;
+
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+
+  background: var(--color-accent-primary);
+  color: #fff;
+}
+
+.table-pagination button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.table-pagination spanspan {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.table-pagination input {
+  width: 48px;
+  padding: 5px 6px;
+
+  background: #020617;
+  color: var(--color-text-primary);
+
+  border: 1px solid var(--color-border-muted);
+  border-radius: 8px;
+
+  font-size: 13px;
+  text-align: center;
+}
+
+/* remove number arrows */
+.table-pagination input::-webkit-outer-spin-button,
+.table-pagination input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.table-pagination input[type="number"] {
+  appearance: textfield;
+}
+
+/* Go button slightly de-emphasized */
+#goPage {
+  background: #334155;
+}
+
+#goPage:hover {
+  background: #475569;
 }
