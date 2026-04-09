@@ -1,53 +1,59 @@
-/* ===============================
-   TABLE STYLING (EXPERIMENTS)
-================================ */
+/* =========================================================
+   EXPERIMENTS TABLE
+   Primary results table styling
+   ========================================================= */
+
 #experimentsTable {
   width: 100%;
   border-collapse: collapse;
   color: var(--color-text-primary);
 }
 
+/* Table headers */
 #experimentsTable th {
   text-align: left;
-  color: var(--color-text-muted);
-  font-weight: 600;
   font-size: 12px;
+  font-weight: 600;
   letter-spacing: 0.02em;
   text-transform: uppercase;
+  color: var(--color-text-muted);
+  white-space: nowrap;
 }
 
+/* Shared cell spacing */
 #experimentsTable th,
 #experimentsTable td {
   padding: 20px 12px;
   border-bottom: 1px solid #1f2937;
 }
 
-/* ===============================
-   TABLE BODY TYPOGRAPHY (FINAL FIX)
-================================ */
+/* Body cell typography */
 #experimentsTable td {
   font-size: 13px;
-  vertical-align: middle;
   line-height: 1.35;
+  vertical-align: middle;
 }
 
-/* ===============================
+/* =========================================================
    STICKY HEADER
-================================ */
+   Keeps table header visible while scrolling
+   ========================================================= */
+
 #experimentsTable thead th {
   position: sticky;
   top: 0;
-  background: var(--color-bg-app);
   z-index: 1;
+  background: var(--color-bg-app);
 }
 
 #experimentsTable thead {
   box-shadow: 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
-/* ===============================
+/* =========================================================
    COLUMN WIDTHS
-================================ */
+   ========================================================= */
+
 #experimentsTable th:nth-child(1),
 #experimentsTable td:nth-child(1) {
   width: 30%;
@@ -59,28 +65,18 @@
   width: 10%;
 }
 
-/* #experimentsTable th:nth-child(3),
-#experimentsTable td:nth-child(3) {
-  width: 10%;
-} */
-
 #experimentsTable td:nth-child(4) {
   width: 30%;
 }
+
 #experimentsTable td:nth-child(8) {
   width: 25%;
-
-} 
-
-#experimentsTable th {
-  white-space: nowrap;
 }
 
+/* =========================================================
+   ROW INTERACTIONS
+   ========================================================= */
 
-
-/* ===============================
-   ROW BEHAVIOR
-================================ */
 #experimentsTable tbody tr:nth-child(even) {
   background: rgba(255, 255, 255, 0.015);
 }
@@ -89,9 +85,11 @@
   background: rgba(255, 255, 255, 0.045);
 }
 
-/* ===============================
-   RUN NAME (TRUNCATE + FADE)
-================================ */
+/* =========================================================
+   RUN NAME
+   Truncated with fade indicator
+   ========================================================= */
+
 #experimentsTable td:nth-child(1) {
   max-width: 360px;
   white-space: nowrap;
@@ -103,8 +101,8 @@
 #experimentsTable td:nth-child(1)::after {
   content: "";
   position: absolute;
-  right: 0;
   top: 0;
+  right: 0;
   width: 28px;
   height: 100%;
   pointer-events: none;
@@ -119,9 +117,10 @@
   opacity: 0;
 }
 
-/* ===============================
-   DATASET (SECONDARY)
-================================ */
+/* =========================================================
+   SECONDARY TEXT (DATASET / DATE)
+   ========================================================= */
+
 #experimentsTable td:nth-child(4),
 #experimentsTable td:nth-child(8) {
   font-size: 12.5px;
@@ -129,52 +128,42 @@
   opacity: 0.85;
 }
 
-/* ===============================
+/* =========================================================
    NUMERIC COLUMNS
-================================ */
+   ========================================================= */
+
 #experimentsTable td:nth-child(5),
 #experimentsTable td:nth-child(6),
 #experimentsTable td:nth-child(7) {
   text-align: right;
-  font-variant-numeric: tabular-nums;
   font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
 }
 
-/* ===============================
-   STATUS PILLS (FINAL)
-================================ */
- /* .status {
-  display:flex;
-  align-items:flex-end;
-  justify-content: center;
-
-  padding: 1px 8px;
-  font-size: 11px;
-  font-weight: 600;
-  line-height: 1;
-
-  border-radius: 999px;
-  text-transform:capitalize;
-} */
+/* =========================================================
+   STATUS STYLES
+   Color-coded status text
+   ========================================================= */
 
 .status.completed {
-  background: rgba(34, 197, 94, 0.15);
   color: #22c55e;
+  background: rgba(34, 197, 94, 0.15);
 }
 
 .status.running {
-  background: rgba(249, 115, 22, 0.15);
   color: #f97316;
+  background: rgba(249, 115, 22, 0.15);
 }
 
 .status.failed {
-  background: rgba(239, 68, 68, 0.15);
   color: #ef4444;
+  background: rgba(239, 68, 68, 0.15);
 }
 
-/* ===============================
-   ACTIONS (DE‑EMPHASIZED)
-================================ */
+/* =========================================================
+   ACTIONS COLUMN
+   ========================================================= */
+
 #experimentsTable td:last-child {
   white-space: nowrap;
   opacity: 0.75;
@@ -185,9 +174,9 @@
 }
 
 #experimentsTable td:last-child button {
+  margin-right: 4px;
   padding: 4px 8px;
   font-size: 12px;
-  margin-right: 4px;
   cursor: pointer;
   opacity: 0.85;
 }
@@ -196,25 +185,29 @@
   opacity: 1;
 }
 
-/* ===============================
-   SCROLLABLE TABLE WRAPPER
-================================ */
+/* =========================================================
+   SCROLLABLE WRAPPER
+   ========================================================= */
+
 .experiments-table-wrapper {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
 }
 
-/* ===============================
-   PAGINATION (PILL STYLE)
-================================ */
+/* =========================================================
+   PAGINATION CONTROLS
+   ========================================================= */
+
 .table-pagination {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 10px;
-  padding: 8px 12px;
+
   margin: 12px auto 0;
+  padding: 8px 12px;
+
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid var(--color-border-default);
   border-radius: 999px;
@@ -222,12 +215,12 @@
 }
 
 .table-pagination button {
-  padding: 6px 14px;
   min-width: 88px;
+  padding: 6px 14px;
   font-size: 13px;
   font-weight: 600;
   border-radius: 999px;
-  transition: transform 0.1s ease, background 0.15s ease;
+  transition: background 0.15s ease, transform 0.1s ease;
 }
 
 .table-pagination button:active {
@@ -247,14 +240,17 @@
 .table-pagination input {
   width: 48px;
   padding: 5px 6px;
+
   background: #020617;
   color: var(--color-text-primary);
+
   border: 1px solid var(--color-border-muted);
   border-radius: 8px;
   font-size: 13px;
   text-align: center;
 }
 
+/* Remove native number spinners */
 .table-pagination input::-webkit-outer-spin-button,
 .table-pagination input::-webkit-inner-spin-button {
   -webkit-appearance: none;
@@ -265,6 +261,7 @@
   appearance: textfield;
 }
 
+/* Explicit go button styling */
 #goPage {
   background: #334155;
 }
@@ -273,30 +270,31 @@
   background: #475569;
 }
 
-/* ===============================
-   METRICS PANEL
-================================ */
+/* =========================================================
+   METRICS PANEL (OVERLAY)
+   ========================================================= */
+
 .metrics-panel {
   display: none;
 
   position: fixed;
-  inset: 64px 48px 48px 48px;
+  inset: 64px 48px 48px;
+
+  padding: 20px;
+  border-radius: 12px;
 
   background: var(--color-bg-app);
-  border-radius: 12px;
-  padding: 20px;
-
   border: 1px solid var(--color-border-default);
+
   box-shadow:
-    0 0 0 1px rgba(255,255,255,0.04),
-    0 20px 40px rgba(0,0,0,0.6);
+    0 0 0 1px rgba(255, 255, 255, 0.04),
+    0 20px 40px rgba(0, 0, 0, 0.6);
 
   z-index: 1000;
-
-  /* ✅ IMPORTANT */
   overflow: hidden;
 }
 
+/* Panel header */
 .metrics-header {
   display: flex;
   justify-content: space-between;
@@ -308,11 +306,9 @@
   color: var(--color-text-primary);
 }
 
-.chart-card {
-  height: 320px;          /* pick a real number */
-  min-height: 320px;
-  position: relative;    /* REQUIRED for Chart.js */
-}
+/* =========================================================
+   METRICS CHARTS
+   ========================================================= */
 
 .metrics-charts {
   display: grid;
@@ -320,26 +316,16 @@
   gap: 16px;
 }
 
-
-/* ===============================
-   SECONDARY BUTTON
-================================ */
-.btn-secondary {
-  background: #334155;
-  color: var(--color-text-primary);
-  border: none;
-  padding: 6px 12px;
-  border-radius: 6px;
-  cursor: pointer;
+.chart-card {
+  position: relative; /* required by Chart.js */
+  height: 320px;
+  min-height: 320px;
 }
 
-.btn-secondary:hover {
-  background: #475569;
-}
+/* =========================================================
+   METRICS SUMMARY
+   ========================================================= */
 
-/* ===============================
-   METRICS SUMMARY & TABLE
-================================ */
 .metrics-summary {
   display: flex;
   gap: 16px;
@@ -347,10 +333,10 @@
 }
 
 .metric-card {
-  background: #020617;
-  padding: 12px 16px;
-  border-radius: 8px;
   min-width: 120px;
+  padding: 12px 16px;
+  background: #020617;
+  border-radius: 8px;
 }
 
 .metric-card .label {
@@ -364,34 +350,30 @@
   color: #38bdf8;
 }
 
-.metrics-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 12px;
-}
+/* =========================================================
+   MAIN CONTAINER
+   ========================================================= */
 
-.metrics-table th,
-.metrics-table td {
-  padding: 8px 10px;
-  border-bottom: 1px solid var(--color-border-default);
-  text-align: left;
-}
-
-.metrics-table th {
-  color: var(--color-text-muted);
-  font-weight: 500;
-}
-
-.metrics-table td {
-  color: var(--color-text-primary);
-}
-
-/* ===============================
-   MAIN LAYOUT CONTAINER
-================================ */
 .trainer-container {
   display: flex;
   flex-direction: column;
   height: calc(100vh - 52px);
   min-height: 0;
+}
+
+/* =========================================================
+   SECONDARY BUTTON
+   ========================================================= */
+
+.btn-secondary {
+  padding: 6px 12px;
+  background: #334155;
+  color: var(--color-text-primary);
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.btn-secondary:hover {
+  background: #475569;
 }

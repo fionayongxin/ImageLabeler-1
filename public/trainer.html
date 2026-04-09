@@ -4,93 +4,118 @@
   <meta charset="UTF-8" />
   <title>Model Training</title>
 
+  <!-- Shared base styles -->
   <link rel="stylesheet" href="/css/base.css" />
+
+  <!-- Trainer page–specific styles -->
   <link rel="stylesheet" href="/css/trainer.css" />
 
+  <!-- Chart.js library used for training metrics visualization -->
   <script src="/vendor/chart.umd.js"></script>
 </head>
 
 <body>
 
-<div class="trainer-page">
+  <!-- Root container for the training application -->
+  <div class="trainer-page">
 
-  <!-- ================= NAVBAR ================= -->
-  <nav class="navbar">
-    <div class="nav-brand">Vision Trainer</div>
-    <ul class="nav-links">
-      <li><a href="/trainer" class="active">Training</a></li>
-      <li><a href="/experiments">Experiments</a></li>
-      <li><a href="/datasets">Datasets</a></li>
-      <li><a href="/settings">Settings</a></li>
-    </ul>
-  </nav>
+    <!-- =========================================
+         TOP NAVIGATION BAR
+         Stable structure used across trainer pages
+         ========================================= -->
+    <nav class="navbar">
+      <div class="nav-brand">Vision Trainer</div>
 
-  <!-- ================= MAIN WORKSPACE ================= -->
-  <main class="trainer-main">
+      <ul class="nav-links">
+        <li><a href="/trainer" class="active">Training</a></li>
+        <li><a href="/experiments">Experiments</a></li>
+        <li><a href="/datasets">Datasets</a></li>
+        <li><a href="/settings">Settings</a></li>
+      </ul>
+    </nav>
 
-    <!-- ========== LEFT COLUMN: CONFIG + PROGRESS ========== -->
-    <section class="trainer-config">
+    <!-- =========================================
+         MAIN TRAINING WORKSPACE
+         ========================================= -->
+    <main class="trainer-main">
 
-      <div class="config-panel">
-        <h2>Configuration</h2>
+      <!-- -----------------------------------------
+           LEFT COLUMN: CONFIGURATION & PROGRESS
+           ----------------------------------------- -->
+      <section class="trainer-config">
 
-        <label>Station</label>
-        <input id="station" value="station_01" readonly />
+        <!-- Training configuration inputs -->
+        <div class="config-panel">
+          <h2>Configuration</h2>
 
-        <label>Process</label>
-        <input id="process" value="final_inspection" readonly />
+          <label>Station</label>
+          <input id="station" value="station_01" readonly />
 
-        <label>Model</label>
-        <select id="model">
-          <option value="yolo26n.pt">YOLOv26 Nano</option>
-          <option value="yolo26s.pt">YOLOv26 Small</option>
-          <option value="yolo26m.pt">YOLOv26 Medium</option>
-        </select>
+          <label>Process</label>
+          <input id="process" value="final_inspection" readonly />
 
-        <label>Epochs</label>
-        <input id="epochs" type="number" value="50" />
+          <label>Model</label>
+          <select id="model">
+            <option value="yolo26n.pt">YOLOv26 Nano</option>
+            <option value="yolo26s.pt">YOLOv26 Small</option>
+            <option value="yolo26m.pt">YOLOv26 Medium</option>
+          </select>
 
-        <label>Image Size</label>
-        <input id="imgsz" type="number" value="640" />
+          <label>Epochs</label>
+          <input id="epochs" type="number" value="50" />
 
-        <label>Batch Size</label>
-        <input id="batch" type="number" value="8" />
+          <label>Image Size</label>
+          <input id="imgsz" type="number" value="640" />
 
-        <label>Run Name</label>
-        <input id="runName" readonly />
+          <label>Batch Size</label>
+          <input id="batch" type="number" value="8" />
 
-        <button id="startBtn">▶ Start Training</button>
-        <button id="stopBtn" class="danger" disabled>■ Cancel Training</button>
-      </div>
+          <label>Run Name</label>
+          <input id="runName" readonly />
 
-      <div class="progress-panel">
-        <div class="progress-container">
-          <div id="progressBar" class="progress-bar"></div>
+          <!-- Training lifecycle controls -->
+          <button id="startBtn" type="button">▶ Start Training</button>
+          <button id="stopBtn" class="danger" type="button" disabled>
+            ■ Cancel Training
+          </button>
         </div>
 
-        <div id="progressText" class="progress-text">Idle</div>
-        <div id="progressFile" class="progress-file">–</div>
-      </div>
+        <!-- Training progress feedback -->
+        <div class="progress-panel">
+          <div class="progress-container">
+            <!-- Width controlled dynamically by JS -->
+            <div id="progressBar" class="progress-bar"></div>
+          </div>
 
-    </section>
+          <div id="progressText" class="progress-text">Idle</div>
+          <div id="progressFile" class="progress-file">–</div>
+        </div>
 
-    <!-- ========== RIGHT COLUMN: CHARTS ========== -->
-    <section class="trainer-metrics">
+      </section>
 
-      <div class="chart-container">
-        <canvas id="lossChart"></canvas>
-      </div>
+      <!-- -----------------------------------------
+           RIGHT COLUMN: TRAINING METRICS
+           Charts rendered via Chart.js
+           ----------------------------------------- -->
+      <section class="trainer-metrics">
 
-      <div class="chart-container">
-        <canvas id="mapChart"></canvas>
-      </div>
+        <!-- Loss over epochs -->
+        <div class="chart-container">
+          <canvas id="lossChart"></canvas>
+        </div>
 
-    </section>
+        <!-- mAP / accuracy over epochs -->
+        <div class="chart-container">
+          <canvas id="mapChart"></canvas>
+        </div>
 
-  </main>
+      </section>
 
-</div>
+    </main>
 
-<script src="/js/trainer.js"></script>
+  </div>
+
+  <!-- Trainer application logic -->
+  <script src="/js/trainer.js"></script>
 </body>
 </html>

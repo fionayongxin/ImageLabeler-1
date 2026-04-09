@@ -4,19 +4,22 @@
   <meta charset="UTF-8" />
   <title>Settings</title>
 
-  <!-- Shared base styles -->
-  <link rel="stylesheet" href="/css/base.css">
+  <!-- Shared base styles (layout, typography, theme variables) -->
+  <link rel="stylesheet" href="/css/base.css" />
 
-  <!-- Settings page styles only -->
-  <link rel="stylesheet" href="/css/settings.css">
+  <!-- Settings page–specific styles -->
+  <link rel="stylesheet" href="/css/settings.css" />
 </head>
+
 <body>
 
-  <!-- =========================
-       Top Navigation Bar
-  ========================== -->
+  <!-- ======================================================
+       TOP NAVIGATION BAR
+       Shared across all application pages
+       ====================================================== -->
   <nav class="navbar">
     <div class="nav-brand">Vision Trainer</div>
+
     <ul class="nav-links">
       <li><a href="/trainer">Training</a></li>
       <li><a href="/experiments">Experiments</a></li>
@@ -25,40 +28,57 @@
     </ul>
   </nav>
 
-  <!-- =========================
-       Main Content
-  ========================== -->
+  <!-- ======================================================
+       MAIN CONTENT CONTAINER
+       Uses shared trainer-container layout
+       ====================================================== -->
   <div class="trainer-container">
+
+    <!-- Page title -->
     <h1>Settings</h1>
 
-    <!-- ===== System Info ===== -->
+    <!-- ======================================================
+         SYSTEM INFORMATION
+         Populated dynamically by JS
+         ====================================================== -->
     <h2>System</h2>
     <div id="systemInfo" class="settings-kv">
       Loading system information...
     </div>
 
-    <!-- ===== Paths ===== -->
+    <!-- ======================================================
+         PATHS CONFIGURATION
+         Read-only, populated by backend
+         ====================================================== -->
     <h2>Paths</h2>
     <div id="pathsInfo" class="settings-kv">
       Loading paths...
     </div>
 
-    <!-- ===== Environment ===== -->
+    <!-- ======================================================
+         ENVIRONMENT DETAILS
+         Python, CUDA, framework versions, etc.
+         ====================================================== -->
     <h2>Environment</h2>
     <div id="envInfo" class="settings-kv">
       Loading environment details...
     </div>
 
-    <!-- ===== Training Defaults ===== -->
+    <!-- ======================================================
+         TRAINING DEFAULTS
+         Backend-defined default hyperparameters
+         ====================================================== -->
     <h2>Training Defaults</h2>
     <div id="defaultsInfo" class="settings-kv">
       Loading training defaults...
     </div>
+
   </div>
 
-  <!-- =========================
-       Page Script
-  ========================== -->
+  <!-- ======================================================
+       PAGE SCRIPT
+       Fetches and renders all settings data
+       ====================================================== -->
   <script src="/js/settings.js"></script>
 
 </body>

@@ -1,20 +1,22 @@
-/* ===============================
+/* =========================================================
    MAIN LAYOUT CONTAINER
-   (THIS IS THE CRITICAL FIX)
-================================ */
+   Critical: ensures only gallery scrolls
+   ========================================================= */
+
 .trainer-container {
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 52px); /* same as Experiments */
+  height: calc(100vh - 52px); /* aligned with Experiments page */
   min-height: 0;
 }
 
-/* ===============================
-   Toolbar
-================================ */
+/* =========================================================
+   TOOLBAR
+   Station / process filters
+   ========================================================= */
+
 .dataset-toolbar {
   display: flex;
-  justify-content: flex-start; /* ✅ FIXED */
   align-items: center;
   gap: 16px;
   margin-bottom: 16px;
@@ -22,58 +24,65 @@
 
 .dataset-info {
   display: flex;
-  gap: 12px;
   align-items: center;
+  gap: 12px;
 }
 
 .dataset-info label {
-  color: var(--color-text-muted);
   font-size: 14px;
+  color: var(--color-text-muted);
 }
 
 .dataset-info select {
+  width: 160px;
+  padding: 6px 8px;
+
   background: var(--color-bg-app);
   color: var(--color-text-primary);
+
   border: 1px solid var(--color-border-muted);
-  padding: 6px 8px;
-  width: 160px;
   border-radius: 6px;
+
   font-size: 13px;
 }
 
-/* ===============================
-   Status / messages
-================================ */
+/* =========================================================
+   STATUS LINE
+   ========================================================= */
+
 .dataset-status {
   margin-bottom: 12px;
-  color: var(--color-text-muted);
   font-size: 14px;
+  color: var(--color-text-muted);
 }
 
-/* ===============================
+/* =========================================================
    SCROLLABLE GALLERY WRAPPER
-   (ONLY THIS SCROLLS)
-================================ */
+   Only this area is allowed to scroll
+   ========================================================= */
+
 .datasets-gallery-wrapper {
-  flex: 1;          /* ✅ REQUIRED */
-  min-height: 0;    /* ✅ REQUIRED */
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
 
   padding-right: 6px;
 }
 
-/* ===============================
-   Image Gallery
-================================ */
+/* =========================================================
+   IMAGE GALLERY GRID
+   ========================================================= */
+
 .gallery {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
   gap: 14px;
 }
 
-/* ===============================
-   Image Tile
-================================ */
+/* =========================================================
+   IMAGE TILE
+   ========================================================= */
+
 .gallery img {
   width: 100%;
   height: 180px;
@@ -81,9 +90,10 @@
   object-fit: cover;
   border-radius: 8px;
 
-  cursor: zoom-in;
-  border: 1px solid var(--color-border-default);
   background: #020617;
+  border: 1px solid var(--color-border-default);
+
+  cursor: zoom-in;
 }
 
 .gallery img:hover {
@@ -91,37 +101,40 @@
   outline-offset: 2px;
 }
 
-/* ===============================
+/* =========================================================
    PAGINATION (REUSED STYLE)
-================================ */
+   ========================================================= */
+
 .table-pagination {
   display: flex;
   align-items: center;
   justify-content: center;
-
   gap: 10px;
-  padding: 8px 12px;
+
   margin: 12px auto 0;
+  padding: 8px 12px;
 
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid var(--color-border-default);
   border-radius: 999px;
+
   width: fit-content;
 }
 
 .table-pagination button {
-  padding: 6px 14px;
   min-width: 88px;
+  padding: 6px 14px;
 
   font-size: 13px;
   font-weight: 600;
 
-  border-radius: 999px;
   border: none;
-  cursor: pointer;
+  border-radius: 999px;
 
   background: var(--color-accent-primary);
-  color: #fff;
+  color: #ffffff;
+
+  cursor: pointer;
 }
 
 .table-pagination button:disabled {
@@ -129,7 +142,7 @@
   cursor: not-allowed;
 }
 
-.table-pagination spanspan {
+.table-pagination span {
   font-size: 12px;
   color: var(--color-text-muted);
 }
@@ -148,7 +161,7 @@
   text-align: center;
 }
 
-/* remove number arrows */
+/* Remove number spinners */
 .table-pagination input::-webkit-outer-spin-button,
 .table-pagination input::-webkit-inner-spin-button {
   -webkit-appearance: none;
@@ -159,7 +172,7 @@
   appearance: textfield;
 }
 
-/* Go button slightly de-emphasized */
+/* Go button de-emphasized */
 #goPage {
   background: #334155;
 }

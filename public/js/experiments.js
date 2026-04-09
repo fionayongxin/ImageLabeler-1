@@ -1,3 +1,7 @@
+// =========================================================
+// STATE
+// =========================================================
+
 let allExperiments = [];
 let currentPage = 1;
 const pageSize = 10;
@@ -5,9 +9,10 @@ const pageSize = 10;
 let lossChart = null;
 let mapChart = null;
 
-/* =========================================================
-   LOAD EXPERIMENTS
-========================================================= */
+// =========================================================
+// LOAD EXPERIMENT all experiment metadata from backend// LOAD EXPERIMENTS
+// =========================================================
+
 async function loadExperiments() {
   const res = await fetch("/api/experiments");
   if (!res.ok) return;
@@ -17,9 +22,11 @@ async function loadExperiments() {
   renderPage();
 }
 
-/* =========================================================
-   RENDER TABLE PAGE
-========================================================= */
+// =========================================================
+// RENDER TABLE PAGE
+// Renders the current page slice into the table body
+// =========================================================
+
 function renderPage() {
   const tbody = document.querySelector("#experimentsTable tbody");
   tbody.innerHTML = "";
@@ -47,12 +54,11 @@ function renderPage() {
           const minutes = String(d.getMinutes()).padStart(2, "0");
           const ampm = hours >= 12 ? "PM" : "AM";
 
-          hours = hours % 12 || 12; // convert 0 → 12
+          hours = hours % 12 || 12;
 
           return `${day}/${month}/${year} ${hours}:${minutes} ${ampm}`;
         })()
-      : "-"
-
+      : "-";
 
     const actions = [];
 
@@ -83,9 +89,11 @@ function renderPage() {
   updatePaginationUI();
 }
 
-/* =========================================================
-   PAGINATION
-========================================================= */
+// =========================================================
+// PAGINATION UI
+// Updates page indicators and button states
+// =========================================================
+
 function updatePaginationUI() {
   const totalPages = Math.ceil(allExperiments.length / pageSize);
 
@@ -97,9 +105,11 @@ function updatePaginationUI() {
   document.getElementById("nextPage").disabled = currentPage === totalPages;
 }
 
-/* =========================================================
-   METRICS OVERLAY (CHARTS ONLY)
-========================================================= */
+// =========================================================
+// METRICS OVERLAY
+// Displays charts and summary for selected run
+// =========================================================
+
 async function showMetrics(runName) {
   const panel = document.getElementById("metricsPanel");
   const backdrop = document.getElementById("metricsBackdrop");
@@ -125,9 +135,10 @@ async function showMetrics(runName) {
   drawMapChart(data);
 }
 
-/* =========================================================
-   CHARTS
-========================================================= */
+// =========================================================
+// CHART RENDERING
+// =========================================================
+
 function drawLossChart(data) {
   if (lossChart) lossChart.destroy();
 
@@ -136,12 +147,14 @@ function drawLossChart(data) {
     type: "line",
     data: {
       labels: data.map(d => d.epoch),
-      datasets: [{
-        label: "Loss",
-        data: data.map(d => d.loss),
-        borderColor: "#38bdf8",
-        tension: 0.3
-      }]
+      datasets: [
+        {
+          label: "Loss",
+          data: data.map(d => d.loss),
+          borderColor: "#38bdf8",
+          tension: 0.3
+        }
+      ]
     },
     options: {
       responsive: true,
@@ -158,12 +171,14 @@ function drawMapChart(data) {
     type: "line",
     data: {
       labels: data.map(d => d.epoch),
-      datasets: [{
-        label: "mAP50",
-        data: data.map(d => d.map50),
-        borderColor: "#22c55e",
-        tension: 0.3
-      }]
+      datasets: [
+        {
+          label: "mAP50",
+          data: data.map(d => d.map50),
+          borderColor: "#22c55e",
+          tension: 0.3
+        }
+      ]
     },
     options: {
       responsive: true,
@@ -175,9 +190,10 @@ function drawMapChart(data) {
   });
 }
 
-/* =========================================================
-   CLOSE OVERLAY
-========================================================= */
+// =========================================================
+// METRICS OVERLAY CLOSE
+// =========================================================
+
 function closeMetrics() {
   document.getElementById("metricsPanel").style.display = "none";
   document.getElementById("metricsBackdrop").style.display = "none";
@@ -186,25 +202,32 @@ function closeMetrics() {
 document.getElementById("closeMetrics").addEventListener("click", closeMetrics);
 document.getElementById("metricsBackdrop").addEventListener("click", closeMetrics);
 
-/* =========================================================
-   TABLE ACTIONS
-========================================================= */
-document.querySelector("#experimentsTable").addEventListener("click", e => {
-  const btn = e.target.closest("button");
-  if (!btn) return;
+// =========================================================
+// TABLE ACTION HANDLING
+// =========================================================
 
-  const tr = btn.closest("tr");
-  const runName = tr.dataset.run;
+document
+  .querySelector("#experimentsTable")
+  .addEventListener("click", e => {
+    const btn = e.target.closest("button");
+    if (!btn) return;
 
-  if (btn.dataset.action === "metrics") showMetrics(runName);
-  if (btn.dataset.action === "weights") {
-    window.location.href = `/training/${runName}/weights/best.pt`;
-  }
-});
+    const tr = btn.closest("tr");
+    const runName = tr.dataset.run;
 
-/* =========================================================
-   PAGINATION BUTTONS
-========================================================= */
+    if (btn.dataset.action === "metrics") {
+      showMetrics(runName);
+    }
+
+    if (btn.dataset.action === "weights") {
+      window.location.href = `/training/${runName}/weights/best.pt`;
+    }
+  });
+
+// =========================================================
+// PAGINATION CONTROLS
+// =========================================================
+
 document.getElementById("prevPage").addEventListener("click", () => {
   if (currentPage > 1) {
     currentPage--;
@@ -223,13 +246,15 @@ document.getElementById("nextPage").addEventListener("click", () => {
 document.getElementById("goPage").addEventListener("click", () => {
   const target = Number(document.getElementById("pageInput").value);
   const totalPages = Math.ceil(allExperiments.length / pageSize);
+
   if (target >= 1 && target <= totalPages) {
     currentPage = target;
     renderPage();
   }
 });
 
-/* =========================================================
-   INIT
-========================================================= */
+// =========================================================
+// INIT
+// =========================================================
+
 loadExperiments();

@@ -1,4 +1,7 @@
-/* ================= CONFIG ================= */
+/* =========================================================
+   CONFIGURATION
+   Shared constants controlling geometry and rendering
+   ========================================================= */
 
 const MIN_BOX_SIZE = 20;
 const NORMAL_LINE_WIDTH = 3;
@@ -6,15 +9,20 @@ const SELECTED_LINE_WIDTH = 6;
 const PREVIEW_LINE_WIDTH = 2;
 const HANDLE_SIZE = 10;
 
-/* ================= COLOR ================= */
+/* =========================================================
+   COLOR DEFINITIONS
+   Box stroke colors by class label
+   ========================================================= */
 
 const BOX_COLORS = {
-  ok: "#22c55e",        // green
-  defect: "#ef4444",   // red
-  scratch: "#fb923c"   // orange
+  ok: "#22c55e",       // green
+  defect: "#ef4444",  // red
+  scratch: "#fb923c"  // orange
 };
 
-/* ================= STATE ================= */
+/* =========================================================
+   APPLICATION STATE
+   ========================================================= */
 
 let mode = "read";
 let images = [];
@@ -34,7 +42,9 @@ let startY = 0;
 
 let lastUndo = null;
 
-/* ================= DOM ================= */
+/* =========================================================
+   DOM REFERENCES
+   ========================================================= */
 
 const thumbs = document.getElementById("thumbs");
 const img = document.getElementById("image");
@@ -48,14 +58,18 @@ const readBtn = document.getElementById("readModeBtn");
 const drawBtn = document.getElementById("drawModeBtn");
 const saveYoloBtn = document.getElementById("saveYoloBtn");
 
-/* ================= STATUS ================= */
+/* =========================================================
+   STATUS MANAGEMENT
+   ========================================================= */
 
 function setStatus(message, type = "info") {
   statusText.textContent = message;
   statusText.className = `status status-${type}`;
 }
 
-/* ================= SAVE STATE ================= */
+/* =========================================================
+   SAVE BUTTON STATE
+   ========================================================= */
 
 function updateSaveButtonState() {
   const canSave =
@@ -67,13 +81,18 @@ function updateSaveButtonState() {
   saveYoloBtn.classList.toggle("disabled", !canSave);
 }
 
-/* ================= MODE ================= */
+/* =========================================================
+   MODE HANDLING (READ / DRAW)
+   ========================================================= */
 
 function setMode(m) {
   mode = m;
+
   readBtn.classList.toggle("active", m === "read");
   drawBtn.classList.toggle("active", m === "draw");
+
   canvas.className = m === "draw" ? "draw-mode" : "read-mode";
+
   setStatus(m === "draw" ? "Draw mode" : "Read mode", "info");
   updateSaveButtonState();
 }
@@ -82,7 +101,9 @@ readBtn.onclick = () => setMode("read");
 drawBtn.onclick = () => setMode("draw");
 setMode("read");
 
-/* ================= CLASS SELECT ================= */
+/* =========================================================
+   CLASS SELECTION
+   ========================================================= */
 
 classSelect.addEventListener("change", () => {
   if (classSelect.value && mode === "read") {
@@ -91,12 +112,15 @@ classSelect.addEventListener("change", () => {
   updateSaveButtonState();
 });
 
-/* ================= LOAD IMAGES ================= */
+/* =========================================================
+   IMAGE LOADING
+   ========================================================= */
 
 fetch("/api/photos")
   .then(r => r.json())
   .then(list => {
     images = list;
+
     list.forEach((name, i) => {
       const t = document.createElement("img");
       t.src = `/photos/${name}`;
@@ -128,7 +152,9 @@ function loadImage(i) {
   img.src = `/photos/${currentImage}`;
 }
 
-/* ================= CLEANUP ================= */
+/* =========================================================
+   POST-SAVE IMAGE HANDLING
+   ========================================================= */
 
 function loadNextImageAfterSave() {
   if (!images.length) {
@@ -144,13 +170,15 @@ function loadNextImageAfterSave() {
   loadImage(nextIndex);
 }
 
-/* ================= GEOMETRY ================= */
+/* =========================================================
+   GEOMETRY UTILITIES
+   ========================================================= */
 
 function toCanvas(e) {
   const r = canvas.getBoundingClientRect();
   return {
-    x: (e.clientX - r.left) * canvas.width / r.width,
-    y: (e.clientY - r.top) * canvas.height / r.height
+    x: ((e.clientX - r.left) * canvas.width) / r.width,
+    y: ((e.clientY - r.top) * canvas.height) / r.height
   };
 }
 
@@ -160,15 +188,16 @@ function inside(b, x, y) {
 
 function hitCorner(b, x, y) {
   return (
-    Math.abs(x - b.x) <= HANDLE_SIZE ||
-    Math.abs(x - (b.x + b.w)) <= HANDLE_SIZE
-  ) && (
-    Math.abs(y - b.y) <= HANDLE_SIZE ||
-    Math.abs(y - (b.y + b.h)) <= HANDLE_SIZE
+    (Math.abs(x - b.x) <= HANDLE_SIZE ||
+      Math.abs(x - (b.x + b.w)) <= HANDLE_SIZE) &&
+    (Math.abs(y - b.y) <= HANDLE_SIZE ||
+      Math.abs(y - (b.y + b.h)) <= HANDLE_SIZE)
   );
 }
 
-/* ================= MOUSE ================= */
+/* =========================================================
+   MOUSE INTERACTION
+   ========================================================= */
 
 canvas.addEventListener("mousedown", e => {
   const { x, y } = toCanvas(e);
@@ -266,13 +295,21 @@ canvas.addEventListener("mouseup", e => {
   updateSaveButtonState();
 });
 
-/* ================= DRAW ================= */
+/* =========================================================
+   DRAWING OPERATIONS
+   ========================================================= */
 
 function drawBox(x, y, w, h, label, preview = false, selected = false) {
   const color = BOX_COLORS[label] || "#ffffff";
   ctx.strokeStyle = color;
-  ctx.lineWidth = preview ? PREVIEW_LINE_WIDTH : selected ? SELECTED_LINE_WIDTH : NORMAL_LINE_WIDTH;
+  ctx.lineWidth = preview
+    ? PREVIEW_LINE_WIDTH
+    : selected
+    ? SELECTED_LINE_WIDTH
+    : NORMAL_LINE_WIDTH;
+
   ctx.strokeRect(x, y, w, h);
+
   ctx.fillStyle = color;
   ctx.font = "16px sans-serif";
   ctx.fillText(label, x + 6, y + 18);
@@ -280,15 +317,21 @@ function drawBox(x, y, w, h, label, preview = false, selected = false) {
 
 function redraw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+
   boxes.forEach((b, i) =>
     drawBox(b.x, b.y, b.w, b.h, b.label, false, i === selectedBox)
   );
 }
 
-/* ================= DELETE ================= */
+/* =========================================================
+   DELETE SHORTCUT
+   ========================================================= */
 
 window.addEventListener("keydown", e => {
-  if ((e.key === "Delete" || e.key === "Backspace") && selectedBox !== -1) {
+  if (
+    (e.key === "Delete" || e.key === "Backspace") &&
+    selectedBox !== -1
+  ) {
     boxes.splice(selectedBox, 1);
     selectedBox = -1;
     redraw();
@@ -297,7 +340,9 @@ window.addEventListener("keydown", e => {
   }
 });
 
-/* ================= KEYBOARD ================= */
+/* =========================================================
+   KEYBOARD SHORTCUTS
+   ========================================================= */
 
 window.addEventListener("keydown", e => {
   if (e.key === "d") setMode("draw");
@@ -314,7 +359,9 @@ window.addEventListener("keydown", e => {
   }
 });
 
-/* ================= YOLO SAVE ================= */
+/* =========================================================
+   YOLO SAVE
+   ========================================================= */
 
 const CLASS_MAP = { ok: 0, defect: 1, scratch: 2 };
 
@@ -340,7 +387,6 @@ saveYoloBtn.onclick = () => {
       }
 
       setStatus("Saved", "success");
-
       lastUndo = { image: currentImage, index: currentIndex };
 
       thumbs.removeChild(thumbs.children[currentIndex]);
@@ -353,7 +399,9 @@ saveYoloBtn.onclick = () => {
     });
 };
 
-/* ================= UNDO ================= */
+/* =========================================================
+   UNDO SUPPORT
+   ========================================================= */
 
 function undoLastSave() {
   if (!lastUndo) {
@@ -361,9 +409,7 @@ function undoLastSave() {
     return;
   }
 
-  fetch("/api/undo-last-save", {
-    method: "POST"
-  })
+  fetch("/api/undo-last-save", { method: "POST" })
     .then(r => r.json())
     .then(res => {
       if (res.error) {
@@ -371,11 +417,9 @@ function undoLastSave() {
         return;
       }
 
-      /* ✅ Restore image into gallery data */
       const restoreIndex = Math.min(lastUndo.index, images.length);
       images.splice(restoreIndex, 0, lastUndo.image);
 
-      /* ✅ Restore thumbnail */
       const thumb = document.createElement("img");
       thumb.src = `/photos/${lastUndo.image}`;
       thumb.onclick = () => loadImage(restoreIndex);
@@ -385,7 +429,6 @@ function undoLastSave() {
         thumbs.children[restoreIndex] || null
       );
 
-      /* ✅ Reload the image in center */
       loadImage(restoreIndex);
 
       lastUndo = null;
@@ -397,12 +440,17 @@ function undoLastSave() {
     });
 }
 
+/* =========================================================
+   FULL REFRESH (UTILITY)
+   ========================================================= */
+
 function refreshImages() {
   fetch("/api/photos")
     .then(r => r.json())
     .then(list => {
       images = list;
       thumbs.innerHTML = "";
+
       list.forEach((name, i) => {
         const t = document.createElement("img");
         t.src = `/photos/${name}`;

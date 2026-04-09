@@ -1,7 +1,13 @@
+/* =========================================================
+   RENDER KEY-VALUE DATA
+   Generic helper for settings sections
+   ========================================================= */
+
 function renderKeyValue(containerId, data) {
   const container = document.getElementById(containerId);
   container.innerHTML = "";
 
+  // Guard: invalid or empty data
   if (!data || typeof data !== "object") {
     container.textContent = "-";
     return;
@@ -25,11 +31,18 @@ function renderKeyValue(containerId, data) {
   });
 }
 
+/* =========================================================
+   LOAD SETTINGS FROM BACKEND
+   Populates all settings sections
+   ========================================================= */
+
 async function loadSettings() {
   try {
     const res = await fetch("/api/settings");
+    if (!res.ok) throw new Error("Request failed");
+
     const data = await res.json();
-    console.log(data.system)
+
     renderKeyValue("systemInfo", data.system);
     renderKeyValue("pathsInfo", data.paths);
     renderKeyValue("envInfo", data.environment);
@@ -37,9 +50,17 @@ async function loadSettings() {
 
   } catch (err) {
     console.error(err);
-    document.getElementById("systemInfo").textContent =
-      "Failed to load settings.";
+
+    // Fallback message on failure
+    const systemInfo = document.getElementById("systemInfo");
+    if (systemInfo) {
+      systemInfo.textContent = "Failed to load settings.";
+    }
   }
 }
+
+/* =========================================================
+   INIT
+   ========================================================= */
 
 loadSettings();

@@ -1,6 +1,7 @@
-/* =========================
-   CSS VARIABLES (THEME)
-   ========================= */
+/* =========================================================
+   THEME VARIABLES
+   Centralized color definitions shared across the app
+   ========================================================= */
 
 :root {
   /* Background layers */
@@ -8,12 +9,12 @@
   --color-bg-camera: #01040f;
   --color-bg-panel: #030a1c;
 
-  /* Text */
+  /* Text colors */
   --color-text-primary: #e5e7eb;
   --color-text-secondary: #cbd5e1;
   --color-text-muted: #94a3b8;
 
-  /* Accent */
+  /* Accent colors */
   --color-accent-primary: #2563eb;
   --color-accent-primary-hover: #1d4ed8;
   --color-accent-link: #60a5fa;
@@ -22,38 +23,43 @@
   --color-border-default: #1e293b;
   --color-border-muted: #334155;
 
+  /* Base */
   --color-white: #ffffff;
 }
 
-/* =========================
-   RESET & GLOBAL
-   ========================= */
+/* =========================================================
+   GLOBAL RESET
+   Normalizes box sizing and base font behavior
+   ========================================================= */
 
 * {
   box-sizing: border-box;
   font-family: system-ui, -apple-system, sans-serif;
 }
 
+/* Prevent scrolling and enforce full-height layout */
 html,
 body {
   height: 100%;
   margin: 0;
   padding: 0;
-  overflow: hidden; 
+  overflow: hidden;
 }
 
-/* =========================
+/* =========================================================
    BODY
-   ========================= */
+   Base application background and text color
+   ========================================================= */
 
 body {
   background: var(--color-bg-app);
   color: var(--color-text-primary);
 }
 
-/* =========================
+/* =========================================================
    TYPOGRAPHY
-   ========================= */
+   Shared heading styles
+   ========================================================= */
 
 h1,
 h2,
@@ -62,9 +68,10 @@ h3 {
   font-weight: 600;
 }
 
-/* =========================
+/* =========================================================
    LINKS
-   ========================= */
+   Default anchor appearance and hover behavior
+   ========================================================= */
 
 a {
   color: var(--color-accent-link);
@@ -75,9 +82,10 @@ a:hover {
   text-decoration: underline;
 }
 
-/* =========================
+/* =========================================================
    BUTTONS
-   ========================= */
+   Default button styling across the app
+   ========================================================= */
 
 button {
   padding: 10px 14px;
@@ -92,16 +100,19 @@ button {
   cursor: pointer;
 }
 
+/* Hover feedback */
 button:hover {
   background: var(--color-accent-primary-hover);
 }
 
+/* Active press feedback */
 button:active {
   transform: scale(0.98);
 }
 
 /* =========================================================
    NAVBAR
+   Top navigation layout and interaction styles
    ========================================================= */
 
 .navbar {
@@ -109,16 +120,19 @@ button:active {
   justify-content: space-between;
   align-items: center;
 
-  background: var(--color-bg-panel);   
+  background: var(--color-bg-panel);
   padding: 10px 20px;
+
   border-bottom: 1px solid var(--color-border-default);
 }
 
+/* Brand / title area */
 .nav-brand {
   font-weight: 700;
   font-size: 16px;
 }
 
+/* Navigation links container */
 .nav-links {
   list-style: none;
   display: flex;
@@ -127,16 +141,18 @@ button:active {
   padding: 0;
 }
 
+/* Individual navigation links */
 .nav-links a {
   color: var(--color-text-secondary);
-  text-decoration: none;
   font-weight: 500;
   font-size: 13px;
 
+  text-decoration: none;
   border-bottom: 2px solid transparent;
   padding-bottom: 4px;
 }
 
+/* Active and hover state for navigation links */
 .nav-links a.active,
 .nav-links a:hover {
   color: var(--color-white);

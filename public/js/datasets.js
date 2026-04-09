@@ -1,6 +1,8 @@
 /* =========================================================
-   ELEMENTS
-========================================================= */
+   DOM ELEMENTS
+   Required elements bound from the datasets page
+   ========================================================= */
+
 const gallery = document.getElementById("gallery");
 const galleryWrapper = document.querySelector(".datasets-gallery-wrapper");
 const statusBox = document.getElementById("datasetStatus");
@@ -16,19 +18,22 @@ const goBtn = document.getElementById("goPage");
 
 /* =========================================================
    STATE
-========================================================= */
+   ========================================================= */
+
 const PAGE_SIZE = 24;
 
 let allImages = [];
 let currentPage = 1;
 
-/* ✅ POC hard-coded values */
+/* Proof-of-concept fixed values (server-backed later) */
 const STATIONS = ["station_01", "station_02"];
 const PROCESSES = ["final_inspection", "pre_inspection"];
 
 /* =========================================================
-   RENDER CURRENT PAGE (REPLACES CONTENT)
-========================================================= */
+   RENDER CURRENT PAGE
+   Replaces gallery contents for the active page
+   ========================================================= */
+
 function renderPage() {
   gallery.innerHTML = "";
 
@@ -44,20 +49,31 @@ function renderPage() {
     img.height = 180;
     img.loading = "lazy";
     img.title = title;
+
+    // Open full image in a new tab
     img.onclick = () => window.open(src, "_blank");
+
     fragment.appendChild(img);
   });
 
   gallery.appendChild(fragment);
+
+  // Reset scroll position when switching pages
   galleryWrapper.scrollTop = 0;
+
   updatePaginationUI();
 }
 
 /* =========================================================
-   PAGINATION UI (SAME LOGIC AS EXPERIMENTS)
-========================================================= */
+   PAGINATION UI
+   Same logic and behavior as Experiments page
+   ========================================================= */
+
 function updatePaginationUI() {
-  const totalPages = Math.max(1, Math.ceil(allImages.length / PAGE_SIZE));
+  const totalPages = Math.max(
+    1,
+    Math.ceil(allImages.length / PAGE_SIZE)
+  );
 
   pageInfo.textContent = `of ${totalPages}`;
   pageInput.value = currentPage;
@@ -68,13 +84,15 @@ function updatePaginationUI() {
 }
 
 /* =========================================================
-   LOAD IMAGES (AUTO-TRIGGERED)
-========================================================= */
+   LOAD IMAGES
+   Automatically triggered by filter changes
+   ========================================================= */
+
 async function loadImages() {
   const station = stationSelect.value;
   const process = processSelect.value;
 
-  /* reset state */
+  // Reset state before loading
   statusBox.textContent = "Loading images...";
   gallery.innerHTML = "";
   allImages = [];
@@ -82,6 +100,7 @@ async function loadImages() {
 
   const stationsToLoad =
     station === "ALL" ? STATIONS : [station];
+
   const processesToLoad =
     process === "ALL" ? PROCESSES : [process];
 
@@ -123,7 +142,8 @@ async function loadImages() {
 
 /* =========================================================
    PAGINATION CONTROLS
-========================================================= */
+   ========================================================= */
+
 prevBtn.addEventListener("click", () => {
   if (currentPage > 1) {
     currentPage--;
@@ -150,12 +170,16 @@ goBtn.addEventListener("click", () => {
 });
 
 /* =========================================================
-   AUTO-LOAD ON SELECTION CHANGE
-========================================================= */
+   FILTER CHANGE HANDLERS
+   Auto-load images when selection changes
+   ========================================================= */
+
 stationSelect.addEventListener("change", loadImages);
 processSelect.addEventListener("change", loadImages);
 
 /* =========================================================
-   INITIAL LOAD (DEFAULT ALL / ALL)
-========================================================= */
+   INITIAL LOAD
+   Default: ALL stations / ALL processes
+   ========================================================= */
+
 loadImages();

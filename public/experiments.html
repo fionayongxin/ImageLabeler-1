@@ -1,21 +1,27 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Experiments</title>
 
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-  <link rel="stylesheet" href="/css/base.css">
-  <link rel="stylesheet" href="/css/experiments.css">
+  <!-- Shared base styles -->
+  <link rel="stylesheet" href="/css/base.css" />
+
+  <!-- Experiments page styles -->
+  <link rel="stylesheet" href="/css/experiments.css" />
+
+  <!-- Chart library for metrics visualization -->
   <script src="/vendor/chart.umd.js"></script>
 </head>
 
 <body>
 
+  <!-- Top navigation -->
   <nav class="navbar">
     <div class="nav-brand">Vision Trainer</div>
+
     <ul class="nav-links">
       <li><a href="/trainer">Training</a></li>
       <li><a href="/experiments" class="active">Experiments</a></li>
@@ -23,10 +29,12 @@
       <li><a href="/settings">Settings</a></li>
     </ul>
   </nav>
+
+  <!-- Main content container -->
   <main class="trainer-container">
     <h1>Experiments</h1>
 
-    <!-- ✅ SCROLLABLE TABLE AREA -->
+    <!-- Scrollable experiments table -->
     <div class="experiments-table-wrapper">
       <table id="experimentsTable">
         <thead>
@@ -42,14 +50,13 @@
             <th scope="col">Actions</th>
           </tr>
         </thead>
-
         <tbody></tbody>
       </table>
     </div>
 
-    <!-- ✅ PAGINATION ALWAYS VISIBLE -->
+    <!-- Pagination controls (always visible) -->
     <div class="table-pagination">
-      <button id="prevPage">Previous</button>
+      <button id="prevPage" type="button">Previous</button>
 
       <span>Page</span>
       <input
@@ -60,32 +67,40 @@
         aria-label="Jump to page"
       />
       <span id="pageInfo">of 1</span>
-      <button id="nextPage">Next</button>
-      <button id="goPage">Go</button>
+
+      <button id="nextPage" type="button">Next</button>
+      <button id="goPage" type="button">Go</button>
     </div>
-    
+
+    <!-- Metrics side panel -->
     <aside id="metricsPanel" class="metrics-panel">
 
       <div class="metrics-header">
         <h2>Training Metrics</h2>
-        <button id="closeMetrics" class="btn-secondary">Close</button>
+        <button id="closeMetrics" class="btn-secondary" type="button">
+          Close
+        </button>
       </div>
 
+      <!-- Summary metrics -->
       <div class="metrics-summary">
         <div class="metric-card">
           <span class="label">Final Epoch</span>
           <span class="value" id="finalEpoch">-</span>
         </div>
+
         <div class="metric-card">
           <span class="label">Final Loss</span>
           <span class="value" id="finalLoss">-</span>
         </div>
+
         <div class="metric-card">
           <span class="label">Best mAP50</span>
           <span class="value" id="bestMap">-</span>
         </div>
       </div>
 
+      <!-- Charts -->
       <div class="metrics-charts">
         <div class="chart-card">
           <h3>Training Loss</h3>
@@ -101,7 +116,11 @@
     </aside>
 
   </main>
+
+  <!-- Backdrop used when metrics panel is active -->
   <div id="metricsBackdrop" class="metrics-backdrop"></div>
+
+  <!-- Page logic -->
   <script src="/js/experiments.js"></script>
 </body>
 </html>

@@ -3,74 +3,100 @@
 <head>
   <meta charset="UTF-8" />
   <title>Datasets</title>
+
+  <!-- Shared base styles -->
   <link rel="stylesheet" href="/css/base.css" />
+
+  <!-- Dataset page–specific styles -->
   <link rel="stylesheet" href="/css/datasets.css" />
 </head>
+
 <body>
 
-<nav class="navbar">
-  <div class="nav-brand">Vision Trainer</div>
-  <ul class="nav-links">
-    <li><a href="/trainer">Training</a></li>
-    <li><a href="/experiments">Experiments</a></li>
-    <li><a href="/datasets" class="active">Datasets</a></li>
-    <li><a href="/settings">Settings</a></li>
-  </ul>
-</nav>
+  <!-- =========================================
+       TOP NAVIGATION
+       ========================================= -->
+  <nav class="navbar">
+    <div class="nav-brand">Vision Trainer</div>
 
-<div class="trainer-container">
+    <ul class="nav-links">
+      <li><a href="/trainer">Training</a></li>
+      <li><a href="/experiments">Experiments</a></li>
+      <li><a href="/datasets" class="active">Datasets</a></li>
+      <li><a href="/settings">Settings</a></li>
+    </ul>
+  </nav>
 
-  <h1>Datasets (Read‑Only)</h1>
+  <!-- =========================================
+       MAIN PAGE CONTAINER
+       ========================================= -->
+  <div class="trainer-container">
 
-  <!-- ================= Toolbar ================= -->
-  <div class="dataset-toolbar">
-    <div class="dataset-info">
+    <!-- Page heading -->
+    <h1>Datasets (Read‑Only)</h1>
 
-      <label>Station</label>
-      <select id="station">
-        <option value="ALL">All Stations</option>
-        <option value="station_01">station_01</option>
-        <option value="station_02">station_02</option>
-      </select>
+    <!-- =========================================
+         FILTER / TOOLBAR
+         Station & process selection drives loading
+         ========================================= -->
+    <div class="dataset-toolbar">
+      <div class="dataset-info">
 
-      <label>Process</label>
-      <select id="process">
-        <option value="ALL">All Processes</option>
-        <option value="final_inspection">final_inspection</option>
-        <option value="pre_inspection">pre_inspection</option>
-      </select>
+        <label>Station</label>
+        <select id="station">
+          <option value="ALL">All Stations</option>
+          <option value="station_01">station_01</option>
+          <option value="station_02">station_02</option>
+        </select>
+
+        <label>Process</label>
+        <select id="process">
+          <option value="ALL">All Processes</option>
+          <option value="final_inspection">final_inspection</option>
+          <option value="pre_inspection">pre_inspection</option>
+        </select>
+
+      </div>
     </div>
 
-    <!-- ✅ NO LOAD BUTTON (selection drives loading) -->
+    <!-- =========================================
+         STATUS MESSAGE
+         Used for loading / empty states
+         ========================================= -->
+    <div id="datasetStatus" class="dataset-status"></div>
+
+    <!-- =========================================
+         SCROLLABLE IMAGE GALLERY
+         ========================================= -->
+    <div class="datasets-gallery-wrapper">
+      <!-- Thumbnails injected dynamically by JS -->
+      <div id="gallery" class="gallery"></div>
+    </div>
+
+    <!-- =========================================
+         PAGINATION CONTROLS
+         Same behavior as Experiments page
+         ========================================= -->
+    <div class="table-pagination">
+      <button id="prevPage" type="button">Previous</button>
+
+      <span>Page</span>
+      <input
+        id="pageInput"
+        type="number"
+        min="1"
+        step="1"
+        aria-label="Jump to page"
+      />
+      <span id="pageInfo"></span>
+
+      <button id="nextPage" type="button">Next</button>
+      <button id="goPage" type="button">Go</button>
+    </div>
+
   </div>
 
-  <!-- ================= Status ================= -->
-  <div id="datasetStatus" class="dataset-status"></div>
-
-  <!-- ================= Scrollable Gallery ================= -->
-  <div class="datasets-gallery-wrapper">
-    <div id="gallery" class="gallery"></div>
-  </div>
-
-  <!-- ================= Pagination (Reused from Experiments) ================= -->
-  <div class="table-pagination">
-    <button id="prevPage">Previous</button>
-
-    <span>Page</span>
-    <input
-      type="number"
-      id="pageInput"
-      min="1"
-      step="1"
-    />
-    <span id="pageInfo"></span>
-
-    <button id="nextPage">Next</button>
-    <button id="goPage">Go</button>
-  </div>
-
-</div>
-
-<script src="/js/datasets.js"></script>
+  <!-- Dataset page logic -->
+  <script src="/js/datasets.js"></script>
 </body>
 </html>

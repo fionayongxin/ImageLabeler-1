@@ -1,72 +1,112 @@
 <!DOCTYPE html>
-<title>InteractiveUI</title>
-
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Labeler</title>
 
-  <link rel="stylesheet" href="/css/base.css">
-  <link rel="stylesheet" href="/css/labeler.css">
+  <!-- Shared base styles -->
+  <link rel="stylesheet" href="/css/base.css" />
+
+  <!-- Labeler-specific styles -->
+  <link rel="stylesheet" href="/css/labeler.css" />
 </head>
 
 <body class="page-labeler">
 
-<div class="labeler-layout">
+  <!-- Root layout container for thumbnail panel and labeling workspace -->
+  <div class="labeler-layout">
 
-  <aside class="thumb-panel">
-    <h3>Images</h3>
-    <div id="thumbs"></div>
-  </aside>
+    <!-- Thumbnail panel populated dynamically with available images -->
+    <aside class="thumb-panel">
+      <h3>Images</h3>
 
-  <main class="work-panel">
-    <h3 id="currentImage">No image selected</h3>
+      <!-- JS injects thumbnail elements here -->
+      <div id="thumbs"></div>
+    </aside>
 
-    <div class="label-workspace">
+    <!-- Main labeling work area -->
+    <main class="work-panel">
+      <!-- Displays currently selected image name or state -->
+      <h3 id="currentImage">No image selected</h3>
 
-      <section class="label-container">
-        <img id="image" alt="">
-        <canvas id="overlay" class="read-mode"></canvas>
-      </section>
-      <aside class="label-controls">
+      <div class="label-workspace">
 
-        <!-- MODE SECTION -->
-        <section class="control-section">
-          <h4 class="section-title">Mode</h4>
-          <div class="mode-toggle">
-            <button id="readModeBtn" class="secondary active">Read</button>
-            <button id="drawModeBtn" class="secondary">Draw</button>
-          </div>
+        <!-- Image display and overlay canvas -->
+        <section class="label-container">
+          <!-- Active image under annotation -->
+          <img id="image" alt="" />
+
+          <!-- Canvas overlay used for read/draw interactions -->
+          <canvas id="overlay" class="read-mode"></canvas>
         </section>
 
-        <!-- ANNOTATION SECTION -->
-        <section class="control-section">
-          <h4 class="section-title">Annotation</h4>
+        <!-- Annotation and mode controls -->
+        <aside class="label-controls">
 
-          <label for="classSelect" class="control-label">Class</label>
-          <select id="classSelect">
-            <option value="">-- Select --</option>
-            <option value="ok">OK</option>
-            <option value="defect">Defect</option>
-            <option value="scratch">Scratch</option>
-          </select>
+          <!-- Mode selection (read vs draw) -->
+          <section class="control-section">
+            <h4 class="section-title">Mode</h4>
 
-          <button id="saveYoloBtn" class="primary-action">
-            Save Annotations
-          </button>
-        </section>
+            <div class="mode-toggle">
+              <button
+                id="readModeBtn"
+                class="secondary active"
+                type="button"
+              >
+                Read
+              </button>
 
-        <!-- STATUS SECTION -->
-        <section class="control-section status-section">
-          <h4 class="section-title">Status</h4>
-          <p id="status" class="status-text">Read mode</p>
-        </section>
+              <button
+                id="drawModeBtn"
+                class="secondary"
+                type="button"
+              >
+                Draw
+              </button>
+            </div>
+          </section>
 
-      </aside>
-    </div>
-  </main>
-</div>
+          <!-- Annotation class selection and save action -->
+          <section class="control-section">
+            <h4 class="section-title">Annotation</h4>
 
-<script src="js/labeler.js"></script>
+            <label for="classSelect" class="control-label">
+              Class
+            </label>
+
+            <select id="classSelect">
+              <option value="">-- Select --</option>
+              <option value="ok">OK</option>
+              <option value="defect">Defect</option>
+              <option value="scratch">Scratch</option>
+            </select>
+
+            <!-- Persists current annotations in YOLO format -->
+            <button
+              id="saveYoloBtn"
+              class="primary-action"
+              type="button"
+            >
+              Save Annotations
+            </button>
+          </section>
+
+          <!-- Current application status feedback -->
+          <section class="control-section status-section">
+            <h4 class="section-title">Status</h4>
+
+            <!-- Updated dynamically by JS based on mode and actions -->
+            <p id="status" class="status-text">Read mode</p>
+          </section>
+
+        </aside>
+      </div>
+    </main>
+
+  </div>
+
+  <!-- Labeling application logic -->
+  <script src="js/labeler.js"></script>
+
 </body>
 </html>

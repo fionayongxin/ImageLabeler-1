@@ -1,6 +1,7 @@
-// ================================
-// Elements (MUST exist in HTML)
-// ================================
+// =========================================================
+// DOM ELEMENTS (MUST EXIST IN HTML)
+// =========================================================
+
 const stationInput = document.getElementById("station");
 const processInput = document.getElementById("process");
 const modelSelect = document.getElementById("model");
@@ -13,17 +14,20 @@ const progressFile = document.getElementById("progressFile");
 const startBtn = document.getElementById("startBtn");
 const stopBtn = document.getElementById("stopBtn");
 
-// ================================
-// State
-// ================================
+// =========================================================
+// STATE
+// =========================================================
+
 let progressTimer = null;
 let currentRunName = null;
 let lossChart = null;
 let mapChart = null;
 
-// ================================
-// Helpers
-// ================================
+// =========================================================
+// HELPERS
+// =========================================================
+
+// Generates a unique experiment name based on inputs & timestamp
 function generateExperimentName() {
   const station = stationInput.value || "station";
   const process = processInput.value || "process";
@@ -31,20 +35,24 @@ function generateExperimentName() {
   return `${station}-${process}-${modelName}-${Date.now()}`;
 }
 
-// ================================
-// Init
-// ================================
+// =========================================================
+// INITIALIZATION
+// =========================================================
+
+// Pre-fill run name on page load
 runNameInput.value = generateExperimentName();
 
+// Regenerate run name when model changes (only if idle)
 modelSelect.addEventListener("change", () => {
   if (!currentRunName) {
     runNameInput.value = generateExperimentName();
   }
 });
 
-// ================================
-// Loss Chart
-// ================================
+// =========================================================
+// LOSS CHART
+// =========================================================
+
 function initLossChart() {
   const canvas = document.getElementById("lossChart");
   if (!canvas) return;
@@ -75,12 +83,8 @@ function initLossChart() {
       animation: false,
       responsive: true,
       scales: {
-        x: {
-          title: { display: true, text: "Epoch" }
-        },
-        y: {
-          title: { display: true, text: "Loss" }
-        }
+        x: { title: { display: true, text: "Epoch" } },
+        y: { title: { display: true, text: "Loss" } }
       }
     }
   });
@@ -100,6 +104,9 @@ async function updateLossChart() {
   lossChart.update();
 }
 
+// =========================================================
+// MAP CHART
+// =========================================================
 
 function initMapChart() {
   const canvas = document.getElementById("mapChart");
@@ -131,9 +138,7 @@ function initMapChart() {
       animation: false,
       responsive: true,
       scales: {
-        x: {
-          title: { display: true, text: "Epoch" }
-        },
+        x: { title: { display: true, text: "Epoch" } },
         y: {
           title: { display: true, text: "mAP50" },
           min: 0,
@@ -144,9 +149,10 @@ function initMapChart() {
   });
 }
 
-// ================================
-// Progress Polling
-// ================================
+// =========================================================
+// PROGRESS POLLING
+// =========================================================
+
 function startProgressPolling() {
   stopProgressPolling();
   progressTimer = setInterval(updateProgress, 1000);
@@ -161,6 +167,7 @@ function stopProgressPolling() {
 
 async function updateProgress() {
   let res;
+
   try {
     res = await fetch("/api/train/progress");
   } catch {
@@ -168,20 +175,23 @@ async function updateProgress() {
   }
 
   if (!res.ok) return;
-  const data = await res.json();
 
+  const data = await res.json();
   if (!progressBar || !progressText) return;
 
+  // Idle state
   if (data.status === "idle") {
     progressBar.style.width = "0%";
     progressText.textContent = "Idle";
     if (progressFile) progressFile.textContent = "–";
+
     stopProgressPolling();
-    stopBtn.disabled = true;
     startBtn.disabled = false;
+    stopBtn.disabled = true;
     return;
   }
 
+  // Starting state
   if (data.status === "starting") {
     progressBar.style.width = "1%";
     progressText.textContent = "Starting training…";
@@ -191,9 +201,10 @@ async function updateProgress() {
     return;
   }
 
+  // Running state
   if (data.status === "running") {
-    
     await updateCharts();
+
     progressBar.style.width = `${data.progress}%`;
     progressText.textContent =
       `Epoch ${data.epoch}/${data.totalEpochs} (${data.progress}%)`;
@@ -206,22 +217,25 @@ async function updateProgress() {
 
     if (data.progress >= 100) {
       progressText.textContent = "Training completed";
+
       stopProgressPolling();
-      stopBtn.disabled = true;
       startBtn.disabled = false;
+      stopBtn.disabled = true;
+
       currentRunName = null;
       runNameInput.value = generateExperimentName();
     }
   }
 }
 
-// ================================
-// Start Training
-// ================================
+// =========================================================
+// START TRAINING
+// =========================================================
+
 startBtn.onclick = async () => {
   const station = stationInput.value.trim();
   const process = processInput.value.trim();
-  
+
   if (!station || !process) {
     alert("Station and process are required");
     return;
@@ -229,6 +243,7 @@ startBtn.onclick = async () => {
 
   currentRunName =
     runNameInput.value.trim() || generateExperimentName();
+
   runNameInput.value = currentRunName;
 
   startBtn.disabled = true;
@@ -255,11 +270,13 @@ startBtn.onclick = async () => {
   startProgressPolling();
 };
 
-// ================================
-// Stop Training
-// ================================
+// =========================================================
+// STOP TRAINING
+// =========================================================
+
 stopBtn.onclick = async () => {
   await fetch("/api/train/stop", { method: "POST" });
+
   stopProgressPolling();
 
   progressText.textContent = "Training stopped";
@@ -271,6 +288,10 @@ stopBtn.onclick = async () => {
   startBtn.disabled = false;
   stopBtn.disabled = true;
 };
+
+// =========================================================
+// METRICS UPDATE (LOSS + MAP)
+// =========================================================
 
 async function updateCharts() {
   if (!lossChart && !mapChart) return;
@@ -295,6 +316,10 @@ async function updateCharts() {
     mapChart.update();
   }
 }
+
+// =========================================================
+// PAGE LOAD
+// =========================================================
 
 document.addEventListener("DOMContentLoaded", () => {
   initLossChart();

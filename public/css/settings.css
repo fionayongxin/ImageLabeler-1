@@ -1,32 +1,28 @@
-/* =========================================
-   Settings Page Layout (LOCAL ONLY)
+/* =========================================================
+   SETTINGS PAGE LAYOUT (LOCAL ONLY)
    Purpose:
-   - Keep app fully fixed (no body scroll)
-   - Allow settings content to scroll internally
-   - Hide scrollbar visually (but keep scrolling)
-========================================== */
+   - Prevent body-level scrolling
+   - Allow internal scrolling within settings content
+   - Hide scrollbar visually while preserving scroll behavior
+   ========================================================= */
 
-/* Main settings container */
+/* Main scrollable container */
 .trainer-container {
-  /* Fill viewport minus navbar height */
   height: calc(100vh - 56px); /* must match navbar height */
-
-  /* Enable scrolling only inside settings */
   overflow-y: auto;
 
-  /* Prevent layout shift when scrollbar appears */
+  /* Prevent layout shift from scrollbars */
   scrollbar-gutter: stable;
 
-  /* Layout */
   padding: 24px;
   max-width: 1100px;
   margin: 0 auto;
   box-sizing: border-box;
 }
 
-/* =========================================
-   Titles
-========================================== */
+/* =========================================================
+   HEADINGS
+   ========================================================= */
 
 /* Page title */
 .trainer-container h1 {
@@ -36,34 +32,35 @@
   color: #e5e7eb;
 }
 
-/* Section headers */
+/* Section titles */
 .trainer-container h2 {
-  font-size: 18px;
-  font-weight: 600;
   margin: 28px 0 10px;
   padding-bottom: 6px;
+
+  font-size: 18px;
+  font-weight: 600;
 
   color: #c7d2fe;
   border-bottom: 1px solid #1f2937;
 }
 
-/* =========================================
-   Key / Value Panels
-========================================== */
+/* =========================================================
+   KEY / VALUE PANELS
+   ========================================================= */
 
 .settings-kv {
+  margin-bottom: 16px;
+  padding: 14px 16px;
+
   background: #020617;
   border: 1px solid #1f2937;
   border-radius: 8px;
-
-  padding: 14px 16px;
-  margin-bottom: 16px;
 
   font-family: monospace;
   font-size: 13px;
 }
 
-/* Each key/value row */
+/* Individual key-value row */
 .settings-row {
   display: grid;
   grid-template-columns: minmax(140px, 200px) 1fr;
@@ -71,27 +68,29 @@
   padding: 6px 0;
 }
 
-/* Separator between rows */
+/* Row divider */
 .settings-row:not(:last-child) {
   border-bottom: 1px solid #020617;
 }
 
+/* Key column */
 .settings-key {
   color: #9ca3af;
 }
 
+/* Value column */
 .settings-value {
   color: #e5e7eb;
   overflow-wrap: anywhere;
   word-break: break-word;
 }
 
-/* =========================================
-   Scrollbar (FULLY TRANSPARENT)
-   Still scrollable via wheel / trackpad
-========================================== */
+/* =========================================================
+   SCROLLBAR HANDLING
+   Keep scrolling functional but visually hidden
+   ========================================================= */
 
-/* Chrome / Edge / Safari */
+/* Chromium-based browsers */
 .trainer-container::-webkit-scrollbar {
   width: 0;
   height: 0;

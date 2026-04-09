@@ -1,5 +1,6 @@
 /* =========================================================
-   GLOBAL RESET (CRITICAL FOR NO SCROLL)
+   GLOBAL RESET
+   Critical to prevent scrolling and enforce full-viewport layout
    ========================================================= */
 
 html,
@@ -17,7 +18,8 @@ body {
 }
 
 /* =========================================================
-   PAGE LAYOUT: NAV | MAIN | FOOTER
+   PAGE LAYOUT
+   NAVBAR | MAIN CONTENT | FOOTER
    ========================================================= */
 
 .trainer-page {
@@ -27,7 +29,9 @@ body {
 }
 
 /* =========================================================
-   MAIN WORKSPACE (LEFT CONFIG | RIGHT GRAPHS)
+   MAIN WORKSPACE
+   Left: configuration / progress
+   Right: metrics charts
    ========================================================= */
 
 .trainer-main {
@@ -39,7 +43,8 @@ body {
 }
 
 /* =========================================================
-   LEFT COLUMN: CONFIG + PROGRESS
+   LEFT COLUMN
+   Configuration panel + progress panel
    ========================================================= */
 
 .trainer-config {
@@ -50,7 +55,8 @@ body {
 }
 
 /* =========================================================
-   RIGHT COLUMN: CHARTS
+   RIGHT COLUMN
+   Training metrics charts
    ========================================================= */
 
 .trainer-metrics {
@@ -68,21 +74,21 @@ body {
   background: #020617;
   border-radius: 8px;
   padding: 14px;
+
   box-shadow: inset 0 0 0 1px #1e293b;
+
   display: flex;
   flex-direction: column;
-  justify-content: flex;
-  zoom: 100%;
 }
 
 .progress-panel {
   background: #020617;
   border-radius: 8px;
-  display: flex;
   padding-top: 10px;
+
+  display: flex;
   flex-direction: column;
   justify-content: flex-start;
-  
 }
 
 /* =========================================================
@@ -101,10 +107,13 @@ select {
   width: 100%;
   padding: 6px 8px;
   margin-top: 4px;
+
   background: #020617;
   color: #e5e7eb;
+
   border: 1px solid #334155;
   border-radius: 6px;
+
   font-size: 13px;
 }
 
@@ -120,10 +129,13 @@ button {
   margin-top: 8px;
   padding: 8px;
   width: 100%;
+
   background: #2563eb;
   color: white;
+
   border: none;
   border-radius: 6px;
+
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
@@ -141,15 +153,17 @@ button:disabled {
 }
 
 /* =========================================================
-   CHART CONTAINERS
+   CHARTS
    ========================================================= */
 
 .chart-container {
   background: #020617;
   border-radius: 8px;
   padding: 8px;
+
   min-height: 0;
   overflow: hidden;
+
   box-shadow: inset 0 0 0 1px #1e293b;
 }
 
@@ -159,7 +173,7 @@ button:disabled {
 }
 
 /* =========================================================
-   FOOTER / PROGRESS
+   FOOTER / TRAINING PROGRESS
    ========================================================= */
 
 .trainer-footer {
@@ -168,9 +182,14 @@ button:disabled {
   border-top: 1px solid #1e293b;
 }
 
+/* =========================================================
+   PROGRESS BAR
+   ========================================================= */
+
 .progress-container {
   width: 100%;
   height: 18px;
+
   background: #1f2937;
   border-radius: 999px;
   overflow: hidden;
@@ -179,6 +198,7 @@ button:disabled {
 .progress-bar {
   height: 100%;
   width: 0%;
+
   background: linear-gradient(90deg, #22c55e, #4ade80);
   transition: width 0.3s ease;
 }
