@@ -6,10 +6,15 @@ const captureInfo = document.getElementById("captureInfo");
 navigator.mediaDevices.getUserMedia({ video: true })
   .then(stream => {
     video.srcObject = stream;
-    statusText.textContent = "Camera streaming";
   });
 
 function capture() {
+  const cameraBox = document.querySelector(".camera-box");
+
+  // Visual feedback
+  cameraBox.classList.add("flash");
+  setTimeout(() => cameraBox.classList.remove("flash"), 150);
+
   canvas.width = video.videoWidth;
   canvas.height = video.videoHeight;
   const ctx = canvas.getContext("2d");
@@ -19,7 +24,6 @@ function capture() {
   ctx.drawImage(video, 0, 0);
 
   const data = canvas.toDataURL("image/png");
-  statusText.textContent = "Saving...";
 
   fetch("/api/save-photo", {
     method: "POST",
@@ -28,7 +32,6 @@ function capture() {
   })
     .then(r => r.json())
     .then(d => {
-      statusText.textContent = "Saved";
       captureInfo.textContent = d.filename;
     });
 }

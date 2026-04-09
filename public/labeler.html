@@ -28,28 +28,41 @@
         <img id="image" alt="">
         <canvas id="overlay" class="read-mode"></canvas>
       </section>
-
       <aside class="label-controls">
 
-        <h4>Mode</h4>
-        <div class="mode-toggle">
-          <button id="readModeBtn" class="secondary active">Read</button>
-          <button id="drawModeBtn" class="secondary">Draw</button>
-        </div>
+        <!-- MODE SECTION -->
+        <section class="control-section">
+          <h4 class="section-title">Mode</h4>
+          <div class="mode-toggle">
+            <button id="readModeBtn" class="secondary active">Read</button>
+            <button id="drawModeBtn" class="secondary">Draw</button>
+          </div>
+        </section>
 
-        <h4>Class</h4>
-        <select id="classSelect">
-          <option value="">-- Select --</option>
-          <option value="ok">OK</option>
-          <option value="defect">Defect</option>
-          <option value="scratch">Scratch</option>
-        </select>
+        <!-- ANNOTATION SECTION -->
+        <section class="control-section">
+          <h4 class="section-title">Annotation</h4>
 
-        <button id="saveYoloBtn">Save YOLO</button>
-        <p id="status"></p>
+          <label for="classSelect" class="control-label">Class</label>
+          <select id="classSelect">
+            <option value="">-- Select --</option>
+            <option value="ok">OK</option>
+            <option value="defect">Defect</option>
+            <option value="scratch">Scratch</option>
+          </select>
+
+          <button id="saveYoloBtn" class="primary-action">
+            Save Annotations
+          </button>
+        </section>
+
+        <!-- STATUS SECTION -->
+        <section class="control-section status-section">
+          <h4 class="section-title">Status</h4>
+          <p id="status" class="status-text">Read mode</p>
+        </section>
 
       </aside>
-
     </div>
   </main>
 </div>

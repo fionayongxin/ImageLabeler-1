@@ -7,6 +7,7 @@ const PREVIEW_LINE_WIDTH = 2;
 const HANDLE_SIZE = 10;
 
 /* ================= COLOR ================= */
+
 const BOX_COLORS = {
   ok: "#22c55e",        // green
   defect: "#ef4444",   // red
@@ -47,6 +48,25 @@ const readBtn = document.getElementById("readModeBtn");
 const drawBtn = document.getElementById("drawModeBtn");
 const saveYoloBtn = document.getElementById("saveYoloBtn");
 
+/* ================= STATUS ================= */
+
+function setStatus(message, type = "info") {
+  statusText.textContent = message;
+  statusText.className = `status status-${type}`;
+}
+
+/* ================= SAVE STATE ================= */
+
+function updateSaveButtonState() {
+  const canSave =
+    mode === "draw" &&
+    boxes.length > 0 &&
+    classSelect.value !== "";
+
+  saveYoloBtn.disabled = !canSave;
+  saveYoloBtn.classList.toggle("disabled", !canSave);
+}
+
 /* ================= MODE ================= */
 
 function setMode(m) {
@@ -54,12 +74,22 @@ function setMode(m) {
   readBtn.classList.toggle("active", m === "read");
   drawBtn.classList.toggle("active", m === "draw");
   canvas.className = m === "draw" ? "draw-mode" : "read-mode";
-  statusText.textContent = m === "draw" ? "Draw mode" : "Read mode";
+  setStatus(m === "draw" ? "Draw mode" : "Read mode", "info");
+  updateSaveButtonState();
 }
 
 readBtn.onclick = () => setMode("read");
 drawBtn.onclick = () => setMode("draw");
 setMode("read");
+
+/* ================= CLASS SELECT ================= */
+
+classSelect.addEventListener("change", () => {
+  if (classSelect.value && mode === "read") {
+    setMode("draw");
+  }
+  updateSaveButtonState();
+});
 
 /* ================= LOAD IMAGES ================= */
 
@@ -99,18 +129,17 @@ function loadImage(i) {
 }
 
 /* ================= CLEANUP ================= */
+
 function loadNextImageAfterSave() {
-  if (images.length === 0) {
-    // No images left
+  if (!images.length) {
     img.src = "";
-    canvas.width = 0;
-    canvas.height = 0;
+    canvas.width = canvas.height = 0;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     document.getElementById("currentImage").textContent = "No image selected";
+    setStatus("No images remaining", "info");
     return;
   }
 
-  // Load the image that now sits at the current index
   const nextIndex = Math.min(currentIndex, images.length - 1);
   loadImage(nextIndex);
 }
@@ -126,34 +155,25 @@ function toCanvas(e) {
 }
 
 function inside(b, x, y) {
-  return (
-    x >= b.x && x <= b.x + b.w &&
-    y >= b.y && y <= b.y + b.h
-  );
+  return x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h;
 }
 
-function hitCorner(b, x, y, s = HANDLE_SIZE) {
-  const corners = [
-    ["tl", b.x, b.y],
-    ["br", b.x + b.w, b.y + b.h]
-  ];
-  for (const [_, cx, cy] of corners) {
-    if (Math.abs(x - cx) <= s && Math.abs(y - cy) <= s) {
-      return true;
-    }
-  }
-  return false;
+function hitCorner(b, x, y) {
+  return (
+    Math.abs(x - b.x) <= HANDLE_SIZE ||
+    Math.abs(x - (b.x + b.w)) <= HANDLE_SIZE
+  ) && (
+    Math.abs(y - b.y) <= HANDLE_SIZE ||
+    Math.abs(y - (b.y + b.h)) <= HANDLE_SIZE
+  );
 }
 
 /* ================= MOUSE ================= */
 
 canvas.addEventListener("mousedown", e => {
   const { x, y } = toCanvas(e);
-  let hit = false;
-
   resizeHandle = null;
 
-  // ✅ Check resize handles first (topmost box)
   for (let i = boxes.length - 1; i >= 0; i--) {
     const b = boxes[i];
     if (hitCorner(b, x, y)) {
@@ -161,44 +181,43 @@ canvas.addEventListener("mousedown", e => {
       resizing = true;
       startX = x;
       startY = y;
-      hit = true;
       redraw();
       return;
     }
   }
 
-  // ✅ Then check dragging
   for (let i = boxes.length - 1; i >= 0; i--) {
     if (inside(boxes[i], x, y)) {
       selectedBox = i;
       dragging = true;
       startX = x;
       startY = y;
-      hit = true;
       redraw();
       return;
     }
   }
 
-  // ✅ Clicked empty space
-  if (!hit) {
-    selectedBox = -1;
-    redraw();
+  selectedBox = -1;
+  redraw();
+
+  if (mode !== "draw") {
+    setStatus("Switch to Draw mode to annotate", "warning");
+    return;
   }
 
-  // ✅ Start drawing new box
-  if (mode === "draw" && !hit) {
-    if (!classSelect.value) return alert("Select class first");
-    drawing = true;
-    startX = x;
-    startY = y;
+  if (!classSelect.value) {
+    setStatus("Select a class before drawing", "warning");
+    return;
   }
-});   
+
+  drawing = true;
+  startX = x;
+  startY = y;
+});
 
 canvas.addEventListener("mousemove", e => {
   const { x, y } = toCanvas(e);
 
-  // ✅ Resize
   if (resizing && selectedBox !== -1) {
     const b = boxes[selectedBox];
     b.w = Math.max(MIN_BOX_SIZE, x - b.x);
@@ -207,7 +226,6 @@ canvas.addEventListener("mousemove", e => {
     return;
   }
 
-  // ✅ Drag
   if (dragging && selectedBox !== -1) {
     const b = boxes[selectedBox];
     b.x += x - startX;
@@ -218,7 +236,6 @@ canvas.addEventListener("mousemove", e => {
     return;
   }
 
-  // ✅ Draw preview
   if (drawing) {
     redraw();
     drawBox(startX, startY, x - startX, y - startY, classSelect.value, true);
@@ -234,36 +251,28 @@ canvas.addEventListener("mouseup", e => {
     let fx = startX;
     let fy = startY;
 
-    if (w < 0) { fx += w; w = Math.abs(w); }
-    if (h < 0) { fy += h; h = Math.abs(h); }
+    if (w < 0) { fx += w; w = -w; }
+    if (h < 0) { fy += h; h = -h; }
 
     w = Math.max(MIN_BOX_SIZE, w);
     h = Math.max(MIN_BOX_SIZE, h);
 
     boxes.push({ x: fx, y: fy, w, h, label: classSelect.value });
+    setStatus(`${boxes.length} box(es) · Not saved`, "warning");
   }
-  resizing = false;
-  dragging = false;
-  drawing = false;
-  resizeHandle = null;  
+
+  resizing = dragging = drawing = false;
   redraw();
+  updateSaveButtonState();
 });
 
 /* ================= DRAW ================= */
 
 function drawBox(x, y, w, h, label, preview = false, selected = false) {
   const color = BOX_COLORS[label] || "#ffffff";
-
   ctx.strokeStyle = color;
-  ctx.lineWidth = preview
-    ? PREVIEW_LINE_WIDTH
-    : selected
-      ? SELECTED_LINE_WIDTH
-      : NORMAL_LINE_WIDTH;
-
+  ctx.lineWidth = preview ? PREVIEW_LINE_WIDTH : selected ? SELECTED_LINE_WIDTH : NORMAL_LINE_WIDTH;
   ctx.strokeRect(x, y, w, h);
-
-  // ✅ draw class name
   ctx.fillStyle = color;
   ctx.font = "16px sans-serif";
   ctx.fillText(label, x + 6, y + 18);
@@ -283,6 +292,25 @@ window.addEventListener("keydown", e => {
     boxes.splice(selectedBox, 1);
     selectedBox = -1;
     redraw();
+    setStatus(`${boxes.length} box(es) · Not saved`, "warning");
+    updateSaveButtonState();
+  }
+});
+
+/* ================= KEYBOARD ================= */
+
+window.addEventListener("keydown", e => {
+  if (e.key === "d") setMode("draw");
+  if (e.key === "r") setMode("read");
+
+  if (e.ctrlKey && e.key.toLowerCase() === "s") {
+    e.preventDefault();
+    saveYoloBtn.click();
+  }
+
+  if (e.ctrlKey && e.key.toLowerCase() === "z") {
+    e.preventDefault();
+    undoLastSave();
   }
 });
 
@@ -291,8 +319,7 @@ window.addEventListener("keydown", e => {
 const CLASS_MAP = { ok: 0, defect: 1, scratch: 2 };
 
 saveYoloBtn.onclick = () => {
-  if (!currentImage) return alert("No image selected");
-  if (!boxes.length) return alert("No boxes");
+  if (!currentImage || !boxes.length) return;
 
   fetch("/api/save-yolo", {
     method: "POST",
@@ -308,77 +335,47 @@ saveYoloBtn.onclick = () => {
     .then(r => r.json())
     .then(res => {
       if (res.error) {
-        statusText.textContent = "❌ Save failed";
+        setStatus("Save failed", "error");
         return;
       }
 
-      statusText.textContent = "✅ Saved";
-      
-      lastUndo = {
-        image: currentImage,
-        index: currentIndex
-      };
+      setStatus("Saved", "success");
 
-      /* ✅ 1. Remove the saved image from thumbnails */
+      lastUndo = { image: currentImage, index: currentIndex };
+
       thumbs.removeChild(thumbs.children[currentIndex]);
       images.splice(currentIndex, 1);
 
-      /* ✅ 2. Reset annotation state (boxes only) */
       boxes = [];
       selectedBox = -1;
-      drawing = dragging = resizing = false;
 
-      /* ✅ 3. Auto-load next image */
       loadNextImageAfterSave();
-    });    
+    });
 };
 
-/* ================= YOLO UNDO ================= */
-function undoLastSave() {
-  if (!lastUndo) {
-    alert("Nothing to undo");
-    return;
-  }
+/* ================= UNDO ================= */
 
-  fetch("/api/undo-last-save", {
-    method: "POST"
-  })
+function undoLastSave() {
+  if (!lastUndo) return;
+
+  fetch("/api/undo-last-save", { method: "POST" })
     .then(r => r.json())
     .then(res => {
       if (res.error) {
-        alert("Undo failed");
+        setStatus("Undo failed", "error");
         return;
       }
 
-      /* ✅ Restore image into gallery data */
       const restoreIndex = Math.min(lastUndo.index, images.length);
       images.splice(restoreIndex, 0, lastUndo.image);
 
-      /* ✅ Restore thumbnail */
       const thumb = document.createElement("img");
       thumb.src = `/photos/${lastUndo.image}`;
       thumb.onclick = () => loadImage(restoreIndex);
+      thumbs.insertBefore(thumb, thumbs.children[restoreIndex] || null);
 
-      thumbs.insertBefore(
-        thumb,
-        thumbs.children[restoreIndex] || null
-      );
-
-      /* ✅ Reload the image in center */
       loadImage(restoreIndex);
-
       lastUndo = null;
-      statusText.textContent = "↩ Undo successful";
-    })
-    .catch(err => {
-      console.error(err);
-      alert("Undo failed");
+      setStatus("Undo successful", "success");
     });
 }
-
-window.addEventListener("keydown", e => {
-  if (e.ctrlKey && e.key === "z") {
-    e.preventDefault();
-    undoLastSave();
-  }
-});

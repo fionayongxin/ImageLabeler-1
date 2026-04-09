@@ -34,7 +34,10 @@
 }
 
 #thumbs img.active {
-  border-color: #2563eb;
+  
+  border-color: transparent;
+  outline: 2px solid #2563eb;
+  outline-offset: -2px;
 }
 
 /* RIGHT: work area */
@@ -119,4 +122,93 @@ canvas.read-mode {
 
 canvas.draw-mode {
   cursor: crosshair;
+}
+
+/* =========================
+   RIGHT PANEL – REFINED
+   ========================= */
+
+.page-labeler .label-controls {
+  background: #020617;
+  border-left: 1px solid #334155;
+  padding: 20px;
+
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+
+  height: 100%;
+}
+
+/* Section headers */
+.page-labeler .label-controls h4 {
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #94a3b8;
+  margin: 0;
+}
+
+/* Group spacing between sections */
+.page-labeler .label-controls h4:not(:first-child) {
+  margin-top: 12px;
+  padding-top: 16px;
+  border-top: 1px solid #1e293b;
+}
+
+/* Select + buttons consistent sizing */
+.page-labeler .label-controls select,
+.page-labeler .label-controls button {
+  width: 100%;
+}
+
+/* MODE TOGGLE */
+.mode-toggle {
+  display: flex;
+  gap: 8px;
+}
+
+.mode-toggle button {
+  flex: 1;
+}
+
+.mode-toggle button.active {
+  background: #2563eb;
+  color: white;
+  border: none;
+}
+
+/* SAVE BUTTON */
+#saveYoloBtn {
+  height: 44px;
+  font-size: 15px;
+  font-weight: 600;
+  margin-top: 12px;
+}
+
+/* Disabled save state (used by JS) */
+#saveYoloBtn.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* STATUS */
+#status {
+  margin-top: auto;
+  font-size: 13px;
+  color: #94a3b8;
+}
+
+/* Optional semantic coloring */
+.status-success {
+  color: #22c55e;
+}
+
+.status-warning {
+  color: #fbbf24;
+}
+
+.status-error {
+  color: #ef4444;
 }

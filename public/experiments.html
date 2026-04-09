@@ -1,79 +1,107 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <title>Experiments</title>
+
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
   <link rel="stylesheet" href="/css/base.css">
   <link rel="stylesheet" href="/css/experiments.css">
+  <script src="/vendor/chart.umd.js"></script>
 </head>
+
 <body>
 
-<nav class="navbar">
-  <div class="nav-brand">Vision Trainer</div>
-  <ul class="nav-links">
-    <li><a href="/trainer">Training</a></li>
-    <li><a href="/experiments" class="active">Experiments</a></li>
-    <li><a href="/datasets">Datasets</a></li>
-    <li><a href="/settings">Settings</a></li>
-  </ul>
-</nav>
+  <nav class="navbar">
+    <div class="nav-brand">Vision Trainer</div>
+    <ul class="nav-links">
+      <li><a href="/trainer">Training</a></li>
+      <li><a href="/experiments" class="active">Experiments</a></li>
+      <li><a href="/datasets">Datasets</a></li>
+      <li><a href="/settings">Settings</a></li>
+    </ul>
+  </nav>
+  <main class="trainer-container">
+    <h1>Experiments</h1>
 
-<div class="trainer-container">
-  <h1>Experiments</h1>
+    <!-- ✅ SCROLLABLE TABLE AREA -->
+    <div class="experiments-table-wrapper">
+      <table id="experimentsTable">
+        <thead>
+          <tr>
+            <th scope="col">Run Name</th>
+            <th scope="col">Status</th>
+            <th scope="col">Model</th>
+            <th scope="col">Dataset</th>
+            <th scope="col">Batch Size</th>
+            <th scope="col">Epochs</th>
+            <th scope="col">Image Size</th>
+            <th scope="col">Started At</th>
+            <th scope="col">Actions</th>
+          </tr>
+        </thead>
 
-  <table id="experimentsTable">
-    <thead>
-      <tr>
-        <th>Run Name</th>
-        <th>Status</th>
-        <th>Model</th>
-        <th>Image Size</th>
-        <th>Epochs</th>
-        <th>Dataset</th>
-        <th>Started At</th>
-        <th>Actions</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
-  <div id="metricsPanel" class="metrics-panel">
-    <div class="metrics-header">
-      <h2>Training Metrics</h2>
-      <button id="closeMetrics" class="btn-secondary">Close</button>
+        <tbody></tbody>
+      </table>
     </div>
 
-    <div class="metrics-summary">
-      <div class="metric-card">
-        <span class="label">Final Epoch</span>
-        <span class="value" id="finalEpoch">-</span>
-      </div>
-      <div class="metric-card">
-        <span class="label">Final Loss</span>
-        <span class="value" id="finalLoss">-</span>
-      </div>
-      <div class="metric-card">
-        <span class="label">Best mAP50</span>
-        <span class="value" id="bestMap">-</span>
-      </div>
+    <!-- ✅ PAGINATION ALWAYS VISIBLE -->
+    <div class="table-pagination">
+      <button id="prevPage">Previous</button>
+
+      <span>Page</span>
+      <input
+        id="pageInput"
+        type="number"
+        min="1"
+        step="1"
+        aria-label="Jump to page"
+      />
+      <span id="pageInfo">of 1</span>
+      <button id="nextPage">Next</button>
+      <button id="goPage">Go</button>
     </div>
+    
+    <aside id="metricsPanel" class="metrics-panel">
 
-    <table class="metrics-table">
-      <thead>
-        <tr>
-          <th>Epoch</th>
-          <th>Loss</th>
-          <th>mAP50</th>
-        </tr>
-      </thead>
-      <tbody id="metricsTableBody"></tbody>
-    </table>
-  </div>
+      <div class="metrics-header">
+        <h2>Training Metrics</h2>
+        <button id="closeMetrics" class="btn-secondary">Close</button>
+      </div>
 
-</div>
+      <div class="metrics-summary">
+        <div class="metric-card">
+          <span class="label">Final Epoch</span>
+          <span class="value" id="finalEpoch">-</span>
+        </div>
+        <div class="metric-card">
+          <span class="label">Final Loss</span>
+          <span class="value" id="finalLoss">-</span>
+        </div>
+        <div class="metric-card">
+          <span class="label">Best mAP50</span>
+          <span class="value" id="bestMap">-</span>
+        </div>
+      </div>
 
+      <div class="metrics-charts">
+        <div class="chart-card">
+          <h3>Training Loss</h3>
+          <canvas id="lossChart"></canvas>
+        </div>
 
-</div>
+        <div class="chart-card">
+          <h3>mAP50</h3>
+          <canvas id="mapChart"></canvas>
+        </div>
+      </div>
 
-<script src="/js/experiments.js"></script>
+    </aside>
+
+  </main>
+  <div id="metricsBackdrop" class="metrics-backdrop"></div>
+  <script src="/js/experiments.js"></script>
 </body>
 </html>

@@ -1,34 +1,38 @@
 <!DOCTYPE html>
-
-<title>InteractiveUI</title>
-
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Camera Capture</title>
-  <link rel="stylesheet" href="css/base.css">
-  <link rel="stylesheet" href="css/camera.css">
 
+  <link rel="stylesheet" href="css/base.css" />
+  <link rel="stylesheet" href="css/camera.css" />
 </head>
 
 <body class="page-camera">
 
-<div class="container">
-  <h1>Camera Capture</h1>
+<div class="container workspace">
 
-  <div class="camera-box">
-    <video id="video" autoplay playsinline></video>
+  <!-- LEFT: Camera area -->
+  <div class="camera-area">
+    <div class="camera-box">
+      <video id="video" autoplay playsinline></video>
+    </div>
   </div>
+  <!-- RIGHT: Control panel -->
+  <aside class="side-panel">
+    <h1>Camera Capture</h1>
 
-  <div class="actions">
     <button onclick="capture()">Capture Photo</button>
-    <a href="/gallery.html" class="back-link">View Gallery</a>
-  </div>
 
-  <p id="status">Camera streaming</p>
+    <div class="panel-footer">
+      <a href="/labeler.html" class="btn-secondary">Label Image</a>
+    </div>
+  </aside>
+
 </div>
 
 <canvas id="canvas" hidden></canvas>
 <script src="js/app.js"></script>
+
 </body>
 </html>

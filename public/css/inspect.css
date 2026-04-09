@@ -1,0 +1,250 @@
+/* ================= GLOBAL ================= */
+html, body {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+}
+h1 {
+  margin: 0 0 6px 0;
+  font-size: 16px;
+}
+.inspect-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 0 0 6px 0;
+}
+
+.inspect-status {
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.inspect-status.pass {
+  background: #14532d;
+  color: #dcfce7;
+}
+
+.inspect-status.fail {
+  background: #78350f;
+  color: #fef3c7;
+}
+
+.inspect-status.unknown {
+  background: #374151;
+  color: #d1d5db;
+}
+
+body {
+  background: #111827;
+  color: #d1d5db;
+  font-family: Segoe UI, sans-serif;
+  margin: 0;
+}
+
+/* ================= NAVBAR ================= */
+
+.navbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #1f2937;
+  border-bottom: 1px solid #374151;
+  padding: 12px 24px;
+}
+
+.nav-brand {
+  font-weight: bold;
+  font-size: 18px;
+}
+
+.nav-links li {
+  display: inline;
+  margin-left: 20px;
+}
+
+.nav-links a {
+  color: #9ca3af;
+  text-decoration: none;
+}
+
+.nav-links a.active {
+  color: #fff;
+}
+
+/* ================= CONTAINER ================= */
+
+.trainer-container {
+  height: calc(100vh - 60px);
+  padding: 12px 24px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ================= MAIN SPLIT ================= */
+
+.inspect-layout {
+  flex: 1;
+  display: flex;
+  gap: 20px;
+  align-items: stretch;
+}
+
+/* ================= LEFT VIDEO PANEL ================= */
+
+.video-panel {
+  flex: 4;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-direction: column;
+  padding: 6px 10px;
+  background: #1f2937;
+  border-bottom: 1px solid #374151;
+  border-radius: 8px;
+  overflow: hidden;
+}
+/* ================= RIGHT CONTROL PANEL ================= */
+
+.control-panel {
+  flex: 1;
+  background: #1f2937;
+  border: 1px solid #374151;
+  border-radius: 12px;
+  padding: 20px;
+}
+
+/* ================= CHECKBOX ================= */
+
+.control-panel label {
+  display: block;
+  margin-bottom: 6px;
+  cursor: pointer;
+}
+.control-panel h3 {
+  margin-bottom: 10px;
+  font-size: 16px;
+}
+
+.control-panel select {
+  width: 100%;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #374151;
+  background: #111827;
+  color: #d1d5db;
+  margin-bottom: 12px;
+}
+
+.control-panel .hint {
+  margin-top: 15px;
+  font-size: 13px;
+  background: #1e3a8a;
+  padding: 10px;
+  border-radius: 8px;
+  text-align: center;
+  color: #bfdbfe;
+}
+
+/* ================= SLIDER ================= */
+
+input[type="range"] {
+  width: 100%;
+}
+
+/* ================= PRIMARY BUTTON ================= */
+
+button {
+  background: #3b82f6;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-weight: bold;
+  cursor: pointer;
+  width: 100%;
+}
+
+button:hover {
+  background: #2563eb;
+}
+
+/* ================= RESULT STATUS ================= */
+#result {
+  margin-top: 12px;
+  text-align: center;
+  background:transparent;
+  border-radius: 8px;
+  padding: 12px;
+  font-weight: bold;
+  font-size: 22px;
+}
+
+/* states */
+.pass {
+  background: #14532d !important;
+  color: #dcfce7;
+}
+
+.fail {
+  background: #78350f !important;
+  color: #fef3c7;
+}
+
+/* CAMERA FRAME FIX */
+
+.camera-frame {
+  position: relative;
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+
+/* Camera image */
+.camera-stream {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* Placeholder */
+.cam-placeholder {
+  position: absolute;
+  inset: 0;
+  background: #111827;
+  color: #6b7280;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  letter-spacing: 1px;
+}
+.result-overlay {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  padding: 15px 22px;
+  font-size: 26px;
+  font-weight: bold;
+  border-radius: 10px;
+  background: rgba(55,65,81,0.8);
+  color: #fff;
+}
+
+.result-overlay.pass {
+  background: #14532d;
+  color: #dcfce7;
+}
+
+.result-overlay.fail {
+  background: #78350f;
+  color: #fef3c7;
+}
+
+.result-overlay.unknown {
+  background: rgba(55,65,81,0.8);
+}

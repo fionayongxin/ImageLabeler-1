@@ -3,68 +3,58 @@
 <head>
   <meta charset="UTF-8">
   <title>Live PCB Inspection</title>
-  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/inspect.css">
 </head>
 <body>
 
-<nav class="navbar">
-  <div class="nav-brand">Vision Trainer</div>
-  <ul class="nav-links">
-    <li><a href="/trainer">Training</a></li>
-    <li><a href="/experiments">Experiments</a></li>
-    <li><a href="/datasets">Datasets</a></li>
-    <li><a href="/inspect" class="active">Inspect</a></li>
-    <li><a href="/settings">Settings</a></li>
-  </ul>
-</nav>
-
 <div class="trainer-container">
+
+<div class="inspect-header">
+
   <h1>Live PCB Inspection</h1>
 
-  <div style="display:flex; gap:32px; margin-top:20px;">
-    <!-- CAMERA -->
-    <div>
-      <h3>Live Camera</h3>
-      <img
-        src="http://localhost:8000/video"
-        style="border:1px solid #333; width:640px;"
+  <div id="resultOverlay" class="inspect-status unknown">
+    NOT STARTED
+  </div>
+
+</div>
+
+  <div class="inspect-layout">
+
+  <!-- LEFT: CAMERA -->
+  <div class="video-panel">
+    <div class="camera-frame">
+      <img id="liveCam"
+           src=""
+           class="camera-stream"
       />
-    </div>
-
-    <!-- CONTROLS -->
-    <div>
-      <h3>Required Classes</h3>
-
-      <!-- MATCH YOUR YOLO CLASS NAMES EXACTLY -->
-      <label><input type="checkbox" class="req" value="T Body"> T Body</label><br>
-      <label><input type="checkbox" class="req" value="T Bushing"> T Bushing</label><br>
-      <label><input type="checkbox" class="req" value="T SN label"> T SN label</label><br>
-      <label><input type="checkbox" class="req" value="T Hole Plug"> T Hole Plug</label><br>
-
-      <h3 style="margin-top:20px;">Fail If Appears</h3>
-
-      <label><input type="checkbox" class="forbid" value="T Missing SN label"> T Missing SN label</label><br>
-      <label><input type="checkbox" class="forbid" value="T Missing Hole Plug"> T Missing Hole Plug</label><br>
-      <label><input type="checkbox" class="forbid" value="T Without Bushing"> T Without Bushing</label><br>
-      <label><input type="checkbox" class="forbid" value="Unassigned"> Unassigned</label><br>
-
-      <h3 style="margin-top:20px;">Confidence</h3>
-      <input
-        id="conf"
-        type="range"
-        min="0.2"
-        max="0.9"
-        step="0.05"
-        value="0.5"
-      >
-      <span id="confValue">0.50</span>
-
-      <div style="margin-top:20px;">
-        <button id="apply">Apply Criteria</button>
+      <div id="camPlaceholder" class="cam-placeholder">
+        CAMERA NOT STARTED
+      </div>
       </div>
 
-      <h2 id="result" style="margin-top:24px;">UNKNOWN</h2>
+  </div>
+
+  <!-- RIGHT: CONTROL -->
+  <div class="control-panel">
+    <h3>Select Config</h3>
+
+    <select>
+      <option>99-003812-0X-HFQA</option>
+      <option>PCB-TEST-001</option>
+    </select>
+
+    <button>Start</button>
+
+    <p style="margin-top:10px;">SN: waiting</p>
+
+    <div class="hint">
+      Please choose a config and click "Start".
+      Then scan the product SN to begin.
     </div>
+  </div>
+
+</div>
   </div>
 </div>
 

@@ -1,5 +1,32 @@
 /* =========================
-   GLOBAL BASE STYLES
+   CSS VARIABLES (THEME)
+   ========================= */
+
+:root {
+  /* Background layers */
+  --color-bg-app: #0f172a;
+  --color-bg-camera: #01040f;
+  --color-bg-panel: #030a1c;
+
+  /* Text */
+  --color-text-primary: #e5e7eb;
+  --color-text-secondary: #cbd5e1;
+  --color-text-muted: #94a3b8;
+
+  /* Accent */
+  --color-accent-primary: #2563eb;
+  --color-accent-primary-hover: #1d4ed8;
+  --color-accent-link: #60a5fa;
+
+  /* Borders */
+  --color-border-default: #1e293b;
+  --color-border-muted: #334155;
+
+  --color-white: #ffffff;
+}
+
+/* =========================
+   RESET & GLOBAL
    ========================= */
 
 * {
@@ -7,24 +34,40 @@
   font-family: system-ui, -apple-system, sans-serif;
 }
 
-html, body {
+html,
+body {
+  height: 100%;
   margin: 0;
   padding: 0;
+  overflow: hidden; 
 }
+
+/* =========================
+   BODY
+   ========================= */
 
 body {
-  min-height: 100vh;
-  background: #0f172a;   /* ✅ DARK BACKGROUND */
-  color: #e5e7eb;
+  background: var(--color-bg-app);
+  color: var(--color-text-primary);
 }
 
-/* Common elements */
-h1, h2, h3 {
-  margin-top: 0;
+/* =========================
+   TYPOGRAPHY
+   ========================= */
+
+h1,
+h2,
+h3 {
+  margin: 0;
+  font-weight: 600;
 }
+
+/* =========================
+   LINKS
+   ========================= */
 
 a {
-  color: #60a5fa;
+  color: var(--color-accent-link);
   text-decoration: none;
 }
 
@@ -32,55 +75,70 @@ a:hover {
   text-decoration: underline;
 }
 
+/* =========================
+   BUTTONS
+   ========================= */
+
 button {
-  padding: 10px;
+  padding: 10px 14px;
   font-size: 16px;
-  background: #2563eb;
-  color: white;
+  font-weight: 600;
+
+  background: var(--color-accent-primary);
+  color: var(--color-white);
+
   border: none;
   border-radius: 8px;
   cursor: pointer;
 }
 
 button:hover {
-  background: #1d4ed8;
+  background: var(--color-accent-primary-hover);
 }
 
-button.secondary {
-  background: #1e293b;
-  border: 1px solid #334155;
+button:active {
+  transform: scale(0.98);
 }
+
+/* =========================================================
+   NAVBAR
+   ========================================================= */
 
 .navbar {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: #0b132b;
-  padding: 12px 24px;
-  color: #fff;
+
+  background: var(--color-bg-panel);   
+  padding: 10px 20px;
+  border-bottom: 1px solid var(--color-border-default);
 }
 
 .nav-brand {
-  font-weight: bold;
-  font-size: 18px;
+  font-weight: 700;
+  font-size: 16px;
 }
 
 .nav-links {
   list-style: none;
   display: flex;
-  gap: 20px;
+  gap: 16px;
   margin: 0;
   padding: 0;
 }
 
 .nav-links a {
-  color: #cbd5e1;
+  color: var(--color-text-secondary);
   text-decoration: none;
   font-weight: 500;
+  font-size: 13px;
+
+  border-bottom: 2px solid transparent;
+  padding-bottom: 4px;
 }
 
-.nav-links a:hover,
-.nav-links a.active {
-  color: #ffffff;
-  border-bottom: 2px solid #3b82f6;
+.nav-links a.active,
+.nav-links a:hover {
+  color: var(--color-white);
+  border-bottom-color: #3b82f6;
 }

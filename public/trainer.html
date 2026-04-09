@@ -1,14 +1,20 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Model Training</title>
-  <link rel="stylesheet" href="/css/trainer.css">
-  <script src="/vendor/chart.umd.js"></script></head>
+
+  <link rel="stylesheet" href="/css/base.css" />
+  <link rel="stylesheet" href="/css/trainer.css" />
+
+  <script src="/vendor/chart.umd.js"></script>
+</head>
+
 <body>
 
-  <!-- ================= NAVIGATION ================= -->
+<div class="trainer-page">
+
+  <!-- ================= NAVBAR ================= -->
   <nav class="navbar">
     <div class="nav-brand">Vision Trainer</div>
     <ul class="nav-links">
@@ -19,107 +25,72 @@
     </ul>
   </nav>
 
-  <!-- ================= MAIN ================= -->
-  <div class="trainer-container">
-    <h1>Model Training</h1>
+  <!-- ================= MAIN WORKSPACE ================= -->
+  <main class="trainer-main">
 
-    <!-- ===== Configuration ===== -->
-    <label>Station</label>
-    <input id="station" value="station_01" readonly>
+    <!-- ========== LEFT COLUMN: CONFIG + PROGRESS ========== -->
+    <section class="trainer-config">
 
-    <label>Process</label>
-    <input id="process" value="final_inspection" readonly>
+      <div class="config-panel">
+        <h2>Configuration</h2>
 
-    <label>Model</label>
-    <select id="model">
-      <option value="yolo26n.pt">YOLOv26 Nano</option>
-      <option value="yolo26s.pt">YOLOv26 Small</option>
-      <option value="yolo26m.pt">YOLOv26 Medium</option>
-    </select>
+        <label>Station</label>
+        <input id="station" value="station_01" readonly />
 
-    <label>Epochs</label>
-    <input id="epochs" type="number" value="50">
+        <label>Process</label>
+        <input id="process" value="final_inspection" readonly />
 
-    <label>Image Size</label>
-    <input id="imgsz" type="number" value="640">
+        <label>Model</label>
+        <select id="model">
+          <option value="yolo26n.pt">YOLOv26 Nano</option>
+          <option value="yolo26s.pt">YOLOv26 Small</option>
+          <option value="yolo26m.pt">YOLOv26 Medium</option>
+        </select>
 
-    <label>Batch Size</label>
-    <input id="batch" type="number" value="8">
+        <label>Epochs</label>
+        <input id="epochs" type="number" value="50" />
 
-    <label>Run Name</label>
-    <input id="runName" readonly>
+        <label>Image Size</label>
+        <input id="imgsz" type="number" value="640" />
 
-    <!-- ===== Controls ===== -->
-    <button id="startBtn">▶ Start Training</button>
-    <button id="stopBtn" class="danger" disabled>■ Cancel Training</button>
+        <label>Batch Size</label>
+        <input id="batch" type="number" value="8" />
 
-    
-    <div class="progress-container">
-      <div id="progressBar" class="progress-bar"></div>
-    </div>
-    <div id="progressText">Idle</div>
-    <div id="progressFile" class="progress-file">–</div>
+        <label>Run Name</label>
+        <input id="runName" readonly />
 
-
-    <!-- ================= METRICS =================
-    <div class="metrics">
-      <div class="metric">
-        <span class="metric-label">mAP50</span>
-        <span id="map50" class="metric-value">-</span>
+        <button id="startBtn">▶ Start Training</button>
+        <button id="stopBtn" class="danger" disabled>■ Cancel Training</button>
       </div>
-      <div class="metric">
-        <span class="metric-label">Loss</span>
-        <span id="loss" class="metric-value">-</span>
+
+      <div class="progress-panel">
+        <div class="progress-container">
+          <div id="progressBar" class="progress-bar"></div>
+        </div>
+
+        <div id="progressText" class="progress-text">Idle</div>
+        <div id="progressFile" class="progress-file">–</div>
       </div>
-    </div>
-     -->
-    <!-- <div id="validationMetrics">
-      <h2>Validation Metrics (Per Class)</h2>
-      <table id="metricsTable" class="metrics-table">
-        <thead>
-          <tr>
-            <th>Class</th>
-            <th>Precision</th>
-            <th>Recall</th>
-            <th>mAP50</th>
-            <th>mAP50‑95</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </div> -->
 
-    <!-- ================= CHARTS ================= -->
-    <h2 style="margin-top:30px;">Training Metrics</h2>
-    <div class="chart-container">
-      <canvas id="lossChart"></canvas>
-    </div>
-    <div class="chart-container">
-      <canvas id="mapChart"></canvas>
-    </div>
-    <h3 style="margin-top: 24px;">mAP50</h3>
-    <div class="chart-container">
-      <canvas id="mapChart"></canvas>
-    </div>
+    </section>
 
-  </div>
-  
-  <!-- <h3 style="margin-top: 32px;">Validation Metrics</h3>
+    <!-- ========== RIGHT COLUMN: CHARTS ========== -->
+    <section class="trainer-metrics">
 
-  <table id="metricsTable" class="metrics-table">
-    <thead>
-      <tr>
-        <th>Class</th>
-        <th>Precision</th>
-        <th>Recall</th>
-        <th>mAP50</th>
-        <th>mAP50‑95</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table> -->
+      <div class="chart-container">
+        <canvas id="lossChart"></canvas>
+      </div>
 
-  <!-- ================= SCRIPT ================= -->
-  <script src="/js/trainer.js"></script>
+      <div class="chart-container">
+        <canvas id="mapChart"></canvas>
+      </div>
+
+    </section>
+
+  </main>
+
+</div>
+
+<script src="/js/trainer.js"></script>
 </body>
 </html>

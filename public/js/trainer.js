@@ -238,9 +238,6 @@ startBtn.onclick = async () => {
   progressText.textContent = "Starting training…";
   if (progressFile) progressFile.textContent = "–";
 
-  initLossChart();
-  initMapChart();
-
   await fetch("/api/train/start", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -298,3 +295,8 @@ async function updateCharts() {
     mapChart.update();
   }
 }
+
+document.addEventListener("DOMContentLoaded", () => {
+  initLossChart();
+  initMapChart();
+});
