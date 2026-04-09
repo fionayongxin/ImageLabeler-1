@@ -36,8 +36,23 @@ function renderPage() {
       : "-";
 
     const startedAt = exp.startedAt
-      ? new Date(exp.startedAt).toLocaleString()
-      : "-";
+      ? (() => {
+          const d = new Date(exp.startedAt);
+
+          const day = d.getDate();
+          const month = d.getMonth() + 1;
+          const year = d.getFullYear();
+
+          let hours = d.getHours();
+          const minutes = String(d.getMinutes()).padStart(2, "0");
+          const ampm = hours >= 12 ? "PM" : "AM";
+
+          hours = hours % 12 || 12; // convert 0 → 12
+
+          return `${day}/${month}/${year} ${hours}:${minutes} ${ampm}`;
+        })()
+      : "-"
+
 
     const actions = [];
 

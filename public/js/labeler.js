@@ -356,26 +356,58 @@ saveYoloBtn.onclick = () => {
 /* ================= UNDO ================= */
 
 function undoLastSave() {
-  if (!lastUndo) return;
+  if (!lastUndo) {
+    alert("Nothing to undo");
+    return;
+  }
 
-  fetch("/api/undo-last-save", { method: "POST" })
+  fetch("/api/undo-last-save", {
+    method: "POST"
+  })
     .then(r => r.json())
     .then(res => {
       if (res.error) {
-        setStatus("Undo failed", "error");
+        alert("Undo failed");
         return;
       }
 
+      /* ✅ Restore image into gallery data */
       const restoreIndex = Math.min(lastUndo.index, images.length);
       images.splice(restoreIndex, 0, lastUndo.image);
 
+      /* ✅ Restore thumbnail */
       const thumb = document.createElement("img");
       thumb.src = `/photos/${lastUndo.image}`;
       thumb.onclick = () => loadImage(restoreIndex);
-      thumbs.insertBefore(thumb, thumbs.children[restoreIndex] || null);
 
+      thumbs.insertBefore(
+        thumb,
+        thumbs.children[restoreIndex] || null
+      );
+
+      /* ✅ Reload the image in center */
       loadImage(restoreIndex);
+
       lastUndo = null;
-      setStatus("Undo successful", "success");
+      statusText.textContent = "↩ Undo successful";
+    })
+    .catch(err => {
+      console.error(err);
+      alert("Undo failed");
+    });
+}
+
+function refreshImages() {
+  fetch("/api/photos")
+    .then(r => r.json())
+    .then(list => {
+      images = list;
+      thumbs.innerHTML = "";
+      list.forEach((name, i) => {
+        const t = document.createElement("img");
+        t.src = `/photos/${name}`;
+        t.onclick = () => loadImage(i);
+        thumbs.appendChild(t);
+      });
     });
 }

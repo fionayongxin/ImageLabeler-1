@@ -179,8 +179,16 @@ app.post("/api/save-yolo", (req, res) => {
   fs.writeFileSync(labelPath, yoloLines.join("\n"));
   fs.renameSync(srcImagePath, dstImagePath);
 
-  lastSaved = { image, labelPath };
+  /* ✅ store FULL undo information */
+  lastSaved = {
+    image,              // filename only
+    imageFrom: srcImagePath,
+    imageTo: dstImagePath,
+    labelPath
+  };
+
   res.json({ status: "ok" });
+
 });
 
 /* ======================================================
@@ -342,8 +350,13 @@ app.get("/api/experiments", (_, res) => {
         hasWeights: fs.existsSync(bestPt),
         hasMetrics: fs.existsSync(resultsCsv)   // ✅ FIX
       };
-
+    })
+    .sort((a, b) => {
+      const ta = a.startedAt ? new Date(a.startedAt).getTime() : 0;
+      const tb = b.startedAt ? new Date(b.startedAt).getTime() : 0;
+      return tb - ta; // newest first
     });
+
 
   res.json(experiments);
 });
@@ -469,29 +482,35 @@ app.get("/api/photos/latest", (req, res) => {
   res.json(files);
 });
 /* ---------- UNDO LAST SAVE ---------- */
+
 app.post("/api/undo-last-save", (req, res) => {
   if (!lastSaved) {
     return res.status(400).json({ error: "Nothing to undo" });
   }
 
   try {
-    const { imageFrom, imageTo, labelPath, image } = lastSaved;
+    const { image, imageTo, labelPath } = lastSaved;
 
+    const restorePath = path.join(photosDir, image);
+
+    /* ✅ restore image back to /photos */
     if (fs.existsSync(imageTo)) {
-      fs.renameSync(imageTo, imageFrom);
+      fs.renameSync(imageTo, restorePath);
     }
 
+    /* ✅ remove YOLO label */
     if (fs.existsSync(labelPath)) {
       fs.unlinkSync(labelPath);
     }
 
     lastSaved = null;
     res.json({ status: "ok", image });
+
   } catch (err) {
-    console.error(err);
+    console.error("Undo failed:", err);
     res.status(500).json({ error: "Undo failed" });
   }
-}); 
+});
 
 /* ======================================================
    START SERVER

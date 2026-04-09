@@ -18,7 +18,7 @@
 
 #experimentsTable th,
 #experimentsTable td {
-  padding: 10px 12px;
+  padding: 20px 12px;
   border-bottom: 1px solid #1f2937;
 }
 
@@ -59,15 +59,24 @@
   width: 10%;
 }
 
-#experimentsTable th:nth-child(3),
+/* #experimentsTable th:nth-child(3),
 #experimentsTable td:nth-child(3) {
   width: 10%;
+} */
+
+#experimentsTable td:nth-child(4) {
+  width: 30%;
+}
+#experimentsTable td:nth-child(8) {
+  width: 25%;
+
+} 
+
+#experimentsTable th {
+  white-space: nowrap;
 }
 
-#experimentsTable th:nth-child(4),
-#experimentsTable td:nth-child(4) {
-  width: 35%;
-}
+
 
 /* ===============================
    ROW BEHAVIOR
