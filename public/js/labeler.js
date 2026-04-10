@@ -467,7 +467,6 @@ saveYoloBtn.onclick = () => {
 /* =========================================================
    UNDO SAVE
    ========================================================= */
-
 function undoLastSave() {
   if (!lastUndo) {
     alert("Nothing to undo");
@@ -478,20 +477,28 @@ function undoLastSave() {
     .then(r => r.json())
     .then(() => {
       const restoreIndex = Math.min(lastUndo.index, images.length);
+
+      // ✅ Restore image in state
       images.splice(restoreIndex, 0, lastUndo.image);
+
+      // ✅ Re-render thumbnails (single source of truth)
       renderThumbnails();
 
-      const thumb = document.createElement("img");
-      thumb.src = `/photos/${lastUndo.image}`;
-      thumb.onclick = () => loadImage(restoreIndex);
-
-      thumbs.insertBefore(
-        thumb,
-        thumbs.children[restoreIndex] || null
-      );
-
+      // ✅ Load restored image
       loadImage(restoreIndex);
+
       lastUndo = null;
       setStatus("Undo successful");
+    })
+    .catch(err => {
+      console.error(err);
+      alert("Undo failed");
     });
 }
+
+window.addEventListener("keydown", e => {
+  if (e.ctrlKey && e.key.toLowerCase() === "z") {
+    e.preventDefault();
+    undoLastSave();
+  }
+});
