@@ -12,6 +12,7 @@ const DATASET_ROOT =
   "/home/user/Documents/h1-visual-inspection/interface/datasets";
 
 const TRAINING_ROOT = path.join(__dirname, "training");
+const PHOTOS_DIR = path.join(__dirname, "photos");
 
 /* ======================================================
    APP
@@ -179,9 +180,8 @@ app.post("/api/save-yolo", (req, res) => {
   fs.writeFileSync(labelPath, yoloLines.join("\n"));
   fs.renameSync(srcImagePath, dstImagePath);
 
-  /* ✅ store FULL undo information */
   lastSaved = {
-    image,              // filename only
+    image,  
     imageFrom: srcImagePath,
     imageTo: dstImagePath,
     labelPath
@@ -190,6 +190,34 @@ app.post("/api/save-yolo", (req, res) => {
   res.json({ status: "ok" });
 
 });
+
+/* ---------- DELETE IMAGE ---------- */
+app.post("/api/delete-image", (req, res) => {
+  const { image } = req.body;
+
+  if (!image) {
+    return res.status(400).json({ error: "Missing image name" });
+  }
+
+  const imagePath = path.join(PHOTOS_DIR, image);
+
+  if (!fs.existsSync(imagePath)) {
+    return res.status(404).json({ error: "Image not found" });
+  }
+
+  try {
+    fs.unlinkSync(imagePath);
+
+    console.log(`[DELETE] Image removed: ${image}`);
+
+    return res.json({ success: true });
+
+  } catch (err) {
+    console.error("Delete image failed:", err);
+    return res.status(500).json({ error: "Failed to delete image" });
+  }
+});
+
 
 /* ======================================================
    TRAINING

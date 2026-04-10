@@ -15,16 +15,18 @@ const HANDLE_SIZE = 10;
    ========================================================= */
 
 const BOX_COLORS = {
-  ok: "#22c55e",       // green
-  defect: "#ef4444",  // red
-  scratch: "#fb923c"  // orange
+  ok: "#22c55e",
+  defect: "#ef4444",
+  scratch: "#fb923c"
 };
 
-/* =========================================================
-   APPLICATION STATE
-   ========================================================= */
+
+/*===========================================================
+  APPLICATION STATE
+  ========================================================= */
 
 let mode = "read";
+
 let images = [];
 let currentIndex = -1;
 let currentImage = null;
@@ -57,6 +59,9 @@ const statusText = document.getElementById("status");
 const readBtn = document.getElementById("readModeBtn");
 const drawBtn = document.getElementById("drawModeBtn");
 const saveYoloBtn = document.getElementById("saveYoloBtn");
+const deleteImageBtn = document.getElementById("deleteImageBtn");
+
+deleteImageBtn.disabled = true;
 
 /* =========================================================
    STATUS MANAGEMENT
@@ -82,7 +87,7 @@ function updateSaveButtonState() {
 }
 
 /* =========================================================
-   MODE HANDLING (READ / DRAW)
+   MODE HANDLING
    ========================================================= */
 
 function setMode(m) {
@@ -93,7 +98,7 @@ function setMode(m) {
 
   canvas.className = m === "draw" ? "draw-mode" : "read-mode";
 
-  setStatus(m === "draw" ? "Draw mode" : "Read mode", "info");
+  setStatus(m === "draw" ? "Draw mode" : "Read mode");
   updateSaveButtonState();
 }
 
@@ -113,27 +118,48 @@ classSelect.addEventListener("change", () => {
 });
 
 /* =========================================================
-   IMAGE LOADING
+   INITIAL IMAGE LOAD
    ========================================================= */
 
 fetch("/api/photos")
   .then(r => r.json())
   .then(list => {
     images = list;
-
-    list.forEach((name, i) => {
-      const t = document.createElement("img");
-      t.src = `/photos/${name}`;
-      t.onclick = () => loadImage(i);
-      thumbs.appendChild(t);
-    });
+    renderThumbnails();
   });
+  
+function renderThumbnails() {
+  thumbs.innerHTML = "";
+
+  images.forEach((name, i) => {
+    const t = document.createElement("img");
+    t.src = `/photos/${name}`;
+    t.dataset.index = i; 
+    thumbs.appendChild(t);
+  });
+}
+
+thumbs.addEventListener("click", e => {
+  const thumb = e.target.closest("img");
+  if (!thumb) return;
+
+  const index = Number(thumb.dataset.index);
+  loadImage(index);
+});
+
+
+/* =========================================================
+   LOAD SINGLE IMAGE
+   ========================================================= */
 
 function loadImage(i) {
   if (i < 0 || i >= images.length) return;
 
   currentIndex = i;
   currentImage = images[i];
+
+  deleteImageBtn.disabled = false;
+
   boxes = [];
   selectedBox = -1;
 
@@ -153,7 +179,7 @@ function loadImage(i) {
 }
 
 /* =========================================================
-   POST-SAVE IMAGE HANDLING
+   LOAD NEXT IMAGE (AFTER SAVE / DELETE)
    ========================================================= */
 
 function loadNextImageAfterSave() {
@@ -162,7 +188,8 @@ function loadNextImageAfterSave() {
     canvas.width = canvas.height = 0;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     document.getElementById("currentImage").textContent = "No image selected";
-    setStatus("No images remaining", "info");
+    deleteImageBtn.disabled = true;
+    setStatus("No images remaining");
     return;
   }
 
@@ -183,7 +210,12 @@ function toCanvas(e) {
 }
 
 function inside(b, x, y) {
-  return x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h;
+  return (
+    x >= b.x &&
+    x <= b.x + b.w &&
+    y >= b.y &&
+    y <= b.y + b.h
+  );
 }
 
 function hitCorner(b, x, y) {
@@ -201,11 +233,9 @@ function hitCorner(b, x, y) {
 
 canvas.addEventListener("mousedown", e => {
   const { x, y } = toCanvas(e);
-  resizeHandle = null;
 
   for (let i = boxes.length - 1; i >= 0; i--) {
-    const b = boxes[i];
-    if (hitCorner(b, x, y)) {
+    if (hitCorner(boxes[i], x, y)) {
       selectedBox = i;
       resizing = true;
       startX = x;
@@ -296,11 +326,12 @@ canvas.addEventListener("mouseup", e => {
 });
 
 /* =========================================================
-   DRAWING OPERATIONS
+   DRAWING
    ========================================================= */
 
 function drawBox(x, y, w, h, label, preview = false, selected = false) {
-  const color = BOX_COLORS[label] || "#ffffff";
+  const color = BOX_COLORS[label] || "#fff";
+
   ctx.strokeStyle = color;
   ctx.lineWidth = preview
     ? PREVIEW_LINE_WIDTH
@@ -309,7 +340,6 @@ function drawBox(x, y, w, h, label, preview = false, selected = false) {
     : NORMAL_LINE_WIDTH;
 
   ctx.strokeRect(x, y, w, h);
-
   ctx.fillStyle = color;
   ctx.font = "16px sans-serif";
   ctx.fillText(label, x + 6, y + 18);
@@ -317,14 +347,13 @@ function drawBox(x, y, w, h, label, preview = false, selected = false) {
 
 function redraw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-
   boxes.forEach((b, i) =>
     drawBox(b.x, b.y, b.w, b.h, b.label, false, i === selectedBox)
   );
 }
 
 /* =========================================================
-   DELETE SHORTCUT
+   DELETE BOX SHORTCUT
    ========================================================= */
 
 window.addEventListener("keydown", e => {
@@ -341,26 +370,62 @@ window.addEventListener("keydown", e => {
 });
 
 /* =========================================================
-   KEYBOARD SHORTCUTS
+   DELETE IMAGE
    ========================================================= */
 
-window.addEventListener("keydown", e => {
-  if (e.key === "d") setMode("draw");
-  if (e.key === "r") setMode("read");
+deleteImageBtn.onclick = async () => {
+  if (!currentImage || currentIndex === -1) return;
 
-  if (e.ctrlKey && e.key.toLowerCase() === "s") {
-    e.preventDefault();
-    saveYoloBtn.click();
+  if (!confirm(`Delete image "${currentImage}"?\nThis cannot be undone.`)) {
+    return;
   }
 
-  if (e.ctrlKey && e.key.toLowerCase() === "z") {
-    e.preventDefault();
-    undoLastSave();
+  const deletedIndex = currentIndex;
+
+  try {
+    const res = await fetch("/api/delete-image", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ image: currentImage })
+    });
+
+    if (!res.ok) throw new Error("Delete failed");
+
+
+    images.splice(deletedIndex, 1);
+    renderThumbnails();
+
+    let nextIndex = images.length
+      ? Math.min(deletedIndex, images.length - 1)
+      : -1;
+
+    currentImage = null;
+    currentIndex = -1;
+    boxes = [];
+    selectedBox = -1;
+
+    img.src = "";
+    canvas.width = canvas.height = 0;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    deleteImageBtn.disabled = true;
+    setStatus("Image deleted");
+
+    document.getElementById("currentImage").textContent =
+      images.length ? "Image deleted" : "No image selected";
+
+    if (nextIndex !== -1) {
+      loadImage(nextIndex);
+    }
+
+  } catch (err) {
+    console.error(err);
+    alert("Error deleting image");
   }
-});
+};
 
 /* =========================================================
-   YOLO SAVE
+   SAVE YOLO
    ========================================================= */
 
 const CLASS_MAP = { ok: 0, defect: 1, scratch: 2 };
@@ -389,8 +454,8 @@ saveYoloBtn.onclick = () => {
       setStatus("Saved", "success");
       lastUndo = { image: currentImage, index: currentIndex };
 
-      thumbs.removeChild(thumbs.children[currentIndex]);
       images.splice(currentIndex, 1);
+      renderThumbnails();
 
       boxes = [];
       selectedBox = -1;
@@ -400,7 +465,7 @@ saveYoloBtn.onclick = () => {
 };
 
 /* =========================================================
-   UNDO SUPPORT
+   UNDO SAVE
    ========================================================= */
 
 function undoLastSave() {
@@ -411,14 +476,10 @@ function undoLastSave() {
 
   fetch("/api/undo-last-save", { method: "POST" })
     .then(r => r.json())
-    .then(res => {
-      if (res.error) {
-        alert("Undo failed");
-        return;
-      }
-
+    .then(() => {
       const restoreIndex = Math.min(lastUndo.index, images.length);
       images.splice(restoreIndex, 0, lastUndo.image);
+      renderThumbnails();
 
       const thumb = document.createElement("img");
       thumb.src = `/photos/${lastUndo.image}`;
@@ -430,32 +491,7 @@ function undoLastSave() {
       );
 
       loadImage(restoreIndex);
-
       lastUndo = null;
-      statusText.textContent = "↩ Undo successful";
-    })
-    .catch(err => {
-      console.error(err);
-      alert("Undo failed");
-    });
-}
-
-/* =========================================================
-   FULL REFRESH (UTILITY)
-   ========================================================= */
-
-function refreshImages() {
-  fetch("/api/photos")
-    .then(r => r.json())
-    .then(list => {
-      images = list;
-      thumbs.innerHTML = "";
-
-      list.forEach((name, i) => {
-        const t = document.createElement("img");
-        t.src = `/photos/${name}`;
-        t.onclick = () => loadImage(i);
-        thumbs.appendChild(t);
-      });
+      setStatus("Undo successful");
     });
 }
