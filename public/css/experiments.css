@@ -283,7 +283,7 @@
   padding: 20px;
   border-radius: 12px;
 
-  background: var(--color-bg-app);
+  background:#f0e8d5;
   border: 1px solid var(--color-border-default);
 
   box-shadow:
@@ -303,7 +303,7 @@
 
 .metrics-header h2 {
   margin: 0;
-  color: var(--color-text-primary);
+  color: #111827;
 }
 
 /* =========================================================
@@ -314,6 +314,7 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
+  color: #111827;
 }
 
 .chart-card {
