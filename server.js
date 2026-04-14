@@ -362,10 +362,10 @@ app.get("/api/experiments", (_, res) => {
         startedAt = config.startedAt ?? null;
       }
 
-      let status = "failed";
-      if (fs.existsSync(bestPt)) status = "completed";
-      else if (trainProcess && activeRunName === name) status = "running";
-      else if (fs.existsSync(resultsCsv)) status = "stopped";
+      let status = "Failed";
+      if (fs.existsSync(bestPt)) status = "Completed";
+      else if (trainProcess && activeRunName === name) status = "Running";
+      else if (fs.existsSync(resultsCsv)) status = "Stopped";
 
       const stats = fs.statSync(runDir);
       return {
@@ -437,6 +437,69 @@ app.get("/api/experiments/:name", (req, res) => {
     // content
     metrics
   });
+});
+
+/* ======================================================
+   DOWNLOAD TRAINED WEIGHTS
+====================================================== */
+app.get("/api/experiments/:runName/weights", (req, res) => {
+  const { runName } = req.params;
+
+  const runDir = path.join(TRAINING_ROOT, runName);
+  const cfgPath = path.join(runDir, "run_config.json");
+  const weightsPath = path.join(runDir, "weights", "best.pt");
+
+  if (!fs.existsSync(cfgPath) || !fs.existsSync(weightsPath)) {
+    return res.status(404).send("Weights not found");
+  }
+
+  const cfg = JSON.parse(fs.readFileSync(cfgPath, "utf8"));
+
+  const station = cfg.station ?? "station";
+  const process = cfg.process ?? "process";
+  const model = (cfg.model ?? "model")
+    .replace(".pt", "")
+    .replace(/[^a-zA-Z0-9_-]/g, "");
+
+  const runs = fs.readdirSync(TRAINING_ROOT)
+    .map(name => {
+      const cfgFile = path.join(TRAINING_ROOT, name, "run_config.json");
+      if (!fs.existsSync(cfgFile)) return null;
+
+      const cfgData = JSON.parse(fs.readFileSync(cfgFile, "utf8"));
+      return {
+        name,
+        station: cfgData.station,
+        process: cfgData.process,
+        model: cfgData.model,
+        startedAt: new Date(cfgData.startedAt).getTime()
+      };
+    })
+    .filter(Boolean);
+
+    const sameGroupRuns = runs
+    .filter(r =>
+      r.station === cfg.station &&
+      r.process === cfg.process &&
+      r.model === cfg.model
+    )
+    .sort((a, b) => a.startedAt - b.startedAt);
+
+  const index = sameGroupRuns.findIndex(r => r.name === runName);
+
+  const runNumber = index >= 0 ? index + 1 : sameGroupRuns.length;
+
+  const runSuffix = `r${String(runNumber).padStart(2, "0")}`;
+
+  const filename =
+    `${station}_${process}_${model}_best_${runSuffix}.pt`;
+
+  res.setHeader(
+    "Content-Disposition",
+    `attachment; filename="${filename}"`
+  );
+
+  res.sendFile(weightsPath);
 });
 
 /* ======================================================

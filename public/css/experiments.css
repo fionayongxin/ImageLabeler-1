@@ -24,6 +24,7 @@
 #experimentsTable th,
 #experimentsTable td {
   padding: 20px 12px;
+  text-align: left;
   border-bottom: 1px solid #1f2937;
 }
 
@@ -31,6 +32,7 @@
 #experimentsTable td {
   font-size: 13px;
   line-height: 1.35;
+  text-align: left;
   vertical-align: middle;
 }
 
@@ -43,6 +45,7 @@
   position: sticky;
   top: 0;
   z-index: 1;
+  text-align: left;
   background: var(--color-bg-app);
 }
 
@@ -135,7 +138,7 @@
 #experimentsTable td:nth-child(5),
 #experimentsTable td:nth-child(6),
 #experimentsTable td:nth-child(7) {
-  text-align: right;
+  text-align: left;
   font-size: 12.5px;
   font-variant-numeric: tabular-nums;
 }
@@ -145,17 +148,17 @@
    Color-coded status text
    ========================================================= */
 
-.status.completed {
+.status.Completed {
   color: #22c55e;
   background: rgba(34, 197, 94, 0.15);
 }
 
-.status.running {
+.status.Running {
   color: #f97316;
   background: rgba(249, 115, 22, 0.15);
 }
 
-.status.failed {
+.status.Failed {
   color: #ef4444;
   background: rgba(239, 68, 68, 0.15);
 }

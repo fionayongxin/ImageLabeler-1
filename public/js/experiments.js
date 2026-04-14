@@ -220,7 +220,7 @@ document
     }
 
     if (btn.dataset.action === "weights") {
-      window.location.href = `/training/${runName}/weights/best.pt`;
+      window.location.href = `/api/experiments/${runName}/weights`;
     }
   });
 

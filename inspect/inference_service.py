@@ -1,183 +1,108 @@
+"""
+======================================================
+inference_service.py — FINAL, CLEAN, FIXED, COMMENTED
+------------------------------------------------------
+ROLE:
+✅ Stateless Python inference runner (spawn-based)
+✅ Used by Node.js inference-service
+✅ Loads model per execution (POC / fallback mode)
+✅ Always returns a stable JSON contract
+✅ No stdout pollution (JSON only)
+
+INPUT:
+  argv[1] -> MODEL_PATH (.pt)
+  argv[2] -> IMAGE_PATH (.jpg / .png)
+
+OUTPUT (stdout, JSON):
+{
+  "status": "PASS" | "FAIL",
+  "detections": [{ cls, conf, xyxy }],
+  "names": { class_id: class_name }
+}
+"""
+
+from ultralytics import YOLO
+import json
+import sys
 import os
-import cv2
-import time
-import requests
-import numpy as np
-from collections import deque
-from flask import Flask, Response, jsonify
 
-# ================================
-# SIMULATION MODE
-# ================================
-SIMULATION_MODE = True
+# ======================================================
+# ARGUMENTS
+# ======================================================
+if len(sys.argv) < 3:
+    print(json.dumps({
+        "status": "FAIL",
+        "detections": [],
+        "names": {}
+    }))
+    sys.exit(0)
 
-# ================================
-# Configuration
-# ================================
-CRITERIA_URL = "http://localhost:3000/api/inspect/criteria"
-RESULT_URL   = "http://localhost:3000/api/inspect/result"
+MODEL_PATH = sys.argv[1]
+IMAGE_PATH = sys.argv[2]
 
-DEFAULT_CONFIDENCE = 0.5
-CRITERIA_REFRESH_SEC = 1.0
-
-WINDOW_SIZE = 5
-PASS_THRESHOLD = 4
-
-# ================================
-# Init
-# ================================
-app = Flask(__name__)
-
-criteria = {
-    "required": ["T_Body", "T_Bushing", "T_SN_label"],
-    "forbidden": [],
-    "confidence": DEFAULT_CONFIDENCE
+# ======================================================
+# DEFAULT RESPONSE (STABLE CONTRACT)
+# ======================================================
+response = {
+    "status": "FAIL",
+    "detections": [],
+    "names": {}
 }
 
-last_fetch = 0
+# ======================================================
+# VALIDATE INPUT FILES
+# ======================================================
+if not os.path.exists(MODEL_PATH):
+    print(json.dumps(response))
+    sys.exit(0)
 
-frame_buffer = deque(maxlen=WINDOW_SIZE)
-product_status = "UNKNOWN"
+if not os.path.exists(IMAGE_PATH):
+    print(json.dumps(response))
+    sys.exit(0)
 
-last_status = {
-    "status": "UNKNOWN",
-    "frame": "UNKNOWN",
-    "buffer": [],
-    "detected": []
-}
+# ======================================================
+# LOAD MODEL
+# ======================================================
+# NOTE:
+# This script intentionally loads the model per run.
+# Use inference_server.py (FastAPI) for production speed.
+model = YOLO(MODEL_PATH)
 
-# ================================
-# Helper
-# ================================
-def fetch_criteria():
-    global criteria
-    try:
-        r = requests.get(CRITERIA_URL, timeout=0.5)
-        if r.status_code == 200:
-            criteria = r.json()
-    except:
-        pass
+# Class name mapping (id -> label)
+response["names"] = model.names
 
-# ================================
-# Video generator
-# ================================
-def generate_frames():
-    global last_fetch, product_status, last_status
+# ======================================================
+# RUN INFERENCE
+# ======================================================
+results = model(
+    IMAGE_PATH,
+    conf=0.30,
+    imgsz=640,
+    verbose=False
+)
 
-    while True:
-        # ----------------------------
-        # Dummy frame (simulation)
-        # ----------------------------
-        frame = 255 * np.ones((480, 640, 3), dtype=np.uint8)
+# ======================================================
+# COLLECT DETECTIONS
+# ======================================================
+for r in results:
+    if r.boxes is None:
+        continue
 
-        # ----------------------------
-        # Refresh criteria
-        # ----------------------------
-        if time.time() - last_fetch > CRITERIA_REFRESH_SEC:
-            fetch_criteria()
-            last_fetch = time.time()
+    for box in r.boxes:
+        response["detections"].append({
+            "cls": int(box.cls),
+            "conf": float(box.conf),
+            "xyxy": box.xyxy[0].tolist()
+        })
 
-        required = set(criteria.get("required", []))
-        forbidden = set(criteria.get("forbidden", []))
+# ======================================================
+# BUSINESS RULE
+# ======================================================
+response["status"] = (
+    "PASS" if len(response["detections"]) >= 1 else "FAIL"
+)
 
-        # ----------------------------
-        # SIMULATED DETECTION
-        # ----------------------------
-        detected = {"T_Body", "T_Bushing", "T_SN_label"}
-
-        # Simulate fault every 8 seconds
-        if int(time.time()) % 8 == 0:
-            detected.remove("T_SN_label")
-
-        # ----------------------------
-        # Reset logic (no body)
-        # ----------------------------
-        if "T_Body" not in detected:
-            frame_buffer.clear()
-            product_status = "UNKNOWN"
-
-        # ----------------------------
-        # Layer 2: Frame decision
-        # ----------------------------
-        missing_required = required - detected
-        detected_forbidden = forbidden & detected
-
-        if missing_required or detected_forbidden:
-            frame_result = "FAIL"
-        else:
-            frame_result = "PASS"
-
-        # ----------------------------
-        # Layer 3: Sliding window
-        # ----------------------------
-        frame_buffer.append(frame_result)
-        product_status = "UNKNOWN"
-
-        if len(frame_buffer) == WINDOW_SIZE:
-            if frame_buffer.count("PASS") >= PASS_THRESHOLD:
-                product_status = "PASS"
-            else:
-                product_status = "FAIL"
-
-        # ----------------------------
-        # Status payload
-        # ----------------------------
-        last_status = {
-            "status": product_status,
-            "frame": frame_result,
-            "buffer": list(frame_buffer),
-            "detected": list(detected)
-        }
-
-        try:
-            requests.post(RESULT_URL, json=last_status, timeout=0.2)
-        except:
-            pass
-
-        # ----------------------------
-        # Visualization
-        # ----------------------------
-        if product_status == "PASS":
-            color = (0, 255, 0)
-        elif product_status == "FAIL":
-            color = (0, 0, 255)
-        else:
-            color = (0, 255, 255)
-
-        cv2.putText(frame, f"PRODUCT: {product_status}", (20, 40),
-                    cv2.FONT_HERSHEY_SIMPLEX, 1.1, color, 3)
-
-        cv2.putText(frame, f"FRAME: {frame_result}", (20, 80),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 0, 0), 2)
-
-        ret, buffer = cv2.imencode(".jpg", frame)
-        if not ret:
-            continue
-
-        yield (
-            b"--frame\r\n"
-            b"Content-Type: image/jpeg\r\n\r\n" +
-            buffer.tobytes() +
-            b"\r\n"
-        )
-
-        time.sleep(0.15)
-
-# ================================
-# Routes
-# ================================
-@app.route("/video")
-def video():
-    return Response(generate_frames(),
-                    mimetype="multipart/x-mixed-replace; boundary=frame")
-
-@app.route("/status")
-def status():
-    return jsonify(last_status)
-
-# ================================
-# Main
-# ================================
-if __name__ == "__main__":
-    print("AOI simulation service running (NO camera, NO YOLO)")
-    app.run(host="0.0.0.0", port=3001, threaded=True)
+# ======================================================
+# OUTPUT (JSON ONLY)
+# ======================================================
+print(json.dumps(response))

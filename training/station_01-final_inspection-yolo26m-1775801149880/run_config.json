@@ -1,0 +1,11 @@
+{
+  "station": "station_01",
+  "process": "final_inspection",
+  "datasetPath": "/home/user/Documents/h1-visual-inspection/interface/datasets/station_01/final_inspection",
+  "model": "yolo26m.pt",
+  "epochs": 20,
+  "imgsz": 640,
+  "batch": 10,
+  "runName": "station_01-final_inspection-yolo26m-1775801149880",
+  "startedAt": "2026-04-10T06:06:17.532Z"
+}
