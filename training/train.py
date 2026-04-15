@@ -1,39 +1,50 @@
-from pathlib import Path
-from ultralytics import YOLO
+"""
+======================================================
+train.py
+------------------------------------------------------
+Responsibility:
+- Train a YO using Ultralytics
+- Accept all configuration via CLI arguments
+- Write results under the given project/run directory
+
+Design rules:
+- Do NOT hardcode model paths
+- Do NOT assume filesystem layout
+- Let Node.js decide what to train
+======================================================
+"""
+
 import argparse
-import json
-
-
-MODEL_DIR = Path(__file__).resolve().parent.parent / "models" / "yolo"
+from ultralytics import YOLO
 
 
 def parse_args():
+    """Parse CLI arguments passed from Node.js."""
     parser = argparse.ArgumentParser("YOLO Training")
-    parser.add_argument("--data", required=True)
-    parser.add_argument("--model", required=True)
+
+    parser.add_argument("--data", required=True, help="Path to dataset.yaml")
+    parser.add_argument("--model", required=True, help="Model name or .pt path")
     parser.add_argument("--epochs", type=int, default=50)
     parser.add_argument("--imgsz", type=int, default=640)
     parser.add_argument("--batch", type=int, default=8)
-    parser.add_argument("--name", required=True)
-    parser.add_argument("--project", required=True)
+    parser.add_argument("--name", required=True, help="Run name")
+    parser.add_argument("--project", required=True, help="Training output root")
+
     return parser.parse_args()
 
 
 def main():
     args = parse_args()
 
-    model_path = MODEL_DIR / args.model
-    if not model_path.exists():
-        raise FileNotFoundError(f"Model not found: {model_path}")
-
-    run_dir = Path(args.project) / args.name
-    val_dir = run_dir / "val"
-    val_dir.mkdir(parents=True, exist_ok=True)
-
     # --------------------------------------------------
     # TRAIN
     # --------------------------------------------------
-    model = YOLO(str(model_path))
+    # args.model can be:
+    #   - "yolo26n.pt"
+    #   - "yolov8n.pt"
+    #   - "/absolute/path/to/model.pt"
+    # Ultralytics resolves all correctly.
+    model = YOLO(args.model)
 
     model.train(
         data=args.data,
@@ -45,6 +56,7 @@ def main():
         exist_ok=True,
         verbose=True
     )
+
 
 if __name__ == "__main__":
     main()

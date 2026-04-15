@@ -1,0 +1,314 @@
+/* ================= ROOT ================= */
+
+html, body {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+}
+
+body {
+  background: #111827;
+  color: #d1d5db;
+  font-family: Segoe UI, system-ui, sans-serif;
+}
+
+/* ================= HEADER ================= */
+
+.inspect-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.inspect-header h1 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+/* ================= LEFT PANEL BOTTOM ACTIONS ================= */
+
+.panel-spacer {
+  flex: 1;
+}
+
+.panel-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.panel-actions button {
+  width: 100%;
+}
+
+/* Danger button style (same size, calmer color) */
+button.danger {
+  background: #7c2d12;
+}
+
+button.danger:hover {
+  background: #9a3412;
+}
+/* ================= STEP TABS (RIGHT PANEL) ================= */
+
+.step-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.step-tab {
+  padding: 6px 12px;
+  border-radius: 6px;
+  background: #111827;
+  border: 1px solid #374151;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.step-tab.active {
+  background: #2563eb;
+  color: #fff;
+  font-weight: bold;
+}
+
+.step-tab.add {
+  background: #1f2937;
+  font-weight: bold;
+}
+
+/* ================= STEP EDITOR HEADINGS ================= */
+
+.video-panel h3 {
+  margin-bottom: 8px;
+}
+
+.video-panel h4 {
+  margin: 10px 0 6px;
+  font-size: 14px;
+}
+
+/* ================= CLASS BOX ================= */
+
+.class-box {
+  border: 1px solid #374151;
+  border-radius: 8px;
+  padding: 10px;
+  background: #111827;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.class-box label {
+  display: block;
+  margin-bottom: 6px;
+}
+
+/* Forbidden style */
+.class-box.error {
+  border-color: #7c2d12;
+  background: #1c1917;
+}
+/* ================= STEP EDITOR BODY ================= */
+
+.step-editor-body {
+  display: flex;
+  gap: 16px;
+  flex: 1;
+  overflow: hidden;
+}
+
+.step-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Make class boxes fill height and scroll */
+.step-column .class-box {
+  flex: 1;
+  overflow-y: auto;
+}
+
+/* Save button placement */
+.save-step-btn {
+  margin-top: 16px;
+  align-self: center;
+  width: 200px;
+}
+.step-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 16px;
+}
+
+.delete-step-btn {
+  background: #7c2d12;
+}
+
+.delete-step-btn:hover {
+  background: #9a3412;
+}
+/* ================= STATUS TOKENS ================= */
+
+.inspect-status,
+.result-overlay {
+  font-weight: 700;
+  text-align: center;
+}
+
+.status-pass {
+  background: #14532d;
+  color: #dcfce7;
+}
+
+.status-fail {
+  background: #78350f;
+  color: #fef3c7;
+}
+
+.status-unknown {
+  background: #374151;
+  color: #d1d5db;
+}
+
+/* ================= HEADER STATUS ================= */
+
+.inspect-status {
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+/* ================= LAYOUT ================= */
+
+.trainer-container {
+  height: calc(100vh - 60px);
+  padding: 12px 24px;
+  display: flex;
+  flex-direction: column;
+}
+
+.inspect-layout {
+  flex: 1;
+  display: flex;
+  gap: 20px;
+  align-items: stretch;
+}
+
+/* ================= CAMERA PANEL ================= */
+
+.video-panel {
+  flex: 4;
+  background: #1f2937;
+  border: 1px solid #374151;
+  border-radius: 10px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+}
+
+
+.camera-frame {
+  position: relative;
+  width: 100%;
+
+  aspect-ratio: 16 / 9;
+  max-height: 70vh;
+
+  object-position: center center;
+  overflow: hidden;
+  border-radius: 8px;
+  background: #020617;
+}
+
+/* Camera image */
+.camera-stream {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* Camera placeholder */
+.cam-placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #020617;
+  color: #6b7280;
+  font-size: 14px;
+  letter-spacing: 0.08em;
+}
+
+/* ================= CAMERA RESULT OVERLAY ================= */
+
+.result-overlay {
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
+  padding: 14px 22px;
+  border-radius: 10px;
+  font-size: 26px;
+  min-width: 120px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+}
+
+/* ================= CONTROL PANEL ================= */
+
+.control-panel {
+  flex: 1;
+  background: #1f2937;
+  border: 1px solid #374151;
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+}
+
+.control-panel h3 {
+  margin: 0 0 10px;
+  font-size: 16px;
+}
+
+.control-panel label {
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+
+.control-panel select {
+  width: 100%;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #374151;
+  background: #020617;
+  color: #d1d5db;
+}
+
+.control-panel button {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: none;
+  background: #3b82f6;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.control-panel button:hover {
+  background: #2563eb;
+}
+
+.control-panel .hint {
+  margin-top: 16px;
+  padding: 10px;
+  border-radius: 8px;
+  background: #1e3a8a;
+  color: #bfdbfe;
+  font-size: 13px;
+  text-align: center;
+}

@@ -1,18 +1,18 @@
 """
 ======================================================
-inference_server.py — FINAL, CLEAN, FIXED, COMMENTED
+inference_server.py
 ------------------------------------------------------
-ROLE:
-✅ Persistent Python inference server (FastAPI)
-✅ Loads YOLO model ONCE and keeps it in memory
-✅ Runs inference on a fixed image (camera-simulated)
-✅ Reloads model when Engineer updates active_model.json
-✅ Thread-safe, GPU-aware, deterministic
+Responsibility:
+- Industry‑grade, persistent inference server
+- Single source of truth for ML / GPU logic
+- Loads YOLO model once and keeps it in memory
+- Exposes HTTP API for Node.js orchestration
 
-THIS FILE:
-- Owns ALL ML logic
-- Owns PASS / FAIL decision
-- Node.js only calls HTTP endpoints here
+Design rules:
+- NO per-request model loading
+- NO CLI / spawn usage
+- Thread-safe
+- FastAPI ONLY
 ======================================================
 """
 
@@ -24,14 +24,14 @@ import threading
 import torch
 
 # ======================================================
-# CONFIG (CHANGE HERE ONLY)
+# CONFIG
 # ======================================================
 
-MODEL_META = "/home/user/Documents/h1-visual-inspection/interface/models/active_model.json"
+MODEL_META = "/home/user/Documents/h1-visual-inspection/interface/server/public/js/models/active_model.json"
 
 DEFAULT_MODEL = (
-    "/home/user/Documents/h1-visual-inspection/interface/"
-    "training/station_01-final_inspection-yolo26m-1775783357791/weights/best.pt"
+    "/home/user/Documents/h1-visual-inspection/interface/server/public/js/"
+    "models/station_01_final_inspection_yolo26m_best_r06.pt"
 )
 
 IMAGE_PATH = (
@@ -44,56 +44,47 @@ CONF_THRES = 0.25
 IMG_SIZE = 640
 
 # ======================================================
-# APP INITIALIZATION
+# APP
 # ======================================================
 
 app = FastAPI()
 
-# Global model state (intentionally single instance)
+device = "cuda" if torch.cuda.is_available() else "cpu"
 model = None
 model_path = None
-
-# Device selection
-device = "cuda" if torch.cuda.is_available() else "cpu"
-
-# Prevent reload/infer race conditions
 model_lock = threading.Lock()
 
 # ======================================================
-# MODEL LOADING (SAFE, SINGLE SOURCE OF TRUTH)
+# MODEL MANAGEMENT
 # ======================================================
 
 def resolve_model_path() -> str:
     """
-    Decide which model to load.
+    Resolve which model to load.
     Priority:
-    1. Engineer-selected active_model.json
-    2. DEFAULT_MODEL fallback
+    1. active_model.json
+    2. DEFAULT_MODEL
     """
     if os.path.exists(MODEL_META):
         with open(MODEL_META, "r") as f:
-            return json.load(f).get("path", DEFAULT_MODEL)
+            data = json.load(f)
+            return data.get("path", DEFAULT_MODEL)
     return DEFAULT_MODEL
 
 
 def load_model():
     """
-    Load YOLO model into memory.
-    - Thread-safe
-    - GPU-aware
-    - Includes warm-up inference
+    Load YOLO model into memory (thread‑safe).
+    Includes warm‑up inference.
     """
     global model, model_path
 
     with model_lock:
         model_path = resolve_model_path()
 
-        print(f"[INFO] Loading model: {model_path}")
-        print(f"[INFO] Using device: {device}")
-
         model = YOLO(model_path).to(device)
 
-        # Warm-up (prevents first-inference latency)
+        # warm‑up
         _ = model(
             IMAGE_PATH,
             imgsz=IMG_SIZE,
@@ -101,31 +92,25 @@ def load_model():
             verbose=False
         )
 
-        print("[INFO] Model loaded and warmed up")
 
-
-# Load once on startup
+# load once on startup
 load_model()
 
 # ======================================================
-# INFERENCE ENDPOINT
+# API
 # ======================================================
 
 @app.get("/infer")
 def infer():
     """
-    Run inference on the configured IMAGE_PATH.
-
-    RETURNS:
+    Run inference on the configured image.
+    Returns:
     {
-      status: "PASS" | "FAIL",
-      detections: [
-        { cls, conf, xyxy }
-      ],
-      names: model.names
+      status: PASS | FAIL,
+      detections: [...],
+      names: {...}
     }
     """
-
     with model_lock:
         results = model(
             IMAGE_PATH,
@@ -135,11 +120,9 @@ def infer():
         )
 
     detections = []
-
     for r in results:
         if r.boxes is None:
             continue
-
         for box in r.boxes:
             detections.append({
                 "cls": int(box.cls),
@@ -147,8 +130,6 @@ def infer():
                 "xyxy": box.xyxy[0].tolist()
             })
 
-    # BUSINESS RULE (LOCKED)
-    # Exactly ONE detection = PASS
     status = "PASS" if len(detections) == 1 else "FAIL"
 
     return {
@@ -157,18 +138,13 @@ def infer():
         "names": model.names
     }
 
-# ======================================================
-# MODEL RELOAD (ENGINEER MODE)
-# ======================================================
 
 @app.post("/reload")
 def reload_model():
     """
-    Reload model after Engineer uploads a new .pt file.
-    Node.js MUST call this after /model/upload.
+    Reload model after Node.js updates active_model.json.
     """
     load_model()
-
     return {
         "status": "ok",
         "model": model_path,

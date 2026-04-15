@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Camera Capture</title>
+
+  <!-- Base styles shared across pages -->
+  <link rel="stylesheet" href="css/base.css" />
+
+  <!-- Camera page–specific styles -->
+  <link rel="stylesheet" href="css/camera.css" />
+</head>
+
+<body class="page-camera">
+
+  <!-- Main workspace container for camera and controls -->
+  <div class="container workspace">
+
+    <!-- Camera preview area (video stream rendered by JS) -->
+    <div class="camera-area">
+      <div class="camera-box">
+        <!-- Live camera feed -->
+        <video id="video" autoplay playsinline></video>
+      </div>
+    </div>
+
+    <!-- Control panel for capture actions and navigation -->
+    <aside class="side-panel">
+      <h1>Camera Capture</h1>
+
+      <!-- Triggers still-image capture from the video stream -->
+      <button id="captureBtn" type="button">Capture Photo</button>
+
+      <!-- Displays thumbnails of recently captured images -->
+      <div class="latest-panel">
+        <h3>Latest Images</h3>
+
+        <!-- Dynamically populated by JS -->
+        <div id="latestImages"></div>
+      </div>
+
+      <!-- Footer actions related to captured images -->
+      <div class="panel-footer">
+        <a href="/labeler.html" class="btn-secondary">Label Image</a>
+      </div>
+    </aside>
+
+  </div>
+
+  <!-- Off-screen canvas used for frame capture processing -->
+  <canvas id="canvas" hidden></canvas>
+
+  <!-- Camera application logic -->
+  <script src="/js/app.js"></script>
+
+</body>
+</html>
