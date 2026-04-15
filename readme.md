@@ -39,55 +39,30 @@ Settings: http://localhost:3000/settings
 ### Directory Tree
 
 /interface/
-
 ├─ server/
-
 │  ├─ server.js
-
 │  ├─ routes/
-
 │  ├─ services/
-
 │  ├─ config/
-
 │  ├─ public/
-
 │  │  ├─ css/
-
 │  │  ├─ js/
-
 │  │  └─ *.html
-
 │  └─ training/
-
 │     └─ <run-name>/
-
 │
-
 ├─ training/
-
 │  └─ train.py
-
 │
-
 ├─ inspect/
-
 │  └─ inference_server.py
-
 │
-
 ├─ datasets/
-
 │  └─ \<station>/\<process>/
-
 │     ├─ images/
-
 │     ├─ labels/
-
 │     └─ dataset.yaml
-
 │
-
 └─ photos/
 
 
