@@ -17,6 +17,7 @@ Node.js (v18+) Python 3.9+ Python virtual environment with:
 ultralytics fastapi uvicorn torch (**GPU** optional)
 
 Activate your Python virtual environment before running services. Start Inference Server (FastAPI) 
+
 `cd interface/inspect` 
 
 `uvicorn inference_server:app --host 0.0.0.0 --port 8001`
@@ -39,12 +40,19 @@ Settings: http://localhost:3000/settings
 
 interface/interface/
 ├─ server/
+
 │  ├─ server.js
+
 │  ├─ routes/
+
 │  ├─ services/
+
 │  ├─ config/
+
 │  ├─ public/
+
 │  │  ├─ css/
+
 │  │  ├─ js/
 │  │  └─ *.html
 │  └─ training/
