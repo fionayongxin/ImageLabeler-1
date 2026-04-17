@@ -160,7 +160,7 @@ body {
   bottom: 16px;
   right: 16px;
 
-  width: 250px;
+  width: 300px;
   height: 200px;
 
   background: #020617;
@@ -272,4 +272,18 @@ body {
 
 .hidden {
   display: none !important;
+}
+@media (max-height: 800px) {
+  .camera-frame {
+    max-height: calc(100vh - 90px);
+  }
+
+  .guide-image-box {
+    width: 180px;
+  }
+
+  .result-overlay {
+    height: 36px;
+    font-size: 18px;
+  }
 }
