@@ -1,7 +1,5 @@
-/* =========================================================
-   GLOBAL: LABELER PAGE
-   Root container styling and base behavior
-   ========================================================= */
+/* =========================================================/* ========================================================= LABELER PAGE
+========================================================= */
 
 .page-labeler {
   height: 100vh;
@@ -12,8 +10,7 @@
 
 /* =========================================================
    MAIN LAYOUT
-   Left thumbnails + right work panel
-   ========================================================= */
+========================================================= */
 
 .page-labeler .labeler-layout {
   display: grid;
@@ -23,8 +20,7 @@
 
 /* =========================================================
    LEFT PANEL: THUMBNAILS
-   Displays available images for labeling
-   ========================================================= */
+========================================================= */
 
 .page-labeler .thumb-panel {
   background: #020617;
@@ -32,14 +28,12 @@
   overflow-y: auto;
 }
 
-/* Thumbnails grid */
 #thumbs {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 8px;
 }
 
-/* Thumbnail image */
 #thumbs img {
   width: 100%;
   border-radius: 6px;
@@ -47,122 +41,104 @@
   cursor: pointer;
 }
 
-/* Active thumbnail indicator */
 #thumbs img.active {
-  border-color: transparent;
   outline: 2px solid #2563eb;
   outline-offset: -2px;
 }
 
 /* =========================================================
    RIGHT PANEL: WORK AREA
-   Image canvas + controls
-   ========================================================= */
+========================================================= */
 
 .page-labeler .work-panel {
   padding: 16px;
   overflow: hidden;
 }
 
-/* Workspace split: image + controls */
 .page-labeler .label-workspace {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 300px;
   gap: 24px;
-  height: calc(100vh - 64px); /* header height accounted */
+  height: calc(100vh - 64px);
 }
 
 /* =========================================================
-   IMAGE DISPLAY AREA
-   Image and overlay canvas are centered and scaled
-   ========================================================= */
+   IMAGE + CANVAS CONTAINER
+   ✅ ONE STACKING CONTEXT
+========================================================= */
 
 .page-labeler .label-container {
   position: relative;
+  z-index: 0;
+
   width: 100%;
   height: 100%;
-  background: black;
 
   display: flex;
   justify-content: center;
   align-items: center;
+
+  background: black;
+  overflow: auto;
+  
+  user-select: none;
+  -webkit-user-select: none;
 }
 
-/* Image and canvas scale proportionally to fit */
-.page-labeler .label-container img,
-.page-labeler .label-container canvas {
+/* =========================================================
+   IMAGE (STATIC, NON-INTERACTIVE)
+========================================================= */
+
+.page-labeler .label-container img#image {
+  position: relative;
+  z-index: 1;
+
+  display: block;
   max-width: 100%;
   max-height: 100%;
   width: auto;
   height: auto;
 
+  /* CRITICAL: image must NOT receive mouse events */
+  pointer-events: none;
+}
+
+/* =========================================================
+   CANVAS OVERLAY (INTERACTIVE)
+========================================================= */
+
+.page-labeler .label-container canvas#overlay {
   position: absolute;
-  inset: 0;
-  margin: auto;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+
+  z-index: 10;
+
+  /* JS controls actual interactivity via mode */
+  pointer-events: auto;
+  display: block;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 /* =========================================================
-   CONTROLS PANEL (BASE STYLES)
-   ========================================================= */
-
-.page-labeler .label-controls {
-  background: #020617;
-  border: 1px solid #334155;
-  border-radius: 8px;
-  padding: 16px;
-}
-
-/* Form controls expand full panel width */
-.page-labeler select,
-.page-labeler button {
-  width: 100%;
-  margin-bottom: 10px;
-}
-
-/* Secondary-style buttons */
-.page-labeler button.secondary {
-  background: #1e293b;
-  border: 1px solid #334155;
-}
-
-/* Navigation button grouping (if present) */
-.page-labeler .nav-buttons {
-  display: flex;
-  gap: 8px;
-}
-
-/* =========================================================
-   MODE TOGGLE
-   Read / Draw mode buttons
-   ========================================================= */
-
-.mode-toggle {
-  display: flex;
-  gap: 6px;
-  margin-bottom: 12px;
-}
-
-.mode-toggle button.active {
-  background: #2563eb;
-}
-
-/* =========================================================
-   CANVAS CURSOR STATES
-   Driven by JS via class toggle
-   ========================================================= */
+   CANVAS INTERACTION MODES
+========================================================= */
 
 canvas.read-mode {
   cursor: default;
+  pointer-events: none;
 }
 
 canvas.draw-mode {
   cursor: crosshair;
+  pointer-events: auto;
 }
 
 /* =========================================================
-   RIGHT PANEL – REFINED LAYOUT
-   Overrides / extends base control styles
-   ========================================================= */
+   CONTROLS PANEL
+========================================================= */
 
 .page-labeler .label-controls {
   background: #020617;
@@ -176,32 +152,23 @@ canvas.draw-mode {
   height: 100%;
 }
 
-/* Section headers inside control panel */
-.page-labeler .label-controls h4 {
-  font-size: 13px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: #94a3b8;
-  margin: 0;
-}
-
-/* Visual separation between control sections */
-.page-labeler .label-controls h4:not(:first-child) {
-  margin-top: 12px;
-  padding-top: 16px;
-  border-top: 1px solid #1e293b;
-}
-
-/* Ensure consistent control sizing */
-.page-labeler .label-controls select,
-.page-labeler .label-controls button {
+.page-labeler select,
+.page-labeler button {
   width: 100%;
+  padding: 12px 16px;
+  margin: 6px 0;
+}
+
+.page-labeler label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  font-size: 14px;
 }
 
 /* =========================================================
-   MODE TOGGLE (REFINED)
-   ========================================================= */
+   MODE TOGGLE
+========================================================= */
 
 .mode-toggle {
   display: flex;
@@ -212,25 +179,25 @@ canvas.draw-mode {
   flex: 1;
 }
 
-.mode-toggle button.active {
+.mode-toggle button.active,
+.mode-toggle button:disabled {
   background: #2563eb;
-  color: white;
+  color: #fff;
   border: none;
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 /* =========================================================
    SAVE BUTTON
-   Driven by JS enable / disable logic
-   ========================================================= */
+========================================================= */
 
 #saveYoloBtn {
   height: 44px;
   font-size: 15px;
   font-weight: 600;
-  margin-top: 12px;
 }
 
-/* Disabled state applied by JS */
 #saveYoloBtn.disabled {
   opacity: 0.5;
   cursor: not-allowed;
@@ -238,7 +205,7 @@ canvas.draw-mode {
 
 /* =========================================================
    STATUS OUTPUT
-   ========================================================= */
+========================================================= */
 
 #status {
   margin-top: auto;
@@ -246,7 +213,6 @@ canvas.draw-mode {
   color: #94a3b8;
 }
 
-/* Semantic status coloring */
 .status-success {
   color: #22c55e;
 }

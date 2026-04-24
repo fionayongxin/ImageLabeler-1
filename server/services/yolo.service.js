@@ -58,6 +58,8 @@ function saveYolo(payload) {
     !station ||
     !process
   ) {
+    
+    console.error("YOLO payload received:", JSON.stringify(payload, null, 2));
     throw new Error("Invalid YOLO payload");
   }
 

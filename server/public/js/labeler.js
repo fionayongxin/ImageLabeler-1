@@ -1,30 +1,8 @@
 /**
- * ======================================================
+ ======================================================
  * trainer.js
- * ------------------------------------------------------
- * Responsibility:
- * - Display captured photos
- * - Allow bounding‑box labeling
- * - Save YOLO annotations
- * - Delete photos
- * - Undo last YOLO save
- *
- * Design rules:
- * - Frontend never touches filesystem
- * - APIs receive FILENAMES only
- * - UI uses PUBLIC URLs only (/photos/*)
- *
- * Aligned backend endpoints:
- * - GET  /api/photos
- * - POST /api/photos/delete
- * - POST /api/yolo/save
- * - POST /api/yolo/undo
  * ======================================================
  */
-
-/* ======================================================
-   CONFIG
-====================================================== */
 
 const MIN_BOX_SIZE = 20;
 const NORMAL_LINE_WIDTH = 3;
@@ -39,24 +17,16 @@ const BOX_COLORS = {
 };
 
 const CLASS_MAP = { ok: 0, defect: 1, scratch: 2 };
+const STATION = "station1";
+const PROCESS = "processA";
 
-/* ======================================================
-   STATE
-====================================================== */
+/* ===================== STATE ===================== */
 
-/**
- * images[] item shape:
- * {
- *   filename: "photo_xxx.png",
- *   url: "/photos/photo_xxx.png"
- * }
- */
 let images = [];
 let currentIndex = -1;
 let currentImage = null;
 
 let mode = "read";
-
 let boxes = [];
 let selectedBox = -1;
 
@@ -66,19 +36,12 @@ let resizing = false;
 
 let startX = 0;
 let startY = 0;
-
-/**
- * Undo buffer:
- * {
- *   image: { filename, url },
- *   index: number
- * }
- */
 let lastUndo = null;
 
-/* ======================================================
-   DOM REFERENCES
-====================================================== */
+let canvasScaleX = 1; // Track X scale ratio
+let canvasScaleY = 1; // Track Y scale ratio
+
+/* ===================== DOM ===================== */
 
 const thumbs = document.getElementById("thumbs");
 const img = document.getElementById("image");
@@ -95,12 +58,10 @@ const deleteImageBtn = document.getElementById("deleteImageBtn");
 
 deleteImageBtn.disabled = true;
 
-/* ======================================================
-   STATUS
-====================================================== */
+/* ===================== STATUS ===================== */
 
-function setStatus(message, type = "info") {
-  statusText.textContent = message;
+function setStatus(msg, type = "info") {
+  statusText.textContent = msg;
   statusText.className = `status status-${type}`;
 }
 
@@ -114,15 +75,18 @@ function updateSaveButtonState() {
   saveYoloBtn.classList.toggle("disabled", !canSave);
 }
 
-/* ======================================================
-   MODE
-====================================================== */
+/* ===================== MODE ===================== */
 
 function setMode(m) {
   mode = m;
   readBtn.classList.toggle("active", m === "read");
   drawBtn.classList.toggle("active", m === "draw");
-  canvas.className = `${m}-mode`;
+  readBtn.disabled = m === "read";
+  drawBtn.disabled = m === "draw";
+  canvas.classList.toggle("read-mode", m === "read");
+  canvas.classList.toggle("draw-mode", m === "draw");
+  canvas.style.pointerEvents = m === "draw" ? "auto" : "none";
+  canvas.style.cursor = m === "draw" ? "crosshair" : "default";
   setStatus(m === "draw" ? "Draw mode" : "Read mode");
   updateSaveButtonState();
 }
@@ -131,14 +95,11 @@ readBtn.onclick = () => setMode("read");
 drawBtn.onclick = () => setMode("draw");
 setMode("read");
 
-/* ======================================================
-   INITIAL LOAD
-====================================================== */
+/* ===================== LOAD IMAGES ===================== */
 
 fetch("/api/photos")
   .then(r => r.json())
   .then(list => {
-    // Backend returns PUBLIC URLs → normalize into objects
     images = list.map(url => ({
       url,
       filename: url.split("/").pop()
@@ -148,24 +109,15 @@ fetch("/api/photos")
 
 function renderThumbnails() {
   thumbs.innerHTML = "";
-
   images.forEach((imgObj, i) => {
     const t = document.createElement("img");
     t.src = imgObj.url;
-    t.dataset.index = i;
+    t.onclick = () => loadImage(i);
     thumbs.appendChild(t);
   });
 }
 
-thumbs.addEventListener("click", e => {
-  const thumb = e.target.closest("img");
-  if (!thumb) return;
-  loadImage(Number(thumb.dataset.index));
-});
-
-/* ======================================================
-   IMAGE LOADING
-====================================================== */
+/* ===================== IMAGE LOAD ===================== */
 
 function loadImage(i) {
   if (i < 0 || i >= images.length) return;
@@ -177,55 +129,75 @@ function loadImage(i) {
   boxes = [];
   selectedBox = -1;
 
-  [...thumbs.children].forEach(el => el.classList.remove("active"));
-  thumbs.children[i].classList.add("active");
-
-  document.getElementById("currentImage").textContent =
-    currentImage.filename;
-
   img.onload = () => {
-    canvas.width = img.naturalWidth;
-    canvas.height = img.naturalHeight;
-    redraw();
-    setMode("read");
+    
+  console.log(
+    canvas.width, canvas.height,
+    img.clientWidth, img.clientHeight
+  );
+
+    // Wait for layout to settle before measuring
+    requestAnimationFrame(() => {
+      const rect = img.getBoundingClientRect();
+      
+      // Set canvas internal resolution to natural image size
+
+      canvas.width = rect.width;
+      canvas.height = rect.height;
+
+      // Calculate scale factors for both axes
+      canvasScaleX = img.naturalWidth / rect.width;
+      canvasScaleY = img.naturalHeight / rect.height;
+
+      console.log("Image loaded:", {
+        naturalWidth: img.naturalWidth,
+        naturalHeight: img.naturalHeight,
+        displayWidth: rect.width,
+        displayHeight: rect.height,
+        scaleX: canvasScaleX,
+        scaleY: canvasScaleY
+      });
+
+      // Set canvas display size to match image display size
+      canvas.style.width = `${rect.width}px`;
+      canvas.style.height = `${rect.height}px`;
+
+      redraw();
+    });
   };
 
   img.src = currentImage.url;
+  document.getElementById("currentImage").textContent =
+    currentImage.filename;
 }
 
-/* ======================================================
-   GEOMETRY HELPERS
-====================================================== */
+/* ===================== GEOMETRY ===================== */
 
 function toCanvas(e) {
   const r = canvas.getBoundingClientRect();
   return {
-    x: ((e.clientX - r.left) * canvas.width) / r.width,
-    y: ((e.clientY - r.top) * canvas.height) / r.height
+    x: (e.clientX - r.left) * canvasScaleX,
+    y: (e.clientY - r.top) * canvasScaleY
   };
 }
 
 function inside(b, x, y) {
   return (
-    x >= b.x &&
-    x <= b.x + b.w &&
-    y >= b.y &&
-    y <= b.y + b.h
+    x >= b.x && x <= b.x + b.w &&
+    y >= b.y && y <= b.y + b.h
   );
 }
 
 function hitCorner(b, x, y) {
   return (
-    (Math.abs(x - b.x) <= HANDLE_SIZE ||
-      Math.abs(x - (b.x + b.w)) <= HANDLE_SIZE) &&
-    (Math.abs(y - b.y) <= HANDLE_SIZE ||
-      Math.abs(y - (b.y + b.h)) <= HANDLE_SIZE)
+    Math.abs(x - b.x) <= HANDLE_SIZE ||
+    Math.abs(x - (b.x + b.w)) <= HANDLE_SIZE ||
+    Math.abs(y - b.y) <= HANDLE_SIZE ||
+    Math.abs(y - (b.y + b.h)) <= HANDLE_SIZE
   );
 }
 
-/* ======================================================
-   CANVAS INTERACTION
-====================================================== */
+/* ===================== CANVAS EVENTS ===================== */
 
 canvas.addEventListener("mousedown", e => {
   const { x, y } = toCanvas(e);
@@ -255,15 +227,7 @@ canvas.addEventListener("mousedown", e => {
   selectedBox = -1;
   redraw();
 
-  if (mode !== "draw") {
-    setStatus("Switch to Draw mode", "warning");
-    return;
-  }
-
-  if (!classSelect.value) {
-    setStatus("Select class before drawing", "warning");
-    return;
-  }
+  if (mode !== "draw" || !classSelect.value) return;
 
   drawing = true;
   startX = x;
@@ -325,13 +289,12 @@ canvas.addEventListener("mouseup", e => {
   updateSaveButtonState();
 });
 
-/* ======================================================
-   DRAWING
-====================================================== */
+/* ===================== DRAW ===================== */
 
 function drawBox(x, y, w, h, label, preview = false, selected = false) {
-  const color = BOX_COLORS[label] || "#fff";
-  ctx.strokeStyle = color;
+  ctx.save();
+  ctx.globalCompositeOperation = "source-over";
+  ctx.strokeStyle = BOX_COLORS[label];
   ctx.lineWidth = preview
     ? PREVIEW_LINE_WIDTH
     : selected
@@ -339,9 +302,9 @@ function drawBox(x, y, w, h, label, preview = false, selected = false) {
     : NORMAL_LINE_WIDTH;
 
   ctx.strokeRect(x, y, w, h);
-  ctx.fillStyle = color;
-  ctx.font = "16px sans-serif";
+  ctx.fillStyle = BOX_COLORS[label];
   ctx.fillText(label, x + 6, y + 18);
+  ctx.restore();
 }
 
 function redraw() {
@@ -351,13 +314,21 @@ function redraw() {
   );
 }
 
-/* ======================================================
-   DELETE IMAGE
-====================================================== */
+/* ===================== DELETE ===================== */
+
+// Delete selected box with DELETE or BACKSPACE
+window.addEventListener("keydown", e => {
+  if ((e.key === "Delete" || e.key === "Backspace") && selectedBox !== -1) {
+    boxes.splice(selectedBox, 1);
+    selectedBox = -1;
+    redraw();
+    updateSaveButtonState();
+    setStatus("Box deleted", "warning");
+  }
+});
 
 deleteImageBtn.onclick = async () => {
   if (!currentImage) return;
-
   if (!confirm(`Delete "${currentImage.filename}"?`)) return;
 
   await fetch("/api/photos/delete", {
@@ -371,9 +342,7 @@ deleteImageBtn.onclick = async () => {
   loadImage(Math.min(currentIndex, images.length - 1));
 };
 
-/* ======================================================
-   SAVE YOLO
-====================================================== */
+/* ===================== SAVE YOLO ===================== */
 
 saveYoloBtn.onclick = () => {
   fetch("/api/yolo/save", {
@@ -384,27 +353,22 @@ saveYoloBtn.onclick = () => {
       width: canvas.width,
       height: canvas.height,
       boxes,
-      classMap: CLASS_MAP
+      classMap: CLASS_MAP,
+      station: STATION,
+      process: PROCESS
     })
-  })
-    .then(() => {
-      setStatus("Saved", "success");
-
-      lastUndo = {
-        image: currentImage,
-        index: currentIndex
-      };
-
-      images.splice(currentIndex, 1);
-      renderThumbnails();
-      boxes = [];
-      loadImage(Math.min(currentIndex, images.length - 1));
-    });
+  }).then(() => {
+    setStatus("Saved", "success");
+    updateSaveButtonState();
+    
+    // Remove current image from list and load next
+    images.splice(currentIndex, 1);
+    renderThumbnails();
+    loadImage(Math.min(currentIndex, images.length - 1));
+  });
 };
 
-/* ======================================================
-   UNDO (Ctrl + Z)
-====================================================== */
+/* ===================== UNDO ===================== */
 
 window.addEventListener("keydown", e => {
   if (e.ctrlKey && e.key.toLowerCase() === "z" && lastUndo) {

@@ -13,44 +13,64 @@
 
 <body class="page-camera">
 
-  <!-- Main workspace container for camera and controls -->
+  <!-- ======================================================
+       Main workspace container
+       - Left: Live Basler preview
+       - Right: Capture controls and recent images
+  ====================================================== -->
   <div class="container workspace">
 
-    <!-- Camera preview area (video stream rendered by JS) -->
-    <div class="camera-area">
-      <div class="camera-box">
-        <!-- Live camera feed -->
-        <video id="video" autoplay playsinline></video>
-      </div>
-    </div>
+    <!-- ======================================================
+         LIVE CAMERA PREVIEW
+         ------------------------------------------------------
+         IMPORTANT:
+         - This is an <img>, NOT <video>
+         - Source is MJPEG stream served by Python (Basler)
+         - Proxied through Node at /api/camera/stream
+         - Browser never accesses camera hardware
+    ====================================================== -->
+    <img
+      id="video"
+      class="camera-preview"
+      src="/api/camera/stream"
+      alt="Basler Live Preview"
+    />
 
-    <!-- Control panel for capture actions and navigation -->
+    <!-- ======================================================
+         CONTROL PANEL
+    ====================================================== -->
     <aside class="side-panel">
       <h1>Camera Capture</h1>
 
-      <!-- Triggers still-image capture from the video stream -->
-      <button id="captureBtn" type="button">Capture Photo</button>
+      <!-- Trigger server-side Basler capture -->
+      <button id="captureBtn" type="button">
+        Capture Photo
+      </button>
 
-      <!-- Displays thumbnails of recently captured images -->
+      <!-- Recently captured images -->
       <div class="latest-panel">
         <h3>Latest Images</h3>
 
-        <!-- Dynamically populated by JS -->
+        <!-- Populated dynamically by app.js -->
         <div id="latestImages"></div>
       </div>
 
-      <!-- Footer actions related to captured images -->
+      <!-- Navigation / downstream workflow -->
       <div class="panel-footer">
-        <a href="/labeler.html" class="btn-secondary">Label Image</a>
+        <a href="/labeler.html" class="btn-secondary">
+          Label Image
+        </a>
       </div>
     </aside>
 
   </div>
 
-  <!-- Off-screen canvas used for frame capture processing -->
-  <canvas id="canvas" hidden></canvas>
-
-  <!-- Camera application logic -->
+  <!-- ======================================================
+       Frontend application logic
+       - Handles UI only
+       - Talks to backend APIs
+       - NO camera logic inside
+  ====================================================== -->
   <script src="/js/app.js"></script>
 
 </body>

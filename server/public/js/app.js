@@ -1,21 +1,22 @@
 /**
  * ======================================================
- * camera.js
+ * app.js  (Frontend – Basler Camera, Server‑Side Controlled)
  * ------------------------------------------------------
  * Responsibility:
- * - Initialize live camera preview
- * - Capture still images from webcam
- * - Send captured images to backend
+ * - Display live Basler camera preview (MJPEG stream)
+ * - Trigger still image capture via backend
  * - Display latest captured photos
  *
  * Design principles:
- * - DOM access only after DOMContentLoaded
- * - Exactly ONE active camera stream
- * - Browser autoplay and security compliant
+ * - Browser NEVER accesses camera hardware
+ * - Exactly ONE active camera owner (Python / pypylon)
+ * - Frontend is view + trigger only
  * - Backend API contract is trusted
+ * - Filenames / public URLs only
  *
  * Backend endpoints:
- * - POST /api/photos/save
+ * - POST /api/camera/capture
+ * - GET  /api/camera/stream
  * - GET  /api/photos/latest
  * ======================================================
  */
@@ -23,148 +24,108 @@
 document.addEventListener("DOMContentLoaded", () => {
   /* ======================================================
      DOM REFERENCES
+     ------------------------------------------------------
+     NOTE:
+     - `video` ID is intentionally retained for layout
+     - Element must be an <img>, NOT a <video>
   ====================================================== */
 
-  /** <video> element showing live camera stream */
-  const video = document.getElementById("video");
-
-  /** <canvas> used for frame capture */
-  const canvas = document.getElementById("canvas");
-
-  /** UI elements */
+  const livePreview = document.getElementById("video"); // <img>
   const captureBtn = document.getElementById("captureBtn");
   const captureInfo = document.getElementById("captureInfo");
   const latestImagesContainer = document.getElementById("latestImages");
 
-  if (!video || !canvas || !captureBtn) {
+  if (!captureBtn || !latestImagesContainer) {
     console.error("Camera DOM elements missing");
     return;
   }
 
   /* ======================================================
-     VIDEO ELEMENT CONFIG (AUTOPLAY SAFE)
+     LIVE PREVIEW INITIALIZATION
+     ------------------------------------------------------
+     - MJPEG stream provided by Python (Basler)
+     - Proxied via Node at /api/camera/stream
+     - No browser permissions required
   ====================================================== */
 
-  video.muted = true;        // Required for autoplay
-  video.playsInline = true; // Required for dashboard / embedded views
-  video.autoplay = true;
-
-  /* ======================================================
-     CAMERA INITIALIZATION
-  ====================================================== */
-
-  /**
-   * Request webcam access and bind stream to video element.
-   */
-  navigator.mediaDevices
-    .getUserMedia({ video: true })
-    .then(stream => {
-      video.srcObject = stream;
-      return video.play();
-    })
-    .catch(err => {
-      console.error("Camera access failed:", err);
-    });
-
-  /* ======================================================
-     IMAGE CAPTURE
-  ====================================================== */
-
-  /**
-   * Capture current video frame, mirror horizontally,
-   * encode as PNG, and send to backend.
-   */
-  function capturePhoto() {
-    if (video.videoWidth === 0 || video.videoHeight === 0) {
-      console.warn("Video not ready for capture");
-      return;
-    }
-
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-
-    const ctx = canvas.getContext("2d");
-
-    // Mirror horizontally (camera-style preview)
-    ctx.save();
-    ctx.translate(canvas.width, 0);
-    ctx.scale(-1, 1);
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    ctx.restore();
-
-    const imageData = canvas.toDataURL("image/png");
-    saveCapturedPhoto(imageData);
+  if (livePreview) {
+    livePreview.src = "/api/camera/stream";
+    livePreview.alt = "Basler Live Preview";
+    livePreview.loading = "eager";
   }
 
-  /**
-   * Persist captured image via backend API.
-   *
-   * @param {string} imageData Base64 PNG data URL
-   */
-  function saveCapturedPhoto(imageData) {
-    fetch("/api/photos/save", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ image: imageData })
-    })
-      .then(res => res.json())
-      .then(data => {
-        if (data?.filename && captureInfo) {
-          captureInfo.textContent = data.filename;
-        }
-        loadLatestImages();
-      })
-      .catch(err => {
-        console.error("Failed to save photo:", err);
+  /* ======================================================
+     STILL IMAGE CAPTURE (BASLER)
+     ------------------------------------------------------
+     - Capture is executed SERVER‑SIDE
+     - Browser only sends trigger command
+     - Capture button is locked during operation
+  ====================================================== */
+
+  async function capturePhoto() {
+    captureBtn.disabled = true;
+
+    try {
+      const response = await fetch("/api/camera/capture", {
+        method: "POST"
       });
+
+      if (!response.ok) {
+        throw new Error("Basler capture request failed");
+      }
+
+      const result = await response.json();
+
+      if (result?.filename && captureInfo) {
+        captureInfo.textContent = result.filename;
+      }
+
+      await loadLatestImages();
+    } catch (err) {
+      console.error("Failed to capture photo:", err);
+    } finally {
+      captureBtn.disabled = false;
+    }
   }
 
   /* ======================================================
      LATEST IMAGES VIEW
+     ------------------------------------------------------
+     - Backend returns PUBLIC URLs only
+     - Frontend never touches filesystem
   ====================================================== */
 
-  /**
-   * Load and render latest captured images.
-   *
-   * @param {number} limit Maximum number of thumbnails
-   */
   async function loadLatestImages(limit = 2) {
-    if (!latestImagesContainer) return;
-
-    let response;
     try {
-      response = await fetch(`/api/photos/latest?limit=${limit}`);
-    } catch {
-      return;
+      const response = await fetch(`/api/photos/latest?limit=${limit}`);
+      if (!response.ok) return;
+
+      const images = await response.json();
+      if (!Array.isArray(images)) return;
+
+      latestImagesContainer.innerHTML = "";
+
+      const fragment = document.createDocumentFragment();
+
+      images.forEach(publicUrl => {
+        const img = document.createElement("img");
+        img.src = publicUrl;
+        img.loading = "lazy";
+        img.onclick = () => window.open(publicUrl, "_blank");
+        fragment.appendChild(img);
+      });
+
+      latestImagesContainer.appendChild(fragment);
+    } catch (err) {
+      console.error("Failed to load latest images:", err);
     }
-
-    if (!response.ok) return;
-
-    const images = await response.json();
-    if (!Array.isArray(images)) return;
-
-    latestImagesContainer.innerHTML = "";
-
-    const fragment = document.createDocumentFragment();
-
-    images.forEach(publicUrl => {
-      const img = document.createElement("img");
-      img.src = publicUrl;
-      img.loading = "lazy";
-      img.onclick = () => window.open(publicUrl, "_blank");
-      fragment.appendChild(img);
-    });
-
-    latestImagesContainer.appendChild(fragment);
   }
 
   /* ======================================================
      EVENT BINDINGS
   ====================================================== */
 
-  captureBtn.addEventListener("click", () => {
-    capturePhoto();
-  });
+  captureBtn.addEventListener("click", capturePhoto);
 
   /* ======================================================
      INITIAL LOAD

@@ -16,8 +16,7 @@ const SERVER_ROOT = path.join(__dirname, "..");
 /* ======================================================
    DATA
 ====================================================== */
-const DATASET_ROOT =
-  "/home/user/Documents/h1-visual-inspection/interface/datasets";
+const DATASET_ROOT = path.join(SERVER_ROOT, "..", "datasets");
 
 const PHOTOS_DIR = path.join(SERVER_ROOT, "photos");
 const TRAINING_ROOT = path.join(SERVER_ROOT, "training");
@@ -31,10 +30,9 @@ const ACTIVE_MODEL_META = path.join(MODELS_DIR, "active_model.json");
 /* ======================================================
    CAMERA (SIMULATED IMAGE)
 ====================================================== */
-const CAMERA_IMAGE_PATH =
-  "/home/user/Documents/h1-visual-inspection/interface/datasets/" +
+const CAMERA_IMAGE_PATH = path.join(DATASET_ROOT,
   "station_01/final_inspection/images/" +
-  "92762c6d__331aa42d-Image__2026-03-25__15-47-02.jpg";
+  "92762c6d__331aa42d-Image__2026-03-25__15-47-02.jpg");
 
 /* ======================================================
    EXPORT

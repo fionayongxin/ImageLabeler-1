@@ -13,37 +13,47 @@
 
 <body class="page-labeler">
 
-  <!-- Root layout container for thumbnail panel and labeling workspace -->
+  <!-- Root layout: thumbnails + labeling workspace -->
   <div class="labeler-layout">
 
-    <!-- Thumbnail panel populated dynamically with available images -->
+    <!-- LEFT: Thumbnail panel -->
     <aside class="thumb-panel">
       <h3>Images</h3>
-
-      <!-- JS injects thumbnail elements here -->
       <div id="thumbs"></div>
     </aside>
 
-    <!-- Main labeling work area -->
+    <!-- RIGHT: Labeling workspace -->
     <main class="work-panel">
-      <!-- Displays currently selected image name or state -->
+
       <h3 id="currentImage">No image selected</h3>
 
       <div class="label-workspace">
 
-        <!-- Image display and overlay canvas -->
+        <!-- ==============================
+             IMAGE + OVERLAY (CRITICAL FIX)
+             ============================== -->
         <section class="label-container">
-          <!-- Active image under annotation -->
-          <img id="image" alt="" />
 
-          <!-- Canvas overlay used for read/draw interactions -->
-          <canvas id="overlay" class="read-mode"></canvas>
+          <!-- Base image (bottom layer) -->
+          <img
+            id="image"
+            alt=""
+            style="position: absolute; z-index: 1;"
+          />
+
+          <!-- Canvas overlay (always on top) -->
+          <canvas
+            id="overlay"
+            class="read-mode"
+            style="position: absolute; z-index: 10;"
+          ></canvas>
+
         </section>
 
-        <!-- Annotation and mode controls -->
+        <!-- RIGHT: Controls -->
         <aside class="label-controls">
 
-          <!-- Mode selection (read vs draw) -->
+          <!-- MODE -->
           <section class="control-section">
             <h4 class="section-title">Mode</h4>
 
@@ -51,28 +61,24 @@
               <button
                 id="readModeBtn"
                 class="secondary active"
-                type="button"
-              >
+                type="button">
                 Read
               </button>
 
               <button
                 id="drawModeBtn"
                 class="secondary"
-                type="button"
-              >
+                type="button">
                 Draw
               </button>
             </div>
           </section>
 
-          <!-- Annotation class selection and save action -->
+          <!-- ANNOTATION -->
           <section class="control-section">
             <h4 class="section-title">Annotation</h4>
 
-            <label for="classSelect" class="control-label">
-              Class
-            </label>
+            <label for="classSelect">Class</label>
 
             <select id="classSelect">
               <option value="">-- Select --</option>
@@ -81,36 +87,33 @@
               <option value="scratch">Scratch</option>
             </select>
 
-            <!-- Persists current annotations in YOLO format -->
             <button
               id="saveYoloBtn"
               class="primary-action"
-              type="button"
-            >
+              type="button">
               Save Annotations
             </button>
-            <!-- Enable user to delete image taken-->
-            <button id="deleteImageBtn" class="danger" disabled>
+
+            <button
+              id="deleteImageBtn"
+              class="danger"
+              disabled>
               Delete Image
             </button>
-
           </section>
 
-          <!-- Current application status feedback -->
+          <!-- STATUS -->
           <section class="control-section status-section">
             <h4 class="section-title">Status</h4>
-
-            <!-- Updated dynamically by JS based on mode and actions -->
             <p id="status" class="status-text">Read mode</p>
           </section>
 
         </aside>
       </div>
     </main>
-
   </div>
 
-  <!-- Labeling application logic -->
+  <!-- Labeling logic -->
   <script src="js/labeler.js"></script>
 
 </body>

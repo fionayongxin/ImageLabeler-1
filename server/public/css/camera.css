@@ -8,6 +8,14 @@
   background: #0f172a;
 }
 
+.camera-preview {
+  width: 100%;
+  height: auto;           /* ✅ preserve aspect ratio */
+  object-fit: contain;    /* ✅ no cropping */
+  background: black;      /* optional, makes borders visible */
+}
+
+
 /* Main workspace layout: camera on the left, controls on the right */
 .container.workspace {
   display: grid;
@@ -240,11 +248,11 @@
 }
 
 .camera-area {
-  align-items: stretch;   /* IMPORTANT */
+  align-items: stretch;  
 }
 
 .camera-box {
-  height: 100%;           /* IMPORTANT */
+  height: 100%;   
   max-height: 100%;
 }
 
