@@ -52,7 +52,7 @@
 
 .page-labeler .work-panel {
   padding: 16px;
-  overflow: hidden;
+  overflow: visible; /* Changed from hidden to prevent clipping */
 }
 
 .page-labeler .label-workspace {
@@ -68,7 +68,7 @@
 ========================================================= */
 
 .page-labeler .label-container {
-  position: relative;
+  position: relative; /* Needed so the overlay canvas can align to the image */
   z-index: 0;
 
   width: 100%;
@@ -79,7 +79,7 @@
   align-items: center;
 
   background: black;
-  overflow: auto;
+  overflow: visible;
   
   user-select: none;
   -webkit-user-select: none;
@@ -90,7 +90,7 @@
 ========================================================= */
 
 .page-labeler .label-container img#image {
-  position: relative;
+  position: static;
   z-index: 1;
 
   display: block;
@@ -109,9 +109,8 @@
 
 .page-labeler .label-container canvas#overlay {
   position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+  top: 0;
+  left: 0;
 
   z-index: 10;
 

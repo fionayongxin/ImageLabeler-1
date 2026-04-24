@@ -4,10 +4,10 @@
  * ======================================================
  */
 
-const MIN_BOX_SIZE = 20;
-const NORMAL_LINE_WIDTH = 3;
+const MIN_BOX_SIZE = 100; // Minimum box size enforced for drawing and resizing
+const NORMAL_LINE_WIDTH = 6;
 const SELECTED_LINE_WIDTH = 6;
-const PREVIEW_LINE_WIDTH = 2;
+const PREVIEW_LINE_WIDTH = 6;
 const HANDLE_SIZE = 10;
 
 const BOX_COLORS = {
@@ -141,9 +141,8 @@ function loadImage(i) {
       const rect = img.getBoundingClientRect();
       
       // Set canvas internal resolution to natural image size
-
-      canvas.width = rect.width;
-      canvas.height = rect.height;
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
 
       // Calculate scale factors for both axes
       canvasScaleX = img.naturalWidth / rect.width;
@@ -162,6 +161,11 @@ function loadImage(i) {
       canvas.style.width = `${rect.width}px`;
       canvas.style.height = `${rect.height}px`;
 
+      // Position canvas exactly over the image inside the relative container
+      canvas.style.position = 'absolute';
+      canvas.style.top = `${img.offsetTop}px`;
+      canvas.style.left = `${img.offsetLeft}px`;
+
       redraw();
     });
   };
@@ -179,6 +183,41 @@ function toCanvas(e) {
     x: (e.clientX - r.left) * canvasScaleX,
     y: (e.clientY - r.top) * canvasScaleY
   };
+}
+
+function normalizeBox(startX, startY, x, y) {
+  let w = x - startX;
+  let h = y - startY;
+  let fx = startX;
+  let fy = startY;
+
+  if (w < 0) {
+    fx += w;
+    w = -w;
+  }
+
+  if (h < 0) {
+    fy += h;
+    h = -h;
+  }
+
+  return { fx, fy, w, h, toLeft: x < startX, toTop: y < startY };
+}
+
+function normalizeMinSquareBox(startX, startY, x, y) {
+  const box = normalizeBox(startX, startY, x, y);
+  if (box.w < MIN_BOX_SIZE || box.h < MIN_BOX_SIZE) {
+    const size = MIN_BOX_SIZE;
+    if (box.toLeft) {
+      box.fx = startX - size;
+    }
+    if (box.toTop) {
+      box.fy = startY - size;
+    }
+    box.w = size;
+    box.h = size;
+  }
+  return box;
 }
 
 function inside(b, x, y) {
@@ -239,8 +278,17 @@ canvas.addEventListener("mousemove", e => {
 
   if (resizing && selectedBox !== -1) {
     const b = boxes[selectedBox];
-    b.w = Math.max(MIN_BOX_SIZE, x - b.x);
-    b.h = Math.max(MIN_BOX_SIZE, y - b.y);
+    const rawW = x - b.x;
+    const rawH = y - b.y;
+
+    if (rawW < MIN_BOX_SIZE || rawH < MIN_BOX_SIZE) {
+      b.w = MIN_BOX_SIZE;
+      b.h = MIN_BOX_SIZE;
+    } else {
+      b.w = rawW;
+      b.h = rawH;
+    }
+
     redraw();
     return;
   }
@@ -257,27 +305,21 @@ canvas.addEventListener("mousemove", e => {
 
   if (drawing) {
     redraw();
-    drawBox(startX, startY, x - startX, y - startY, classSelect.value, true);
+    const { fx, fy, w, h } = normalizeMinSquareBox(startX, startY, x, y);
+    drawBox(fx, fy, w, h, classSelect.value, true);
   }
 });
 
 canvas.addEventListener("mouseup", e => {
   if (drawing) {
     const { x, y } = toCanvas(e);
-
-    let w = x - startX;
-    let h = y - startY;
-    let fx = startX;
-    let fy = startY;
-
-    if (w < 0) { fx += w; w = -w; }
-    if (h < 0) { fy += h; h = -h; }
+    const { fx, fy, w, h } = normalizeMinSquareBox(startX, startY, x, y);
 
     boxes.push({
       x: fx,
       y: fy,
-      w: Math.max(MIN_BOX_SIZE, w),
-      h: Math.max(MIN_BOX_SIZE, h),
+      w,
+      h,
       label: classSelect.value
     });
 
