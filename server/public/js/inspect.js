@@ -1,29 +1,33 @@
 /**
- * ======================================================
- * inspect.js — FINAL, INDUSTRY‑GRADE
+ * =================================================GRADE * ======================================================
  * ------------------------------------------------------
  * Role separation:
  *  Operator mode
- *    - Camera visible
+ *    - Camera visible (Basler MJPEG)
  *    - Inference polling active
  *  Engineer mode
  *    - No camera
  *    - No inference
  *
  * Architecture:
- * Browser → Node → FastAPI
+ * Browser → Node → Python
  * ======================================================
  */
 
 /* ======================================================
    API ENDPOINTS (Node‑owned)
 ====================================================== */
-const CAMERA_URL = "/api/inference/camera";
+
+// ✅ Basler camera stream (MJPEG)
+const CAMERA_URL = "/api/camera/stream";
+
+// ✅ Inference status endpoint
 const STATUS_URL = "/api/inference/status";
 
 /* ======================================================
    DOM ELEMENTS
 ====================================================== */
+
 const camImg        = document.getElementById("liveCam");
 const placeholder   = document.getElementById("camPlaceholder");
 const headerStatus  = document.getElementById("headerStatus");
@@ -41,6 +45,7 @@ const engineerLayout = document.querySelector(".engineer-layout");
 /* ======================================================
    STATE
 ====================================================== */
+
 let polling = false;
 let pollingTimer = null;
 let lastStatus = null;
@@ -50,6 +55,7 @@ let classNames = {};
 /* ======================================================
    CLASS COLORS
 ====================================================== */
+
 const CLASS_COLORS = {
   T_Body: "#22c55e",
   T_Top_view: "#16a34a",
@@ -70,6 +76,7 @@ const CLASS_COLORS = {
 /* ======================================================
    STATUS UI
 ====================================================== */
+
 function setStatus(status, text) {
   headerStatus.textContent = text;
   cameraResult.textContent = text;
@@ -81,6 +88,7 @@ function setStatus(status, text) {
 /* ======================================================
    CANVAS
 ====================================================== */
+
 function resizeCanvas() {
   canvas.width  = camImg.clientWidth;
   canvas.height = camImg.clientHeight;
@@ -91,9 +99,10 @@ window.addEventListener("resize", resizeCanvas);
 /* ======================================================
    CAMERA CONTROL
 ====================================================== */
+
 function startCamera() {
   cameraReady = false;
-  camImg.src = CAMERA_URL;
+  camImg.src = CAMERA_URL;   // ✅ Fixed: defined URL
 }
 
 function stopCamera() {
@@ -123,6 +132,7 @@ camImg.onerror = () => {
 /* ======================================================
    POLLING
 ====================================================== */
+
 function startPolling() {
   if (polling) return;
   polling = true;
@@ -138,6 +148,7 @@ function stopPolling() {
 /* ======================================================
    DRAW DETECTIONS
 ====================================================== */
+
 function drawBoxes(detections) {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -155,7 +166,7 @@ function drawBoxes(detections) {
     if (det.conf < 0.3) return;
 
     const [x1, y1, x2, y2] = det.xyxy;
-    const clsName = classNames[det.cls] || "Unassigned";
+    const clsName = classNames[det.cls] || det.name || "Unassigned";
     const color = CLASS_COLORS[clsName] || "#facc15";
 
     ctx.strokeStyle = color;
@@ -180,6 +191,7 @@ function drawBoxes(detections) {
 /* ======================================================
    INFERENCE
 ====================================================== */
+
 async function pollInspectionStatus() {
   if (!polling) return;
 
@@ -211,6 +223,7 @@ async function pollInspectionStatus() {
 /* ======================================================
    MODE SWITCHING
 ====================================================== */
+
 tabOperator.onclick = () => {
   tabOperator.classList.add("active");
   tabEngineer.classList.remove("active");
@@ -236,4 +249,5 @@ tabEngineer.onclick = () => {
 /* ======================================================
    INIT
 ====================================================== */
+
 startCamera();

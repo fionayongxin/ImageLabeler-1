@@ -14,55 +14,75 @@
  * ======================================================
  */
 
-const fs = require("fs");
+
 const axios = require("axios");
+const fs = require("fs/promises");
+const path = require("path");
 
-const {
-  ACTIVE_MODEL_META
-} = require("../config/paths");
+const { FASTAPI_BASE_URL } = require("../config/env");
 
-const {
-  FASTAPI_BASE_URL
-} = require("../config/env");
+// -----------------------------------------------------------------------------
+// INSPECTION CONFIG PATH (single source of truth)
+// -----------------------------------------------------------------------------
 
-/**
- * Persist active model relative path.
- *
- * @param {string} relativePath
- */
-function setActiveModel(relativePath) {
-  if (!relativePath) {
-    throw new Error("Invalid model path");
-  }
+const INSPECTION_CONFIG_PATH = path.join(
+  __dirname,
+  "..",
+  "config",
+  "inspection_state.json"
+);
 
-  fs.writeFileSync(
-    ACTIVE_MODEL_META,
-    JSON.stringify({ path: relativePath }, null, 2)
-  );
-}
+// -----------------------------------------------------------------------------
+// INFERENCE (EXISTING FUNCTIONALITY — UNCHANGED)
+// -----------------------------------------------------------------------------
 
-/**
- * Trigger FastAPI to reload the active model.
- *
- * @returns {Promise<Object>}
- */
-async function reloadModel() {
-  const res = await axios.post(`${FASTAPI_BASE_URL}/reload`);
-  return res.data;
-}
-
-/**
- * Run inference via FastAPI.
- *
- * @returns {Promise<Object>}
- */
 async function runInference() {
   const res = await axios.get(`${FASTAPI_BASE_URL}/infer`);
   return res.data;
 }
 
+// -----------------------------------------------------------------------------
+// INSPECTION CONFIG MANAGEMENT (MERGED HERE)
+// -----------------------------------------------------------------------------
+
+async function readInspectionState() {
+  const raw = await fs.readFile(INSPECTION_CONFIG_PATH, "utf-8");
+  return JSON.parse(raw);
+}
+
+async function writeInspectionState(state) {
+  await fs.writeFile(
+    INSPECTION_CONFIG_PATH,
+    JSON.stringify(state, null, 2),
+    "utf-8"
+  );
+}
+
+async function setCurrentStep(step) {
+  const state = await readInspectionState();
+  state.currentStep = step;
+  await writeInspectionState(state);
+  return state;
+}
+
+async function updateInspectionConfig(partialUpdate) {
+  const state = await readInspectionState();
+  const updated = { ...state, ...partialUpdate };
+  await writeInspectionState(updated);
+  return updated;
+}
+
+// -----------------------------------------------------------------------------
+// EXPORTS (SINGLE SERVICE, SINGLE OWNER)
+// -----------------------------------------------------------------------------
+
 module.exports = {
-  setActiveModel,
-  reloadModel,
-  runInference
+  // inference
+  runInference,
+
+  // inspection configuration
+  readInspectionState,
+  writeInspectionState,
+  setCurrentStep,
+  updateInspectionConfig
 };

@@ -1,0 +1,33 @@
+{
+  "model": "C:\\Users\\pnayeuoo\\OneDrive - Flex\\Documents\\AISetup\\interface\\server\\training\\station_01-final_inspection-yolo26m-1777254365548\\weights\\best.pt",
+  "confidence": 0.35,
+  "currentStep": 2,
+  "steps": [
+    {
+      "step": 1,
+      "required": [
+        "T_Body"
+      ],
+      "forbidden": [
+        "T_Bushing",
+        "T_SN_label"
+      ]
+    },
+    {
+      "step": 2,
+      "required": [
+        "T_Bushing"
+      ],
+      "forbidden": [
+        "T_SN_label"
+      ]
+    },
+    {
+      "step": 3,
+      "required": [
+        "T_SN_label"
+      ],
+      "forbidden": []
+    }
+  ]
+}
