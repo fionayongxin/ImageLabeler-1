@@ -38,8 +38,7 @@ const pythonScript = path.join(
 );
 
 const baslerProcess = spawn("python", [pythonScript], {
-  stdio: "inherit",
-  shell: true
+  stdio: "inherit"
 });
 
 baslerProcess.on("error", err => {

@@ -10,15 +10,52 @@ const SELECTED_LINE_WIDTH = 6;
 const PREVIEW_LINE_WIDTH = 6;
 const HANDLE_SIZE = 10;
 
-const BOX_COLORS = {
-  ok: "#22c55e",
-  defect: "#ef4444",
-  scratch: "#fb923c"
-};
+const COLOR_PALETTE = [
+  "#22c55e", "#ef4444", "#fb923c", "#3b82f6", "#8b5cf6", "#f59e0b",
+  "#10b981", "#ec4899", "#06b6d4", "#a855f7", "#14b8a6", "#f97316",
+  "#0ea5e9", "#e11d48", "#eab308", "#0f766e", "#7c3aed", "#15803d",
+  "#d946ef", "#c026d3", "#fb7185", "#0f766e"
+];
 
-const CLASS_MAP = { ok: 0, defect: 1, scratch: 2 };
-const STATION = "station1";
-const PROCESS = "processA";
+let BOX_COLORS = {};
+let CLASS_MAP = {};
+let classNames = [];
+
+const STATION = "station_01";
+const PROCESS = "final_inspection";
+
+async function loadClassNames() {
+  try {
+    const response = await fetch(`/api/yolo/classes?station=${encodeURIComponent(STATION)}&process=${encodeURIComponent(PROCESS)}`);
+    if (!response.ok) {
+      throw new Error(`Failed to load classes: ${response.statusText}`);
+    }
+    const data = await response.json();
+    classNames = data.classes || [];
+    populateClassSelect(classNames);
+  } catch (error) {
+    console.error(error);
+    setStatus("Cannot load class list", "error");
+  }
+}
+
+function populateClassSelect(names) {
+  CLASS_MAP = {};
+  BOX_COLORS = {};
+  classSelect.innerHTML = "<option value=\"\">-- Select --</option>";
+
+  names.forEach((name, index) => {
+    CLASS_MAP[name] = index;
+    BOX_COLORS[name] = COLOR_PALETTE[index % COLOR_PALETTE.length];
+
+    const option = document.createElement("option");
+    option.value = name;
+    option.textContent = name;
+    classSelect.appendChild(option);
+  });
+
+  updateSaveButtonState();
+}
 
 /* ===================== STATE ===================== */
 
@@ -94,6 +131,7 @@ function setMode(m) {
 readBtn.onclick = () => setMode("read");
 drawBtn.onclick = () => setMode("draw");
 setMode("read");
+loadClassNames();
 
 /* ===================== LOAD IMAGES ===================== */
 
@@ -119,8 +157,27 @@ function renderThumbnails() {
 
 /* ===================== IMAGE LOAD ===================== */
 
+function clearImageView() {
+  currentIndex = -1;
+  currentImage = null;
+  boxes = [];
+  selectedBox = -1;
+  deleteImageBtn.disabled = true;
+  img.src = "";
+  img.removeAttribute("src");
+  canvas.width = 0;
+  canvas.height = 0;
+  canvas.style.width = "0";
+  canvas.style.height = "0";
+  document.getElementById("currentImage").textContent = "No image selected";
+  redraw();
+}
+
 function loadImage(i) {
-  if (i < 0 || i >= images.length) return;
+  if (i < 0 || i >= images.length) {
+    clearImageView();
+    return;
+  }
 
   currentIndex = i;
   currentImage = images[i];
@@ -130,39 +187,18 @@ function loadImage(i) {
   selectedBox = -1;
 
   img.onload = () => {
-    
-  console.log(
-    canvas.width, canvas.height,
-    img.clientWidth, img.clientHeight
-  );
-
-    // Wait for layout to settle before measuring
     requestAnimationFrame(() => {
       const rect = img.getBoundingClientRect();
-      
-      // Set canvas internal resolution to natural image size
+
       canvas.width = img.naturalWidth;
       canvas.height = img.naturalHeight;
 
-      // Calculate scale factors for both axes
       canvasScaleX = img.naturalWidth / rect.width;
       canvasScaleY = img.naturalHeight / rect.height;
 
-      console.log("Image loaded:", {
-        naturalWidth: img.naturalWidth,
-        naturalHeight: img.naturalHeight,
-        displayWidth: rect.width,
-        displayHeight: rect.height,
-        scaleX: canvasScaleX,
-        scaleY: canvasScaleY
-      });
-
-      // Set canvas display size to match image display size
       canvas.style.width = `${rect.width}px`;
       canvas.style.height = `${rect.height}px`;
-
-      // Position canvas exactly over the image inside the relative container
-      canvas.style.position = 'absolute';
+      canvas.style.position = "absolute";
       canvas.style.top = `${img.offsetTop}px`;
       canvas.style.left = `${img.offsetLeft}px`;
 
@@ -381,13 +417,22 @@ deleteImageBtn.onclick = async () => {
 
   images.splice(currentIndex, 1);
   renderThumbnails();
-  loadImage(Math.min(currentIndex, images.length - 1));
+
+  if (images.length > 0) {
+    loadImage(Math.min(currentIndex, images.length - 1));
+  } else {
+    clearImageView();
+  }
 };
 
 /* ===================== SAVE YOLO ===================== */
 
-saveYoloBtn.onclick = () => {
-  fetch("/api/yolo/save", {
+classSelect.onchange = updateSaveButtonState;
+
+saveYoloBtn.onclick = async () => {
+  if (!currentImage) return;
+
+  const response = await fetch("/api/yolo/save", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -399,15 +444,26 @@ saveYoloBtn.onclick = () => {
       station: STATION,
       process: PROCESS
     })
-  }).then(() => {
-    setStatus("Saved", "success");
-    updateSaveButtonState();
-    
-    // Remove current image from list and load next
-    images.splice(currentIndex, 1);
-    renderThumbnails();
-    loadImage(Math.min(currentIndex, images.length - 1));
   });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => null);
+    setStatus(error?.message || "Save failed", "error");
+    return;
+  }
+
+  setStatus("Saved", "success");
+  updateSaveButtonState();
+
+  images.splice(currentIndex, 1);
+  renderThumbnails();
+
+  if (images.length > 0) {
+    loadImage(Math.min(currentIndex, images.length - 1));
+  } else {
+    clearImageView();
+    setStatus("All images labeled", "success");
+  }
 };
 
 /* ===================== UNDO ===================== */

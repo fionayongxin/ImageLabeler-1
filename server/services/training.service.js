@@ -77,7 +77,7 @@ function startTraining({
   activeRunName = safeRun;
 
   trainProcess = spawn(
-    "python3",
+    "python",
     [
         path.join(__dirname, "..", "..", "training", "train.py"),     
         "--data", datasetYaml,

@@ -36,16 +36,37 @@ const yoloService = require("../services/yolo.service");
  * }
  */
 router.post("/save", (req, res) => {
-  const result = yoloService.saveYolo(req.body);
-  res.json(result);
+  try {
+    const result = yoloService.saveYolo(req.body);
+    res.json(result);
+  } catch (error) {
+    console.error("[YOLO] save error", error);
+    res.status(500).json({ status: "error", message: error.message });
+  }
+});
+
+router.get("/classes", (req, res) => {
+  try {
+    const { station, process } = req.query;
+    const classes = yoloService.getClasses(station, process);
+    res.json({ classes });
+  } catch (error) {
+    console.error("[YOLO] classes error", error);
+    res.status(500).json({ status: "error", message: error.message });
+  }
 });
 
 /**
  * Undo the last YOLO save operation.
  */
 router.post("/undo", (_req, res) => {
-  const result = yoloService.undoLastSave();
-  res.json(result);
+  try {
+    const result = yoloService.undoLastSave();
+    res.json(result);
+  } catch (error) {
+    console.error("[YOLO] undo error", error);
+    res.status(500).json({ status: "error", message: error.message });
+  }
 });
 
 module.exports = router;

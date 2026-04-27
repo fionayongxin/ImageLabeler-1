@@ -1,13 +1,16 @@
-0: T 2 label
-1: T Body
-2: T Bushing
-3: T Hole Plug
-4: T Inner opening
-5: T Missing 2 label
-6: T Missing Hole Plug
-7: T Missing SN label
-8: T SN label
-9: T Top view
-10: T Without Bushing
-11: T rear side
-12: Unassigned
+T 2 label
+T Body
+T Bushing
+T Hole Plug
+T Inner opening
+T Missing 2 label
+T Missing Hole Plug
+T Missing SN label
+T SN label
+T Top view
+T Without Bushing
+T rear side
+Unassigned
+dev
+test
+train

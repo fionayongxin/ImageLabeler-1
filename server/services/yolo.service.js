@@ -27,6 +27,50 @@ const {
   deleteFileSafe
 } = require("../utils/file.safe");
 
+function parseDatasetClasses(datasetYamlPath) {
+  const raw = fs.readFileSync(datasetYamlPath, "utf8");
+  const lines = raw.split(/\r?\n/);
+  const names = [];
+  let inNames = false;
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!inNames) {
+      if (trimmed === "names:") {
+        inNames = true;
+      }
+      continue;
+    }
+
+    if (!trimmed || !/^\d+:/.test(trimmed)) break;
+
+    const match = trimmed.match(/^\d+:\s*(.*)$/);
+    if (match) {
+      names.push(match[1].trim());
+    }
+  }
+
+  return names;
+}
+
+function getClasses(station, process) {
+  if (!station || !process) {
+    throw new Error("Missing station or process");
+  }
+
+  const datasetYaml = path.join(DATASET_ROOT, station, process, "dataset.yaml");
+  if (!fs.existsSync(datasetYaml)) {
+    throw new Error("dataset.yaml not found");
+  }
+
+  const classes = parseDatasetClasses(datasetYaml);
+  if (classes.length === 0) {
+    throw new Error("No class names found in dataset.yaml");
+  }
+
+  return classes;
+}
+
 /**
  * Internal state to support undo.
  * Only the most recent save is undoable.
@@ -130,5 +174,6 @@ function undoLastSave() {
 
 module.exports = {
   saveYolo,
-  undoLastSave
+  undoLastSave,
+  getClasses
 };

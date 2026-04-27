@@ -1,7 +1,7 @@
-path: "/home/user/Documents/h1-visual-inspection/interface"
+path: "C:/Users/pnayeuoo/OneDrive - Flex/Documents/AISetup/interface"
 
-train: "/home/user/Documents/h1-visual-inspection/interface/datasets/station_01/final_inspection/images"
-val: "/home/user/Documents/h1-visual-inspection/interface/datasets/station_01/final_inspection/validation/images"
+train: "C:/Users/pnayeuoo/OneDrive - Flex/Documents/AISetup/interface/datasets/station_01/final_inspection/images"
+val: "C:/Users/pnayeuoo/OneDrive - Flex/Documents/AISetup/interface/datasets/station_01/final_inspection/validation/images"
 
 names:
   0: T_2_label
