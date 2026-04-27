@@ -1,53 +1,310 @@
-## Vision Trainer Web App – Developer
+# Vision Inspection System
 
-This project is a multi‑page, framework‑free web application for camera capture, image annotation, model training, experiment tracking, dataset browsing, and live visual inspection. Each page is self‑contained and communicates only with backend APIs. There is no shared frontend state across pages.
+A comprehensive computer vision inspection system for automated quality control using Basler cameras, YOLO object detection, and real-time inference. Built with Node.js, Python FastAPI, and Ultralytics YOLO.
 
-### High‑Level Architecture
+## Features
 
-Browser (**HTML** / **CSS** / **JavaScript**)
-↓
-Node.js Server (Static assets + REST APIs)
-↓
+### 🔍 **Live Inspection**
+- Real-time camera streaming via Basler cameras
+- Step-based inspection rules with required/forbidden classes
+- PASS/FAIL/WAITING status with confidence thresholds
+- Engineer mode for configuration and testing
 
-### Python Services
+### 📷 **Camera Integration**
+- Basler camera control via pypylon
+- MJPEG streaming for live preview
+- Still image capture and storage
+- Automatic camera discovery and configuration
 
-    ├─ Training (Ultralytics YOLO)
-    └─ Inference (FastAPI, persistent runtime)
+### 🏷️ **Image Labeling**
+- Canvas-based annotation interface
+- Dynamic class loading from dataset configuration
+- YOLO format export with normalized coordinates
+- Thumbnail navigation and batch processing
 
-### Startup / Run Guide Prerequisites
+### 🤖 **Model Training**
+- Ultralytics YOLO training with CLI interface
+- Multiple model support (YOLOv5, YOLOv8, etc.)
+- Experiment tracking with metrics visualization
+- Automatic dataset validation
 
-Node.js (v18+) Python 3.9+ Python virtual environment with:
+### 📊 **Experiment Management**
+- Training run history and metrics
+- Model performance comparison
+- Weights download and deployment
+- Loss and mAP visualization
 
-ultralytics fastapi uvicorn torch (**GPU** optional)
+### 📁 **Dataset Management**
+- Hierarchical dataset organization (station/process)
+- Image browsing with pagination
+- Dataset statistics and validation
+- YAML configuration management
 
-Activate your Python virtual environment before running services. Start Inference Server (FastAPI)
+## Architecture
 
-`cd interface/inspect`
+```
+Browser (HTML/CSS/JS)
+    ↓ HTTP
+Node.js Express Server (Port 3000)
+    ↓ REST APIs
+├── Camera Service (Python/Flask - Port 8001)
+├── Inference Service (Python/FastAPI - Port 8000)
+├── Training Service (Python CLI)
+└── File System (Datasets, Models, Photos)
+```
 
-`uvicorn inference_server:app --host 0.0.0.0 --port 8001`
+### Service Responsibilities
 
-Start Node.js Server
-`cd interface/server node server.js`
+- **Node.js Server**: HTTP API gateway, static assets, service orchestration
+- **Camera Service**: Basler camera control, MJPEG streaming, image capture
+- **Inference Service**: YOLO model loading, real-time inference, inspection logic
+- **Training Service**: Dataset training, experiment tracking, model export
 
-Expected output: Server running on [http://localhost:3000](http://localhost:**3000**)
+## Prerequisites
 
-### Application URLs
+### System Requirements
+- **Windows 10/11** (tested on Windows)
+- **Node.js** v18+ (LTS recommended)
+- **Python** 3.12 
+- **Basler Camera** with pylon SDK (optional for development)
 
-Camera: http://localhost:3000/
-Labeler: http://localhost:3000/labeler
-Trainer: http://localhost:3000/trainer
-Experiments: http://localhost:3000/experiments
-Datasets: http://localhost:3000/datasets
-Inspection: http://localhost:3000/inspect
-Settings: http://localhost:3000/settings
+### Python Environment
+```bash
+# Create virtual environment
+python -m venv yolo-env
 
-### Directory Tree
+# Activate environment
+yolo-env\Scripts\activate  # Windows
+# source yolo-env/bin/activate  # Linux/Mac
 
-/interface/
-├─ server/
-│ ├─ server.js
-│ ├─ routes/
-│ ├─ services/
+# Install dependencies
+pip install -r requirements.txt
+```
+
+### Required Packages
+- `ultralytics` - YOLO training and inference
+- `fastapi` - REST API framework
+- `uvicorn` - ASGI server
+- `torch` - PyTorch (with CUDA support for GPU)
+- `opencv-python` - Image processing
+- `flask` - Camera streaming service
+- `pypylon` - Basler camera SDK (optional)
+
+## Installation
+
+1. **Clone/Download the project**
+   ```bash
+   cd path/to/your/projects
+   # Place the interface folder here
+   ```
+
+2. **Install Node.js dependencies**
+   ```bash
+   cd interface
+   npm install
+   ```
+
+3. **Setup Python environment**
+   ```bash
+   # Create virtual environment
+   python -m venv yolo-env
+
+   # Activate environment
+   yolo-env\Scripts\activate
+
+   # Install Python packages
+   pip install -r requirements.txt
+   ```
+
+4. **Configure paths** (if needed)
+   - Update `server/config/paths.js` for custom directories
+   - Update `server/config/env.js` for different ports
+   - Ensure dataset paths in `datasets/station_01/final_inspection/dataset.yaml` are correct
+
+## Usage
+
+### Starting the System
+
+1. **Activate Python environment**
+   ```bash
+   cd interface
+   yolo-env\Scripts\activate
+   ```
+
+2. **Start Inference Service** (FastAPI)
+   ```bash
+   cd inspect
+   uvicorn inference_server:app --host 0.0.0.0 --port 8000
+   ```
+
+3. **Start Main Server** (Node.js)
+   ```bash
+   cd server
+   node server.js
+   ```
+
+4. **Access the application**
+   - Open browser: `http://localhost:3000`
+   - Default page redirects to training interface
+
+### Application Pages
+
+| Page | URL | Description |
+|------|-----|-------------|
+| **Training** | `/` or `/trainer` | Configure and start YOLO training |
+| **Labeler** | `/labeler` | Annotate images for training |
+| **Experiments** | `/experiments` | View training history and metrics |
+| **Datasets** | `/datasets` | Browse dataset images |
+| **Inspection** | `/inspect` | Live inspection with camera |
+| **Settings** | `/settings` | System diagnostics and info |
+
+### Workflow
+
+1. **Setup Dataset**
+   - Place images in `datasets/station_01/final_inspection/images/`
+   - Configure classes in `dataset.yaml`
+
+2. **Label Images**
+   - Go to `/labeler`
+   - Select images, draw bounding boxes
+   - Choose classes and save annotations
+
+3. **Train Model**
+   - Go to `/trainer`
+   - Select dataset, model, and parameters
+   - Start training and monitor progress
+
+4. **Deploy Model**
+   - Trained models appear in `/experiments`
+   - Download weights or set as active model
+
+5. **Live Inspection**
+   - Go to `/inspect`
+   - Configure inspection rules per step
+   - Monitor real-time PASS/FAIL results
+
+## Configuration
+
+### Dataset Configuration
+Located: `datasets/station_01/final_inspection/dataset.yaml`
+
+```yaml
+path: "C:/Users/username/Documents/AISetup/interface"
+train: "C:/Users/username/Documents/AISetup/interface/datasets/station_01/final_inspection/images"
+val: "C:/Users/username/Documents/AISetup/interface/datasets/station_01/final_inspection/validation/images"
+
+names:
+  0: T_2_label
+  1: T_Body
+  2: T_Bushing
+  # ... more classes
+```
+
+### Inspection Rules
+Located: `server/config/inspection_state.json`
+
+```json
+{
+  "model": "path/to/model.pt",
+  "confidence": 0.35,
+  "currentStep": 1,
+  "steps": [
+    {
+      "step": 1,
+      "required": ["T_Body"],
+      "forbidden": ["T_Bushing", "T_SN_label"]
+    }
+  ]
+}
+```
+
+### Active Model
+Located: `server/public/js/models/active_model.json`
+
+```json
+{
+  "path": "C:/path/to/trained/model.pt"
+}
+```
+
+## API Reference
+
+### Camera APIs
+- `GET /api/camera/stream` - MJPEG camera stream
+- `POST /api/camera/capture` - Capture still image
+
+### Inference APIs
+- `GET /api/inference/status` - Get inspection result
+- `GET /api/inference/config` - Get inspection configuration
+- `POST /api/inference/config` - Update inspection config
+
+### Training APIs
+- `POST /api/train/start` - Start training run
+- `POST /api/train/stop` - Stop active training
+- `GET /api/train/progress` - Get training progress
+
+### Labeling APIs
+- `GET /api/yolo/classes` - Get available classes
+- `POST /api/yolo/save` - Save YOLO annotations
+- `POST /api/yolo/undo` - Undo last save
+
+### Dataset APIs
+- `GET /api/datasets` - List datasets
+- `GET /api/datasets/images` - Get dataset images
+
+## Directory Structure
+
+```
+interface/
+├── basler_capture.py          # Camera capture utility
+├── basler_stream.py           # Camera streaming service
+├── train.py                   # Training CLI script
+├── requirements.txt           # Python dependencies
+├── package.json              # Node.js dependencies
+├── datasets/                 # Training datasets
+│   └── station_01/
+│       └── final_inspection/
+│           ├── dataset.yaml
+│           ├── classes.txt
+│           ├── images/       # Training images
+│           ├── labels/       # YOLO annotations
+│           └── validation/   # Validation set
+├── inspect/
+│   └── inference_server.py  # FastAPI inference service
+├── server/
+│   ├── server.js             # Main Express server
+│   ├── config/
+│   │   ├── env.js           # Environment config
+│   │   └── paths.js         # Path configuration
+│   ├── routes/              # API route handlers
+│   ├── services/            # Business logic
+│   ├── utils/               # Utility functions
+│   └── public/              # Static web assets
+│       ├── index.html
+│       ├── css/
+│       ├── js/
+│       └── models/
+├── training/                # Training outputs
+│   └── [run_name]/
+│       ├── weights/
+│       │   ├── best.pt
+│       │   └── last.pt
+│       ├── results.csv
+│       └── run_config.json
+└── yolo-env/               # Python virtual environment
+```
+
+## License
+
+This project is proprietary software for internal use.
+
+## Support
+
+For issues or questions:
+1. Check this README and troubleshooting section
+2. Review logs and error messages
+3. Verify configuration files
+4. Test individual services in isolation
 │ ├─ config/
 │ ├─ public/
 │ │ ├─ css/
@@ -69,73 +326,3 @@ Settings: http://localhost:3000/settings
 │ └─ dataset.yaml
 │
 └─ photos/
-
-### Page Responsibilities
-
-#### Camera Capture
-
-Live webcam preview using getUserMedia Capture still images via off‑screen canvas Mirror image before saving Persist images to backend Display latest captured thumbnails
-
-#### Image Labeler
-
-Draw bounding boxes Assign class labels Read / draw modes Pixel‑based deterministic annotation Save YOLO labels Undo last annotation save
-
-#### Model Trainer
-
-Configure training parameters Start and stop training jobs Poll backend for progress Display live loss and mAP charts
-
-#### Experiments
-
-Paginated experiment list Per‑run metrics visualization Download trained weights
-
-#### Datasets
-
-Read‑only dataset inspection Filter by station and process Paginated image display
-
-#### Live Inspection
-
-Run inference via FastAPI Persistent model runtime Poll inference results Draw bounding boxes Display **PASS** / **FAIL** status
-
-#### Settings
-
-Display backend system diagnostics Read‑only key/value data
-
-### API Endpoints
-
-#### Camera / Photos
-
-**GET** /api/photos
-**GET** /api/photos/latest
-**POST** /api/photos/save
-**POST** /api/photos/delete
-
-#### Labeling
-
-**POST** /api/yolo/save
-**POST** /api/yolo/undo
-
-#### Training
-
-**POST** /api/train/start
-**POST** /api/train/stop
-**GET** /api/train/progress
-**GET** /api/train/metrics
-
-#### Experiments
-
-**GET** /api/experiments
-**GET** /api/experiments/:run/metrics
-**GET** /api/experiments/:run/weights
-
-#### Datasets
-
-**GET** /api/datasets/images?station=&process=
-
-#### Inference
-
-**GET** /api/inference/status
-**POST** /api/inference/model/upload
-
-#### System
-
-**GET** /api/system

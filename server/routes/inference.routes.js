@@ -13,65 +13,57 @@
  * ======================================================
  */
 
+
 const express = require("express");
-const multer = require("multer");
 const router = express.Router();
 
-const inferenceService = require("../services/inference.service");
+const {
+  runInference,
+  readInspectionState,
+  setCurrentStep,
+  updateInspectionConfig
+} = require("../services/inference.service");
 
-/**
- * Upload and activate a model (Engineer mode).
- * Triggers FastAPI reload.
- */
-const upload = multer({
-  storage: multer.diskStorage({
-    destination: "models",
-    filename: (_req, file, cb) => cb(null, file.originalname)
-  }),
-  fileFilter: (_req, file, cb) =>
-    file.originalname.endsWith(".pt")
-      ? cb(null, true)
-      : cb(new Error("Only .pt files allowed"))
-});
+// -----------------------------------------------------------------------------
+// EXISTING INFERENCE ENDPOINT
+// -----------------------------------------------------------------------------
 
-router.post("/model/upload", upload.single("model"), async (req, res) => {
-  const relativePath = `models/${req.file.originalname}`;
-  inferenceService.setActiveModel(relativePath);
-  const reload = await inferenceService.reloadModel();
-  res.json({ status: "ok", reload });
-});
-
-/**
- * Run inference (FastAPI).
- */
 router.get("/status", async (_req, res) => {
-  const result = await inferenceService.runInference();
-  res.json(result);
+  try {
+    const result = await runInference();
+    res.json(result);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Inference failed" });
+  }
 });
 
-/**
- * Proxy camera MJPEG stream from FastAPI
- */
-router.get("/camera", async (_req, res) => {
-  try {
-    const response = await fetch(`${FASTAPI_BASE_URL}/camera`);
+// -----------------------------------------------------------------------------
+// ENGINEER: READ INSPECTION STATE
+// -----------------------------------------------------------------------------
 
-    if (!response.ok || !response.body) {
-      throw new Error("FastAPI camera unavailable");
-    }
+router.get("/config", async (_req, res) => {
+  const state = await readInspectionState();
+  res.json(state);
+});
 
-    res.setHeader(
-      "Content-Type",
-      response.headers.get("content-type") ||
-        "multipart/x-mixed-replace; boundary=frame"
-    );
+// -----------------------------------------------------------------------------
+// ENGINEER: UPDATE FULL / PARTIAL CONFIG
+// -----------------------------------------------------------------------------
 
-    response.body.pipe(res);
+router.post("/config", async (req, res) => {
+  const updated = await updateInspectionConfig(req.body);
+  res.json({ status: "ok", config: updated });
+});
 
-  } catch (err) {
-    console.error("Camera proxy error:", err.message);
-    res.status(500).end();
-  }
+// -----------------------------------------------------------------------------
+// ENGINEER: MANUAL STEP CONTROL
+// -----------------------------------------------------------------------------
+
+router.post("/step/:step", async (req, res) => {
+  const step = Number(req.params.step);
+  const updated = await setCurrentStep(step);
+  res.json({ status: "ok", currentStep: updated.currentStep });
 });
 
 module.exports = router;
