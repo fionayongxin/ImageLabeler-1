@@ -1,75 +1,36 @@
-training/**/weights/*.pt
-# ========================
+# --------------------------------------------------
 # Python
-# ========================
+# --------------------------------------------------
 __pycache__/
-*.py[cod]
+*.pyc
 *.pyo
 *.pyd
-
-# Virtual environments (CRITICAL)
 yolo-env/
-venv/
-.env/
-.env*/
-.env.bak/
-.env.old/
 
-# Python build artifacts
-build/
-dist/
-*.egg-info/
-
-# ========================
-# Node / Web
-# ========================
+# --------------------------------------------------
+# Node / frontend
+# --------------------------------------------------
 node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
 
-# ========================
-# OS / Editor
-# ========================
+# --------------------------------------------------
+# Runtime & generated data (DO NOT VERSION)
+# --------------------------------------------------
+server/runtime/
+server/photos/
+datasets/
+training/
+
+# --------------------------------------------------
+# Large / binary files
+# --------------------------------------------------
+*.pt
+*.onnx
+*.engine
+*.jpg
+*.png
+
+# --------------------------------------------------
+# OS
+# --------------------------------------------------
 .DS_Store
 Thumbs.db
-ehthumbs.db
-Desktop.ini
-
-.vscode/
-.idea/
-
-# ========================
-# Logs & temp
-# ========================
-*.log
-tmp/
-temp/
-
-# ========================
-# ML / Data
-# ========================
-*.pt
-*.pth
-*.onnx
-*.h5
-*.ckpt
-
-datasets/
-runs/
-outputs/
-results/
-
-# ========================
-# Yolo / cache
-# ========================
-.cache/
-*.cache
-
-# ========================
-# Certificates / secrets
-# ========================
-*.key
-*.pem
-*.crt
-*.json.secret
