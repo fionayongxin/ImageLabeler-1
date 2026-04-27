@@ -76,10 +76,26 @@ python -m venv yolo-env
 # Activate environment
 yolo-env\Scripts\activate  # Windows
 # source yolo-env/bin/activate  # Linux/Mac
-
-# Install dependencies
-pip install -r requirements.txt
 ```
+
+### Dependency management
+This project uses `pip-tools` to keep dependencies reproducible.
+
+1. Install `pip-tools` inside the virtual environment:
+   ```bash
+   pip install pip-tools
+   ```
+
+2. Generate the pinned requirements file:
+   ```bash
+   cd interface
+   pip-compile requirements.in
+   ```
+
+3. Install dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
 
 ### Required Packages
 - `ultralytics` - YOLO training and inference
@@ -251,78 +267,3 @@ Located: `server/public/js/models/active_model.json`
 ### Dataset APIs
 - `GET /api/datasets` - List datasets
 - `GET /api/datasets/images` - Get dataset images
-
-## Directory Structure
-
-```
-interface/
-├── basler_capture.py          # Camera capture utility
-├── basler_stream.py           # Camera streaming service
-├── train.py                   # Training CLI script
-├── requirements.txt           # Python dependencies
-├── package.json              # Node.js dependencies
-├── datasets/                 # Training datasets
-│   └── station_01/
-│       └── final_inspection/
-│           ├── dataset.yaml
-│           ├── classes.txt
-│           ├── images/       # Training images
-│           ├── labels/       # YOLO annotations
-│           └── validation/   # Validation set
-├── inspect/
-│   └── inference_server.py  # FastAPI inference service
-├── server/
-│   ├── server.js             # Main Express server
-│   ├── config/
-│   │   ├── env.js           # Environment config
-│   │   └── paths.js         # Path configuration
-│   ├── routes/              # API route handlers
-│   ├── services/            # Business logic
-│   ├── utils/               # Utility functions
-│   └── public/              # Static web assets
-│       ├── index.html
-│       ├── css/
-│       ├── js/
-│       └── models/
-├── training/                # Training outputs
-│   └── [run_name]/
-│       ├── weights/
-│       │   ├── best.pt
-│       │   └── last.pt
-│       ├── results.csv
-│       └── run_config.json
-└── yolo-env/               # Python virtual environment
-```
-
-## License
-
-This project is proprietary software for internal use.
-
-## Support
-
-For issues or questions:
-1. Check this README and troubleshooting section
-2. Review logs and error messages
-3. Verify configuration files
-4. Test individual services in isolation
-│ ├─ config/
-│ ├─ public/
-│ │ ├─ css/
-│ │ ├─ js/
-│ │ └─ \*.html
-│ └─ training/
-│ └─ <run-name>/
-│
-├─ training/
-│ └─ train.py
-│
-├─ inspect/
-│ └─ inference_server.py
-│
-├─ datasets/
-│ └─ \<station>/\<process>/
-│ ├─ images/
-│ ├─ labels/
-│ └─ dataset.yaml
-│
-└─ photos/
