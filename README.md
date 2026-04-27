@@ -216,24 +216,6 @@ names:
   # ... more classes
 ```
 
-### Inspection Rules
-Located: `server/config/inspection_state.json`
-
-```json
-{
-  "model": "path/to/model.pt",
-  "confidence": 0.35,
-  "currentStep": 1,
-  "steps": [
-    {
-      "step": 1,
-      "required": ["T_Body"],
-      "forbidden": ["T_Bushing", "T_SN_label"]
-    }
-  ]
-}
-```
-
 ### Active Model
 Located: `server/public/js/models/active_model.json`
 
