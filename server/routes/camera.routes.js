@@ -1,28 +1,11 @@
-/**
- * ======================================================
- * camera.routes.js
- * ------------------------------------------------------
- * Responsibility:
- * - Proxy Basler camera operations to Python camera service
- *   • Live MJPEG preview
- *   • Still image capture
- *
- * IMPORTANT:
- * - Node NEVER opens the camera
- * - Python (basler_stream.py) is the sole camera owner
- * ======================================================
- */
-
 const express = require("express");
 const http = require("http");
+const photosService = require("../services/photos.service");
 
-const router = express.Router(); // ✅ THIS WAS MISSING
+const router = express.Router();
 
 /* ======================================================
    LIVE MJPEG STREAM
-   ------------------------------------------------------
-   Browser → /api/camera/stream
-   Node    → proxies to http://127.0.0.1:8001/stream
 ====================================================== */
 
 router.get("/stream", (req, res) => {
@@ -49,36 +32,35 @@ router.get("/stream", (req, res) => {
 });
 
 /* ======================================================
-   STILL IMAGE CAPTURE
-   ------------------------------------------------------
-   Browser → /api/camera/capture
-   Node    → proxies to http://127.0.0.1:8001/capture
-   Python  → saves latest frame
+   STILL IMAGE CAPTURE (UNIFIED)
 ====================================================== */
 
-router.post("/capture", (req, res) => {
-  const proxyReq = http.request(
-    {
-      hostname: "127.0.0.1",
-      port: 8001,
-      path: "/capture",
+router.post("/capture", async (req, res) => {
+  try {
+    const pyRes = await fetch("http://127.0.0.1:8001/capture", {
       method: "POST"
-    },
-    pyRes => {
-      let body = "";
-      pyRes.on("data", chunk => (body += chunk));
-      pyRes.on("end", () => {
-        res.status(pyRes.statusCode).send(body);
-      });
+    });
+
+    if (!pyRes.ok) {
+      throw new Error("Camera capture failed");
     }
-  );
 
-  proxyReq.on("error", err => {
-    console.error("[Camera] Capture proxy error:", err);
-    res.sendStatus(500);
-  });
+    const { image } = await pyRes.json();
+    if (!image) {
+      throw new Error("No image data returned from camera");
+    }
 
-  proxyReq.end();
+    const base64 =
+      "data:image/png;base64," +
+      Buffer.from(image, "hex").toString("base64");
+
+    const result = await photosService.savePhoto(base64);
+    res.json(result);
+
+  } catch (err) {
+    console.error("[Camera Capture]", err.message);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 module.exports = router;
