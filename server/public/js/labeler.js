@@ -5,10 +5,10 @@
  */
 
 const MIN_BOX_SIZE = 100; // Minimum box size enforced for drawing and resizing
-const NORMAL_LINE_WIDTH = 6;
-const SELECTED_LINE_WIDTH = 6;
-const PREVIEW_LINE_WIDTH = 6;
-const HANDLE_SIZE = 10;
+const NORMAL_LINE_WIDTH = 12;
+const SELECTED_LINE_WIDTH = 12;
+const PREVIEW_LINE_WIDTH = 12;
+const HANDLE_SIZE = 12; 
 
 const COLOR_PALETTE = [
   "#22c55e", "#ef4444", "#fb923c", "#3b82f6", "#8b5cf6", "#f59e0b",
@@ -135,11 +135,12 @@ loadClassNames();
 
 /* ===================== LOAD IMAGES ===================== */
 
-fetch("/api/photos")
+fetch("/api/photos?page=1&limit=50")
   .then(r => r.json())
-  .then(list => {
-    images = list.map(url => ({
-      url,
+  .then(data => {
+    images = (data.images || []).map(url => ({
+      thumbUrl: url,
+      fullUrl: url.replace("/thumbs/", "/"),
       filename: url.split("/").pop()
     }));
     renderThumbnails();
@@ -149,7 +150,7 @@ function renderThumbnails() {
   thumbs.innerHTML = "";
   images.forEach((imgObj, i) => {
     const t = document.createElement("img");
-    t.src = imgObj.url;
+    t.src = imgObj.thumbUrl;
     t.onclick = () => loadImage(i);
     thumbs.appendChild(t);
   });
@@ -206,7 +207,7 @@ function loadImage(i) {
     });
   };
 
-  img.src = currentImage.url;
+  img.src = currentImage.fullUrl;
   document.getElementById("currentImage").textContent =
     currentImage.filename;
 }

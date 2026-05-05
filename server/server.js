@@ -1,17 +1,6 @@
 /**
  * ======================================================
- * server.js
- * ------------------------------------------------------
- * Responsibility:
- * - Express server bootstrap
- * - Static asset exposure
- * - API route registration
- * - Auto-start Basler camera service (Python)
- *
- * Design principles:
- * - Basler camera owned by Python only
- * - Node orchestrates services
- * - Frontend never touches camera hardware
+ * server.js  (FIXED)
  * ======================================================
  */
 
@@ -19,6 +8,9 @@ const express = require("express");
 const path = require("path");
 const { spawn } = require("child_process");
 const { SERVER_PORT } = require("./config/env");
+const { PHOTOS_DIR } = require("./config/paths");
+
+const thumbsRoutes = require("./routes/thumbs.routes");
 
 const app = express();
 
@@ -29,13 +21,10 @@ const app = express();
 app.use(express.json({ limit: "10mb" }));
 
 /* ======================================================
-   AUTO-START BASLER CAMERA SERVICE (OPTION 2)
+   AUTO-START BASLER CAMERA SERVICE
 ====================================================== */
 
-const pythonScript = path.join(
-  __dirname,
-  "../basler_stream.py"
-);
+const pythonScript = path.join(__dirname, "../basler_stream.py");
 
 const baslerProcess = spawn("python", [pythonScript], {
   stdio: "inherit"
@@ -51,22 +40,40 @@ process.on("exit", () => {
 });
 
 /* ======================================================
-   STATIC ASSETS
+   STATIC ASSETS (FAST PATH)
 ====================================================== */
 
+// UI assets
 app.use(express.static(path.join(__dirname, "public")));
-app.use("/photos", express.static(path.join(__dirname, "photos")));
-app.use("/datasets", express.static(path.join(__dirname, "..", "datasets")));
-app.use("/training", express.static(path.join(__dirname, "training")));
+
+// ✅ Photos (with cache headers)
+app.use(
+  "/photos",
+  express.static(PHOTOS_DIR, {
+    maxAge: "7d",
+    immutable: true
+  })
+);
+
+// ✅ Datasets (read-only browsing)
+app.use(
+  "/datasets",
+  express.static(path.join(__dirname, "..", "datasets"), {
+    maxAge: "7d"
+  })
+);
+
+// ⚠️ Training artifacts (consider removing later)
+app.use(
+  "/training",
+  express.static(path.join(__dirname, "training"))
+);
 
 /* ======================================================
    API ROUTES
 ====================================================== */
 
-// Basler camera APIs
 app.use("/api/camera", require("./routes/camera.routes"));
-
-// Existing APIs (unchanged)
 app.use("/api/photos", require("./routes/photos.routes"));
 app.use("/api/datasets", require("./routes/datasets.routes"));
 app.use("/api/yolo", require("./routes/yolo.routes"));
@@ -74,6 +81,7 @@ app.use("/api/train", require("./routes/training.routes"));
 app.use("/api/experiments", require("./routes/experiments.routes"));
 app.use("/api/inference", require("./routes/inference.routes"));
 app.use("/api/system", require("./routes/system.routes"));
+app.use("/thumbs", thumbsRoutes);
 
 /* ======================================================
    UI ROUTES (LAST)
@@ -89,4 +97,3 @@ app.listen(SERVER_PORT, () => {
   console.log(`Server running at http://localhost:${SERVER_PORT}`);
   console.log("[Server] Basler camera service auto-started");
 });
-``

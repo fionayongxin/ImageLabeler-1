@@ -1,19 +1,6 @@
 /**
  * ======================================================
- * datasets.routes.js
- * ------------------------------------------------------
- * Responsibility:
- * HTTP API for dataset discovery and browsing
- * - Thin routing layer only
- *
- * Design rules:
- * - NO filesystem logic here
- * - NO training logic
- * - Delegate all work to datasets.service
- *
- * Endpoints:
- * - GET /api/datasets
- * - GET /api/datasets/images
+ * datasets.routes.js  (FINAL)
  * ======================================================
  */
 
@@ -23,9 +10,7 @@ const router = express.Router();
 const datasetsService = require("../services/datasets.service");
 
 /**
- * List available datasets by station and process.
- * Query:
- *   ?station=station_01&process=final_inspection
+ * List available datasets.
  */
 router.get("/", (req, res) => {
   const { station, process } = req.query;
@@ -34,17 +19,28 @@ router.get("/", (req, res) => {
 });
 
 /**
- * List images for a given dataset.
+ * Paginated dataset images.
+ *
  * Query:
- *   ?station=station_01&process=final_inspection
+ * ?station=station_01
+ * &process=final_inspection
+ * &page=1
+ * &limit=24
  */
 router.get("/images", (req, res) => {
   const { station, process } = req.query;
-  const images = datasetsService.listDatasetImages(station, process);
-  res.json(images);
+  const page = Number(req.query.page) || 1;
+  const limit = Number(req.query.limit) || 24;
+
+  const result =
+    datasetsService.listDatasetImagesPaged(
+      station,
+      process,
+      page,
+      limit
+    );
+
+  res.json(result);
 });
 
-/**
- * Export router for mounting in server.js
- */
 module.exports = router;

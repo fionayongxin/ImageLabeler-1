@@ -2,20 +2,11 @@
 ======================================================
 basler_stream.py
 ------------------------------------------------------
-Responsibility:
-- Own the Basler camera (pypylon)
-- Configure camera for stable inspection imaging
-- Perform auto-exposure ONCE at startup, then lock
-- Grab frames continuously in background
-- Serve MJPEG live preview over HTTP
-- Save latest frame for inference consumption
-
-Design principles:
-- Exactly ONE camera owner
-- Auto exposure only during calibration phase
-- Stable brightness during inspection
-- Thread-safe frame access
-- Windows-safe filesystem paths
+Basler camera service
+- Owns camera (pypylon)
+- Provides MJPEG stream
+- Provides still capture as IMAGE BYTES ONLY
+- NEVER writes photos to disk
 ======================================================
 """
 
@@ -24,7 +15,8 @@ from flask import Flask, Response, jsonify
 import cv2
 import threading
 import time
-from pathlib import Path
+import signal
+import sys
 
 # =====================================================
 # FLASK APP
@@ -33,30 +25,12 @@ from pathlib import Path
 app = Flask(__name__)
 
 # =====================================================
-# PROJECT PATHS (WINDOWS SAFE)
-# =====================================================
-
-BASE_DIR = Path(
-    r"C:\Users\pnayeuoo\OneDrive - Flex\Documents\AISetup\interface"
-)
-
-PHOTOS_DIR = BASE_DIR / "server" / "photos"
-RUNTIME_DIR = BASE_DIR / "server" / "runtime"
-
-PHOTOS_DIR.mkdir(parents=True, exist_ok=True)
-RUNTIME_DIR.mkdir(parents=True, exist_ok=True)
-
-# Shared frame path (read by inference server)
-LATEST_FRAME_PATH = RUNTIME_DIR / "basler_latest.jpg"
-
-# =====================================================
 # CAMERA INITIALIZATION
 # =====================================================
 
 camera = pylon.InstantCamera(
     pylon.TlFactory.GetInstance().CreateFirstDevice()
 )
-
 camera.Open()
 nodemap = camera.GetNodeMap()
 
@@ -75,24 +49,16 @@ def try_set(node_name: str, value):
 # BASIC CAMERA CONFIGURATION
 # =====================================================
 
-# Continuous free run
 try_set("TriggerSelector", "FrameStart")
 try_set("TriggerMode", "Off")
 try_set("AcquisitionMode", "Continuous")
 
 # =====================================================
-# AUTO EXPOSURE & GAIN (INSPECTION PATTERN)
+# AUTO EXPOSURE (ONCE)
 # =====================================================
 
-# Enable auto exposure ONCE
 try_set("ExposureAuto", "Once")
 try_set("GainAuto", "Once")
-
-# Constrain auto range (prevents extreme values)
-try_set("ExposureTimeLowerLimit", 2000.0)    # µs
-try_set("ExposureTimeUpperLimit", 20000.0)   # µs
-try_set("GainLowerLimit", 0.0)
-try_set("GainUpperLimit", 6.0)
 
 # =====================================================
 # IMAGE FORMAT CONVERTER
@@ -110,40 +76,51 @@ frame_lock = threading.Lock()
 latest_frame = None
 
 # =====================================================
+# FPS METRICS
+# =====================================================
+
+camera_fps = 0.0
+mjpeg_fps = 0.0
+
+# =====================================================
 # CAMERA GRAB THREAD
 # =====================================================
 
 def camera_loop():
-    """
-    Background acquisition loop.
-    Owns camera grabbing and frame updates.
-    """
-
-    global latest_frame
+    global latest_frame, camera_fps
 
     camera.StartGrabbing(pylon.GrabStrategy_LatestImageOnly)
     print("[Camera] Grabbing started (auto exposure phase)")
 
-    # Allow auto exposure to converge
     time.sleep(1.5)
 
-    # Lock exposure and gain (VERY IMPORTANT)
+    # Lock exposure & gain
     try_set("ExposureAuto", "Off")
     try_set("GainAuto", "Off")
 
+    # Clamp exposure
     try:
-        print(
-            "[Camera] Final ExposureTime =",
-            nodemap.GetNode("ExposureTime").GetValue()
-        )
-        print(
-            "[Camera] Final Gain =",
-            nodemap.GetNode("Gain").GetValue()
-        )
+        exp = nodemap.GetNode("ExposureTime").GetValue()
+        nodemap.GetNode("ExposureTime").SetValue(min(exp, 50000.0))
+    except Exception:
+        pass
+
+    # Align FPS
+    try_set("AcquisitionFrameRateEnable", True)
+    try_set("AcquisitionFrameRate", 10.0)
+
+    try:
+        print("[Camera] Final ExposureTime =",
+              nodemap.GetNode("ExposureTime").GetValue())
+        print("[Camera] Final Gain =",
+              nodemap.GetNode("Gain").GetValue())
     except Exception:
         pass
 
     print("[Camera] Auto exposure locked, entering inspection mode")
+
+    last_time = time.time()
+    count = 0
 
     while camera.IsGrabbing():
         try:
@@ -158,43 +135,67 @@ def camera_loop():
 
                 with frame_lock:
                     latest_frame = frame
-                    cv2.imwrite(str(LATEST_FRAME_PATH), frame)
+
+                count += 1
+                now = time.time()
+                if now - last_time >= 1.0:
+                    camera_fps = count / (now - last_time)
+                    count = 0
+                    last_time = now
 
             grab.Release()
 
         except Exception as e:
             print("[Camera] Grab failed:", e)
 
-# Start grab thread
-threading.Thread(target=camera_loop, daemon=True).start()
-
 # =====================================================
 # MJPEG STREAM
 # =====================================================
 
 def mjpeg_generator():
-    """
-    Yield MJPEG frames for browser <img>.
-    """
+    global mjpeg_fps
+
+    last_time = time.time()
+    count = 0
+
     while True:
         with frame_lock:
             if latest_frame is None:
+                time.sleep(0.01)
                 continue
+            frame = latest_frame.copy()
 
-            ok, jpg = cv2.imencode(".jpg", latest_frame)
-            if not ok:
-                continue
+        cv2.putText(
+            frame,
+            f"CAM {camera_fps:.1f} FPS | MJPEG {mjpeg_fps:.1f} FPS",
+            (10, 30),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.8,
+            (0, 255, 0),
+            2
+        )
 
-            frame_bytes = jpg.tobytes()
+        ok, jpg = cv2.imencode(".jpg", frame)
+        if not ok:
+            continue
 
         yield (
             b"--frame\r\n"
             b"Content-Type: image/jpeg\r\n\r\n" +
-            frame_bytes +
+            jpg.tobytes() +
             b"\r\n"
         )
 
-        time.sleep(0.05)  # ~20 FPS
+        count += 1
+        now = time.time()
+        if now - last_time >= 1.0:
+            mjpeg_fps = count / (now - last_time)
+            count = 0
+            last_time = now
+
+# =====================================================
+# ROUTES
+# =====================================================
 
 @app.route("/stream")
 def stream():
@@ -203,25 +204,46 @@ def stream():
         mimetype="multipart/x-mixed-replace; boundary=frame"
     )
 
-# =====================================================
-# STILL IMAGE CAPTURE (DATASET CREATION)
-# =====================================================
+@app.route("/stats")
+def stats():
+    return jsonify({
+        "camera_fps": round(camera_fps, 2),
+        "mjpeg_fps": round(mjpeg_fps, 2)
+    })
 
 @app.route("/capture", methods=["POST"])
 def capture():
     """
-    Save the latest frame to photos directory.
+    Memory-only still capture.
+    Node is the sole photo writer.
     """
     with frame_lock:
         if latest_frame is None:
             return jsonify({"error": "No frame available"}), 500
 
-        filename = f"photo_{int(time.time() * 1000)}.png"
-        path = PHOTOS_DIR / filename
-        cv2.imwrite(str(path), latest_frame)
+        ok, buffer = cv2.imencode(".jpg", latest_frame, [cv2.IMWRITE_JPEG_QUALITY, 85])
+        if not ok:
+            return jsonify({"error": "Encode failed"}), 500
 
-    print(f"[Capture] Saved {filename}")
-    return jsonify({"filename": filename})
+        return jsonify({
+            "image": buffer.tobytes().hex()
+        })
+
+# =====================================================
+# CLEAN SHUTDOWN
+# =====================================================
+
+def shutdown(sig, frame):
+    print("[Camera] Shutting down")
+    try:
+        camera.StopGrabbing()
+        camera.Close()
+    except Exception:
+        pass
+    sys.exit(0)
+
+signal.signal(signal.SIGINT, shutdown)
+signal.signal(signal.SIGTERM, shutdown)
 
 # =====================================================
 # ENTRY POINT
@@ -229,5 +251,8 @@ def capture():
 
 if __name__ == "__main__":
     print("[Server] Basler MJPEG + Capture running")
-    print(f"[Server] MJPEG stream: http://127.0.0.1:8001/stream")
+    print("[Server] MJPEG stream: http://127.0.0.1:8001/stream")
+    print("[Server] Stats: http://127.0.0.1:8001/stats")
+
+    threading.Thread(target=camera_loop, daemon=True).start()
     app.run(host="127.0.0.1", port=8001, threaded=True)

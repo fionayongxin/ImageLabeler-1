@@ -1,18 +1,6 @@
 /**
  * ======================================================
- * datasets.service.js
- * ------------------------------------------------------
- * Responsibility:
- * - Business logic for dataset discovery
- * - Provide dataset names and dataset image lists
- *
- * Design rules:
- * - NO Express / HTTP objects
- * - NO training logic
- * - NO inference logic
- * - Filesystem access limited to DATASET_ROOT
- *
- * This service is used by datasets.routes.js.
+ * datasets.service.js  (UNIFIED – NO THUMB LOGIC)
  * ======================================================
  */
 
@@ -20,49 +8,68 @@ const fs = require("fs");
 const path = require("path");
 const { DATASET_ROOT } = require("../config/paths");
 
-/**
- * List dataset folders under a station + process.
- *
- * @param {string} station
- * @param {string} process
- * @returns {string[]} dataset directory names
- */
+const IMAGE_REGEX = /\.(png|jpg|jpeg)$/i;
+
+/* ======================================================
+   DATASET DISCOVERY
+====================================================== */
+
 function listDatasets(station, process) {
   if (!station || !process) return [];
 
   const dir = path.join(DATASET_ROOT, station, process);
   if (!fs.existsSync(dir)) return [];
 
-  return fs.readdirSync(dir).filter(name =>
-    fs.statSync(path.join(dir, name)).isDirectory()
-  );
+  return fs
+    .readdirSync(dir)
+    .filter(name =>
+      fs.statSync(path.join(dir, name)).isDirectory()
+    );
 }
 
-/**
- * List images belonging to a dataset (public URLs).
- *
- * @param {string} station
- * @param {string} process
- * @returns {string[]} image URLs
- */
-function listDatasetImages(station, process) {
-  if (!station || !process) return [];
+/* ======================================================
+   PAGINATED IMAGE LISTING
+====================================================== */
 
-  const imageDir = path.join(
+function listDatasetImagesPaged(
+  station,
+  process,
+  page = 1,
+  limit = 24
+) {
+  if (!station || !process) {
+    return { total: 0, images: [] };
+  }
+
+  const imagesDir = path.join(
     DATASET_ROOT,
     station,
     process,
     "images"
   );
 
-  if (!fs.existsSync(imageDir)) return [];
+  if (!fs.existsSync(imagesDir)) {
+    return { total: 0, images: [] };
+  }
 
-  return fs.readdirSync(imageDir)
-    .filter(name => /\.(png|jpg|jpeg)$/i.test(name))
-    .map(name => `/datasets/${station}/${process}/images/${name}`);
+  const files = fs
+    .readdirSync(imagesDir)
+    .filter(name => IMAGE_REGEX.test(name))
+    .sort();
+
+  const total = files.length;
+  const start = (page - 1) * limit;
+  const slice = files.slice(start, start + limit);
+
+  return {
+    total,
+    images: slice.map(
+      name => `/thumbs/datasets/${station}/${process}/${name}` // ✅ unified
+    )
+  };
 }
 
 module.exports = {
   listDatasets,
-  listDatasetImages
+  listDatasetImagesPaged
 };

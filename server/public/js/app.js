@@ -62,31 +62,27 @@ document.addEventListener("DOMContentLoaded", () => {
      - Capture button is locked during operation
   ====================================================== */
 
-  async function capturePhoto() {
-    captureBtn.disabled = true;
+async function capturePhoto() {
+  captureBtn.disabled = true;
 
-    try {
-      const response = await fetch("/api/camera/capture", {
-        method: "POST"
-      });
+  try {
+    const response = await fetch("/api/camera/capture", {
+      method: "POST"
+    });
 
-      if (!response.ok) {
-        throw new Error("Basler capture request failed");
-      }
-
-      const result = await response.json();
-
-      if (result?.filename && captureInfo) {
-        captureInfo.textContent = result.filename;
-      }
-
-      await loadLatestImages();
-    } catch (err) {
-      console.error("Failed to capture photo:", err);
-    } finally {
-      captureBtn.disabled = false;
+    if (!response.ok) {
+      throw new Error("Basler capture failed");
     }
+
+    // ✅ THIS updates "latest"
+    await loadLatestImages();
+
+  } catch (err) {
+    console.error(err);
+  } finally {
+    captureBtn.disabled = false;
   }
+}
 
   /* ======================================================
      LATEST IMAGES VIEW
@@ -95,31 +91,26 @@ document.addEventListener("DOMContentLoaded", () => {
      - Frontend never touches filesystem
   ====================================================== */
 
-  async function loadLatestImages(limit = 2) {
-    try {
-      const response = await fetch(`/api/photos/latest?limit=${limit}`);
-      if (!response.ok) return;
+async function loadLatestImages(limit = 2) {
+  const res = await fetch(`/api/photos?page=1&limit=${limit}`);
+  if (!res.ok) return;
 
-      const images = await response.json();
-      if (!Array.isArray(images)) return;
+  const data = await res.json();
+  const images = data.images || [];
 
-      latestImagesContainer.innerHTML = "";
+  latestImagesContainer.innerHTML = "";
+  const frag = document.createDocumentFragment();
 
-      const fragment = document.createDocumentFragment();
+  images.forEach(src => {
+    const img = document.createElement("img");
+    img.src = `${src}?t=${Date.now()}`; // cache‑bust
+    img.onclick = () =>
+      window.open(src.replace("/thumbs/", "/"), "_blank");
+    frag.appendChild(img);
+  });
 
-      images.forEach(publicUrl => {
-        const img = document.createElement("img");
-        img.src = publicUrl;
-        img.loading = "lazy";
-        img.onclick = () => window.open(publicUrl, "_blank");
-        fragment.appendChild(img);
-      });
-
-      latestImagesContainer.appendChild(fragment);
-    } catch (err) {
-      console.error("Failed to load latest images:", err);
-    }
-  }
+  latestImagesContainer.appendChild(frag);
+}
 
   /* ======================================================
      EVENT BINDINGS
