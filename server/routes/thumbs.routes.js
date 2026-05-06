@@ -11,13 +11,22 @@ const THUMB_SIZE = 256;
 ====================================================== */
 
 async function ensureThumb(fullImagePath, thumbPath) {
-  if (fs.existsSync(thumbPath)) return true;
-  if (!fs.existsSync(fullImagePath)) return false;
+  // ✅ original image gone → cleanup stale thumb
+  if (!fs.existsSync(fullImagePath)) {
+    if (fs.existsSync(thumbPath)) {
+      fs.unlinkSync(thumbPath);
+    }
+    return false;
+  }
+
+  if (fs.existsSync(thumbPath)) {
+    return true;
+  }
 
   fs.mkdirSync(path.dirname(thumbPath), { recursive: true });
 
   await sharp(fullImagePath)
-    .resize(THUMB_SIZE, THUMB_SIZE, { fit: "inside" })
+    .resize(256, 256, { fit: "inside" })
     .jpeg({ quality: 70 })
     .toFile(thumbPath);
 

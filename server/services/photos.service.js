@@ -51,7 +51,7 @@ async function savePhoto(base64Image) {
   return {
     filename,
     url: `/photos/${filename}`,
-    thumb: `/thumbs/photos/${filename}` // ✅ unified
+    thumb: `/thumbs/photos/${filename}` 
   };
 }
 
@@ -60,8 +60,17 @@ async function savePhoto(base64Image) {
 ====================================================== */
 
 function deletePhoto(imageName) {
-  const full = path.join(PHOTOS_DIR, imageName);
-  if (fs.existsSync(full)) fs.unlinkSync(full);
+  const fullPath = path.join(PHOTOS_DIR, imageName);
+  const thumbPath = path.join(PHOTOS_DIR, "thumbs", imageName);
+
+  if (fs.existsSync(fullPath)) {
+    fs.unlinkSync(fullPath);
+  }
+
+  if (fs.existsSync(thumbPath)) {
+    fs.unlinkSync(thumbPath);
+  }
+
   return { success: true };
 }
 

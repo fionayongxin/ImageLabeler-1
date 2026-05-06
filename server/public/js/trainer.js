@@ -25,8 +25,6 @@
    DOM REFERENCES
 ====================================================== */
 
-const stationInput = document.getElementById("station");
-const processInput = document.getElementById("process");
 const modelSelect  = document.getElementById("model");
 const runNameInput = document.getElementById("runName");
 
@@ -56,12 +54,11 @@ let mapChart  = null;
  *
  * @returns {string}
  */
-function generateExperimentName() {
-  const station = stationInput.value || "station";
-  const process = processInput.value || "process";
-  const model   = modelSelect.value.replace(".pt", "");
 
-  return `${station}-${process}-${model}-${Date.now()}`;
+function generateExperimentName() {
+  const model = modelSelect.value.replace(".pt", "");
+  const ts = new Date().toISOString().slice(0,19).replace(/[:T]/g, "-");
+  return `${model}_${ts}`;
 }
 
 /* ======================================================
@@ -111,20 +108,6 @@ function initLossChart() {
       }
     }
   });
-}
-
-async function updateLossChart() {
-  if (!lossChart) return;
-
-  const res = await fetch("/api/train/metrics");
-  if (!res.ok) return;
-
-  const data = await res.json();
-  if (!Array.isArray(data) || !data.length) return;
-
-  lossChart.data.labels = data.map(d => d.epoch);
-  lossChart.data.datasets[0].data = data.map(d => d.loss);
-  lossChart.update();
 }
 
 /* ======================================================
@@ -185,6 +168,7 @@ function stopProgressPolling() {
 /**
  * Poll backend for training progress and update UI.
  */
+
 async function updateProgress() {
   let res;
 
@@ -207,6 +191,9 @@ async function updateProgress() {
     stopProgressPolling();
     startBtn.disabled = false;
     stopBtn.disabled = true;
+
+    currentRunName = null;
+    runNameInput.value = generateExperimentName();
     return;
   }
 
@@ -217,6 +204,13 @@ async function updateProgress() {
     if (progressFile) {
       progressFile.textContent = "Preparing training files…";
     }
+    return;
+  }
+
+  /* ---------------- Stopping ---------------- */
+  if (data.status === "stopping") {
+    progressText.textContent = "Stopping training…";
+    stopBtn.disabled = true;
     return;
   }
 
@@ -232,8 +226,6 @@ async function updateProgress() {
       progressFile.textContent = `${data.runName}/results.csv`;
     }
 
-    await updateLossChart();
-
     if (data.progress >= 100) {
       progressText.textContent = "Training completed";
 
@@ -247,19 +239,12 @@ async function updateProgress() {
   }
 }
 
+
 /* ======================================================
    START TRAINING
 ====================================================== */
 
 startBtn.onclick = async () => {
-  const station = stationInput.value.trim();
-  const process = processInput.value.trim();
-
-  if (!station || !process) {
-    alert("Station and process are required");
-    return;
-  }
-
   currentRunName =
     runNameInput.value.trim() || generateExperimentName();
 
@@ -271,13 +256,24 @@ startBtn.onclick = async () => {
   progressBar.style.width = "1%";
   progressText.textContent = "Starting training…";
   if (progressFile) progressFile.textContent = "–";
+  
+  if (lossChart) {
+    lossChart.destroy();
+    lossChart = null;
+  }
+
+  if (mapChart) {
+    mapChart.destroy();
+    mapChart = null;
+  }
+
+  initLossChart();
+  initMapChart();
 
   await fetch("/api/train/start", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      station,
-      process,
       model: modelSelect.value,
       epochs: Number(document.getElementById("epochs").value),
       imgsz:  Number(document.getElementById("imgsz").value),
@@ -294,18 +290,15 @@ startBtn.onclick = async () => {
 ====================================================== */
 
 stopBtn.onclick = async () => {
-  await fetch("/api/train/stop", { method: "POST" });
 
-  stopProgressPolling();
-
-  progressText.textContent = "Training stopped";
-  if (progressFile) progressFile.textContent = "–";
-
-  currentRunName = null;
-  runNameInput.value = generateExperimentName();
-
-  startBtn.disabled = false;
   stopBtn.disabled = true;
+  progressText.textContent = "Stopping training…";
+
+  try {
+    const res = await fetch("/api/train/stop", { method: "POST" });
+  } catch (err) {
+    console.error("Stop fetch failed", err);
+  }
 };
 
 /* ======================================================
@@ -340,7 +333,30 @@ async function updateCharts() {
    INIT
 ====================================================== */
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
   initLossChart();
   initMapChart();
+
+  try {
+    const res = await fetch("/api/train/progress");
+    if (!res.ok) return;
+
+    const data = await res.json();
+
+    if (data.status === "running") {
+      startBtn.disabled = true;
+      stopBtn.disabled = false;
+
+      currentRunName = data.runName;
+      runNameInput.value = data.runName;
+
+      progressBar.style.width = `${data.progress}%`;
+      progressText.textContent =
+        `Epoch ${data.epoch}/${data.totalEpochs} (${data.progress}%)`;
+
+      startProgressPolling();
+    }
+  } catch (err) {
+    console.error("Failed to restore training state", err);
+  }
 });

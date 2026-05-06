@@ -66,10 +66,6 @@ function renderPage() {
     const tr = document.createElement("tr");
     tr.dataset.run = exp.name;
 
-    const dataset = exp.config
-      ? `${exp.config.station} / ${exp.config.process}`
-      : "-";
-
     const startedAt = exp.startedAt
       ? formatDate(exp.startedAt)
       : "-";
@@ -80,20 +76,21 @@ function renderPage() {
       actions.push(`<button data-action="metrics">Metric</button>`);
     }
 
-    if (exp.hasWeights) {
+    if (exp.hasWeights && exp.status === "Completed") {
       actions.push(`<button data-action="weights">Weights</button>`);
     }
 
     tr.innerHTML = `
       <td>${exp.name}</td>
       <td class="status ${exp.status}">${exp.status}</td>
-      <td>${exp.config?.model ?? "-"}</td>
-      <td>${dataset}</td>
-      <td>${exp.config?.batch ?? "-"}</td>
-      <td>${exp.config?.epochs ?? "-"}</td>
-      <td>${exp.config?.imgsz ?? "-"}</td>
+      <td>${exp.model ?? "-"}</td>
+      <td>${exp.dataset ?? "-"}</td>
+      <td>${exp.batch ?? "-"}</td>
+      <td>${exp.epochs ?? "-"}</td>
+      <td>${exp.imgsz ?? "-"}</td>
       <td>${startedAt}</td>
       <td>${actions.join(" ")}</td>
+      
     `;
 
     tbody.appendChild(tr);

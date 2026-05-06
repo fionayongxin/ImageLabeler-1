@@ -1,23 +1,3 @@
-/**
- * ======================================================
- * training.routes.js
- * ------------------------------------------------------
- * Responsibility:
- * - HTTP API for training lifecycle
- * - Thin routing layer only
- *
- * Design rules:
- * - NO training logic here
- * - NO filesystem logic here
- * - Delegate all work to training.service
- *
- * Endpoints:
- * - POST /api/train/start
- * - POST /api/train/stop
- * - GET  /api/train/progress
- * ======================================================
- */
-
 const express = require("express");
 const router = express.Router();
 
@@ -25,49 +5,56 @@ const trainingService = require("../services/training.service");
 
 /**
  * Start a new training run.
- * Body expects:
- * {
- *   station,
- *   process,
- *   model,
- *   epochs,
- *   imgsz,
- *   batch,
- *   runName
- * }
  */
-router.post("/start", (req, res) => {
-  const result = trainingService.startTraining(req.body);
-  res.json(result);
-});
-
-/**
- * Stop the active training run.
- */
-router.post("/stop", (_req, res) => {
-  const result = trainingService.stopTraining();
-  res.json(result);
-});
-
-/**
- * Get current training progress.
- */
-router.get("/progress", (_req, res) => {
-  const result = trainingService.getTrainingProgress();
-  res.json(result);
-});
-
-/**
- * Live training metrics (loss, mAP).
- * Used by trainer.js for live charts.
- */
-router.get("/metrics", (_req, res) => {
+router.post("/start", async (req, res) => {
+  console.log(">>> NODE /api/train/start HIT <<<");
+  console.log(">>> PAYLOAD FROM FRONTEND <<<", req.body);
   try {
-    const metrics = trainingService.getTrainingMetrics();
-    res.json(metrics);
+    const result = await trainingService.startTraining(req.body);
+    res.json(result);
   } catch (err) {
-    res.status(500).json([]);
+    res.status(500).json({ error: err.message });
   }
 });
+
+/**
+ * Stop training.
+ */
+
+router.post("/stop", async (_req, res) => {
+
+  try {
+    const result = await trainingService.stopTraining();
+    res.json(result);
+  } catch (err) {
+    console.error("Stop training error:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * Get training progress.
+ */
+router.get("/progress", async (_req, res) => {
+  try {
+    const result = await trainingService.getTrainingProgress();
+    res.json(result);
+  } catch (err) {
+    res.json({ status: "idle" });
+  }
+});
+
+/**
+ * Live training metrics.
+ */
+router.get("/metrics", async (_req, res) => {
+  try {
+    const metrics = await trainingService.getTrainingMetrics();
+    res.json(metrics);
+  } catch {
+    res.json([]);
+  }
+});
+
 
 module.exports = router;
