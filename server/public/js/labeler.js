@@ -21,8 +21,30 @@ let BOX_COLORS = {};
 let CLASS_MAP = {};
 let classNames = [];
 
-const STATION = "station_01";
-const PROCESS = "final_inspection";
+let STATION = null;
+let PROCESS = null;
+
+(async () => {
+  try {
+    await loadIdentity();     
+    await loadClassNames();   
+    setMode("read");
+  } catch (err) {
+    console.error(err);
+    setStatus("System identity not available", "error");
+  }
+})();
+
+async function loadIdentity() {
+  const res = await fetch("/api/system/identity");
+  if (!res.ok) {
+    throw new Error("Failed to load system identity");
+  }
+
+  const data = await res.json();
+  STATION = data.station;
+  PROCESS = data.process;
+}
 
 async function loadClassNames() {
   try {
@@ -130,8 +152,6 @@ function setMode(m) {
 
 readBtn.onclick = () => setMode("read");
 drawBtn.onclick = () => setMode("draw");
-setMode("read");
-loadClassNames();
 
 /* ===================== LOAD IMAGES ===================== */
 

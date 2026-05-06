@@ -1,183 +1,75 @@
 /**
  * ======================================================
- * training.service.js
- * ------------------------------------------------------
- * Responsibility:
- * - training lifecycle business logic
- * - Start / stop training
- * - Track training state
- * - Report training progress
- *
- * Design rules:
- * - NO Express / HTTP
- * - NO UI logic
- * - Single active training at a time
+ * training.service.js  (REMOTE TRAINING PROXY)
  * ======================================================
+ * - Node runs on PC
+ * - Training runs on remote Python server
+ * - This file ONLY forwards requests via HTTP
  */
 
-const fs = require("fs");
-const path = require("path");
-const { spawn } = require("child_process");
-
-const { DATASET_ROOT, TRAINING_ROOT } = require("../config/paths");
-const { parseTrainingMetrics } = require("../utils/csv.parser");
-
-/* Ensure training root exists */
-if (!fs.existsSync(TRAINING_ROOT)) {
-  fs.mkdirSync(TRAINING_ROOT, { recursive: true });
-}
-
-/* Internal state */
-let trainProcess = null;
-let activeRunName = null;
-
-/* Utils */
-function safeName(name) {
-  return String(name).replace(/[^a-zA-Z0-9_-]/g, "_");
-}
+const TRAIN_SERVER = "http://10.192.74.39:8002";
 
 /**
- * Start training.
+ * Start training on remote server.
  */
-function startTraining({
-  station,
-  process,
-  model,
-  epochs,
-  imgsz,
-  batch,
-  runName
-}) {
-  if (trainProcess) {
-    throw new Error("Training already running");
-  }
 
-  if (!station || !process || !runName) {
-    throw new Error("Missing parameters");
-  }
+const { FASTAPI_BASE_URL, STATION, PROCESS } = require("../config/env");
 
-  const safeRun = safeName(runName);
-  const datasetDir = path.join(
-    DATASET_ROOT,
-    safeName(station),
-    safeName(process)
-  );
-
-  const datasetYaml = path.join(datasetDir, "dataset.yaml");
-  if (!fs.existsSync(datasetYaml)) {
-    throw new Error("dataset.yaml not found");
-  }
-
-  const runDir = path.join(TRAINING_ROOT, safeRun);
-  if (fs.existsSync(runDir)) {
-    throw new Error("Run already exists");
-  }
-
-  fs.mkdirSync(runDir, { recursive: true });
-  activeRunName = safeRun;
-
-  trainProcess = spawn(
-    "python",
-    [
-        path.join(__dirname, "..", "..", "training", "train.py"),     
-        "--data", datasetYaml,
-        "--model", model,
-        "--epochs", epochs,
-        "--imgsz", imgsz,
-        "--batch", batch,
-        "--name", safeRun,
-        "--project", TRAINING_ROOT
-    ],
-    { stdio: "inherit" }
-  );
-
-  trainProcess.on("close", () => {
-    trainProcess = null;
-    activeRunName = null;
+async function startTraining(cfg) {
+  const res = await fetch(`${FASTAPI_BASE_URL}/train/start`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      ...cfg,
+      station: STATION,
+      process: PROCESS
+    })
   });
 
-  fs.writeFileSync(
-    path.join(runDir, "run_config.json"),
-    JSON.stringify({
-      station,
-      process,
-      model,
-      epochs,
-      imgsz,
-      batch,
-      runName: safeRun,
-      startedAt: new Date().toISOString()
-    }, null, 2)
-  );
 
-  return { status: "started", runName: safeRun };
+  const text = await res.text();
+
+  if (!res.ok) {
+    throw new Error(text);
+  }
+
+  return JSON.parse(text);
 }
 
 /**
- * Stop training.
+ * Stop training on remote server.
  */
-function stopTraining() {
-  if (!trainProcess) {
-    throw new Error("No training running");
-  }
+async function stopTraining() {
 
-  trainProcess.kill("SIGTERM");
-  return { status: "stopping" };
+  const res = await fetch(`${TRAIN_SERVER}/train/stop`, {
+    method: "POST"
+  });
+
+  const text = await res.text();
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    return { status: "unknown", raw: text };
+  }
 }
 
 /**
- * Get training progress.
+ * Get training progress from remote server.
  */
-function getTrainingProgress() {
-  if (!trainProcess || !activeRunName) {
-    return { status: "idle" };
-  }
-
-  const runDir = path.join(TRAINING_ROOT, activeRunName);
-  const csvPath = path.join(runDir, "results.csv");
-  const cfgPath = path.join(runDir, "run_config.json");
-
-  if (!fs.existsSync(csvPath) || !fs.existsSync(cfgPath)) {
-    return { status: "starting", runName: activeRunName };
-  }
-
-  const cfg = JSON.parse(fs.readFileSync(cfgPath));
-  const metrics = parseTrainingMetrics(csvPath);
-  if (!metrics.length) {
-    return { status: "starting", runName: activeRunName };
-  }
-
-  const last = metrics[metrics.length - 1];
-  const totalEpochs = Number(cfg.epochs);
-  const progress = Math.min(
-    100,
-    Math.round((last.epoch / totalEpochs) * 100)
-  );
-
-  return {
-    status: "running",
-    runName: activeRunName,
-    epoch: last.epoch,
-    totalEpochs,
-    progress
-  };
+async function getTrainingProgress() {
+  const res = await fetch(`${TRAIN_SERVER}/train/progress`);
+  if (!res.ok) return { status: "idle" };
+  return res.json();
 }
 
 /**
- * Return live training metrics from results.csv.
- * Used ONLY for live chart updates during training.
- *
- * @returns {Array}
+ * Get training metrics from remote server.
  */
-function getTrainingMetrics() {
-  if (!activeRunName) return [];
-
-  const runDir = path.join(TRAINING_ROOT, activeRunName);
-  const csvPath = path.join(runDir, "results.csv");
-
-  if (!fs.existsSync(csvPath)) return [];
-
-  return parseTrainingMetrics(csvPath);
+async function getTrainingMetrics() {
+  const res = await fetch(`${TRAIN_SERVER}/train/metrics`);
+  if (!res.ok) return [];
+  return res.json();
 }
 
 module.exports = {
@@ -186,4 +78,3 @@ module.exports = {
   getTrainingProgress,
   getTrainingMetrics
 };
-

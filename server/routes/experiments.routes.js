@@ -1,20 +1,8 @@
 /**
  * ======================================================
  * experiments.routes.js
- * ------------------------------------------------------
- * Responsibility:
- * - HTTP API for experiment metadata and artifacts
- * - Thin layer only
- *
- * Design rules:
- * - NO filesystem parsing here
- * - NO training execution here
- * - Delegate all logic to experiments.service
- *
- * Endpoints:
- * - GET /api/experiments
- * - GET /api/experiments/:name
- * - GET /api/experiments/:name/weights
+ * ======================================================
+ * Mounted at /api/experiments
  * ======================================================
  */
 
@@ -24,46 +12,51 @@ const router = express.Router();
 const experimentsService = require("../services/experiments.service");
 
 /**
- * List all experiments.
+ * GET /api/experiments
  */
-router.get("/", (_req, res) => {
-  const experiments = experimentsService.listExperiments();
-  res.json(experiments);
-});
-
-/**
- * Get details for a single experiment.
- */
-router.get("/:name", (req, res) => {
-  const { name } = req.params;
-  const experiment = experimentsService.getExperiment(name);
-  res.json(experiment);
-});
-
-/**
- * Download trained weights for an experiment.
- */
-router.get("/:name/weights", (req, res) => {
-  const { name } = req.params;
-  const { weightsPath, filename } =
-    experimentsService.getWeightsDownload(name);
-
-  res.setHeader(
-    "Content-Disposition",
-    `attachment; filename="${filename}"`
-  );
-  res.sendFile(weightsPath);
-});
-
-/**
- * Return parsed training metrics for a completed experiment.
- */
-router.get("/:name/metrics", (req, res) => {
+router.get("/", async (_req, res) => {
   try {
-    const metrics = experimentsService.getExperimentMetrics(req.params.name);
-    res.json(metrics);
+    const list = await experimentsService.listExperiments();
+    res.json(list);
   } catch (err) {
-    res.status(404).json([]);
+    console.error("[Experiments]", err.message);
+    res.json([]);
+  }
+});
+
+/**
+ * GET /api/experiments/:run/metrics
+ */
+router.get("/:run/metrics", async (req, res) => {
+  try {
+    const runName = req.params.run;
+
+    const response = await fetch(
+      `http://10.192.74.39:8002/train/metrics?run=${encodeURIComponent(runName)}`
+    );
+
+    if (!response.ok) {
+      return res.json([]);
+    }
+
+    const data = await response.json();
+    res.json(data);
+  } catch (err) {
+    console.error("[Experiments Metrics]", err.message);
+    res.json([]);
+  }
+});
+
+/**
+ * GET /api/experiments/:run/weights
+ */
+router.get("/:run/weights", async (req, res) => {
+  try {
+    const { url } = experimentsService.getWeightsDownload(req.params.run);
+    res.redirect(url);
+  } catch (err) {
+    console.error("[Experiments Download]", err.message);
+    res.status(404).json({ error: "Weights not found" });
   }
 });
 

@@ -106,6 +106,35 @@ This project uses `pip-tools` to keep dependencies reproducible.
 - `flask` - Camera streaming service
 - `pypylon` - Basler camera SDK (optional)
 
+## Service Compatibility
+
+This repository contains the **PC / Control Plane** of the Vision Inspection System.
+It depends on external backend services that are versioned and deployed independently.
+
+### Training Server
+
+- **Repository**: https://github.com/yang-githubb/imagelabeler-server
+- **Required Version**: **>= v0.1.0**
+
+The training server is responsible for:
+- YOLO model training
+- Experiment tracking
+- Metrics generation
+- Model weight export
+
+The PC application communicates with the training server via REST APIs and assumes
+the following endpoints are available:
+
+- `POST /train/start`
+- `POST /train/stop`
+- `GET /train/progress`
+- `GET /train/metrics`
+- `GET /experiments`
+
+### Compatibility Notes
+
+- `station` and `process` are **fixed per PC**
+
 ## Installation
 
 1. **Clone/Download the project**

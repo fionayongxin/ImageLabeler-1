@@ -12,17 +12,21 @@
  * ======================================================
  */
 
+
 const express = require("express");
 const router = express.Router();
 
-const systemService = require("../services/system.service");
+const { STATION, PROCESS } = require("../config/env");
 
 /**
- * Get system and environment information.
+ * GET /api/system/identity
+ * Returns fixed station & process for this PC
  */
-router.get("/", (_req, res) => {
-  const info = systemService.getSystemInfo();
-  res.json(info);
+router.get("/identity", (_req, res) => {
+  res.json({
+    station: STATION,
+    process: PROCESS
+  });
 });
 
 module.exports = router;
