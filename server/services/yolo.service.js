@@ -1,89 +1,123 @@
 /**
  * ======================================================
  * yolo.service.js
- * ------------------------------------------------------
+ * ======================================================
  * Responsibility:
- * - Business logic for YOLO labeling
- * - Convert boxes to YOLO format
- * - Move images into dataset structure
- * - Support undo of last save
+ * - YOLO labeling business logic
+ * - Build YOLO labels
+ * - Upload labeled image + label to training server
+ * - Delete local image ONLY after server ACK
+ * - Provide class list for UI from dataset.yaml
  *
- * Design rules:
- * - NO Express / HTTP
- * - NO request/response objects
- * - Use utils for filesystem safety & YOLO math
- * - Owns labeling lifecycle state
+ * IMPORTANT:
+ * - Dataset images are persisted on SERVER via HTTP
+ * - dataset.yaml is still read locally for class names
  * ======================================================
  */
 
 const fs = require("fs");
 const path = require("path");
+const fetch = require("node-fetch");
+const FormData = require("form-data");
+const sharp = require("sharp");
 
-const { DATASET_ROOT, PHOTOS_DIR } = require("../config/paths");
+const { PHOTOS_DIR, DATASET_ROOT } = require("../config/paths");
 const { buildYoloFile } = require("../utils/yolo.format");
-const {
-  ensureDir,
-  moveFileSafe,
-  deleteFileSafe
-} = require("../utils/file.safe");
+const { deleteFileSafe } = require("../utils/file.safe");
 
-function parseDatasetClasses(datasetYamlPath) {
-  const raw = fs.readFileSync(datasetYamlPath, "utf8");
-  const lines = raw.split(/\r?\n/);
-  const names = [];
-  let inNames = false;
+const { TRAINING_SERVER_BASE } = require("../config/env");
 
-  for (const line of lines) {
-    const trimmed = line.trim();
-    if (!inNames) {
-      if (trimmed === "names:") {
-        inNames = true;
-      }
-      continue;
-    }
+/* ======================================================
+   CLASS LOADING
+====================================================== */
 
-    if (!trimmed || !/^\d+:/.test(trimmed)) break;
-
-    const match = trimmed.match(/^\d+:\s*(.*)$/);
-    if (match) {
-      names.push(match[1].trim());
-    }
-  }
-
-  return names;
-}
-
-function getClasses(station, process) {
+async function getClasses(station, process) {
   if (!station || !process) {
     throw new Error("Missing station or process");
   }
 
-  const datasetYaml = path.join(DATASET_ROOT, station, process, "dataset.yaml");
-  if (!fs.existsSync(datasetYaml)) {
-    throw new Error("dataset.yaml not found");
+  const res = await fetch(
+    `${TRAINING_SERVER_BASE}/dataset/classes` +
+    `?station=${encodeURIComponent(station)}` +
+    `&process=${encodeURIComponent(process)}`
+  );
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(text || "Failed to load classes");
   }
 
-  const classes = parseDatasetClasses(datasetYaml);
-  if (classes.length === 0) {
-    throw new Error("No class names found in dataset.yaml");
-  }
-
-  return classes;
+  const data = await res.json();
+  return data.classes || [];
 }
 
-/**
- * Internal state to support undo.
- * Only the most recent save is undoable.
- */
-let lastSaved = null;
+/* ======================================================
+   SERVER UPLOAD
+====================================================== */
 
-/**
- * Save YOLO labels and move image into dataset.
- *
- * @param {Object} payload
- * @returns {{ status: string }}
- */
-function saveYolo(payload) {
+async function uploadToTrainingServer({
+  imagePath,
+  imageName,
+  labelText,
+  station,
+  process
+}) {
+  const form = new FormData();
+
+  form.append("station", station);
+  form.append("process", process);
+
+  form.append(
+    "image",
+    fs.createReadStream(imagePath),
+    imageName
+  );
+
+  form.append(
+    "label",
+    Buffer.from(labelText),
+    {
+      filename: `${path.parse(imageName).name}.txt`,
+      contentType: "text/plain"
+    }
+  );
+  
+  const thumbBuffer = await sharp(imagePath)
+    .resize(320)          // width 320px (auto height)
+    .jpeg({ quality: 60 }) // compress
+    .toBuffer();
+
+  form.append(
+    "thumb",
+    thumbBuffer,
+    {
+      filename: imageName,
+      contentType: "image/jpeg"
+    }
+  );
+
+  const res = await fetch(
+    `${TRAINING_SERVER_BASE}/dataset/upload`,
+    {
+      method: "POST",
+      body: form,
+      headers: form.getHeaders()
+    }
+  );
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(
+      `Training server upload failed (${res.status}): ${text}`
+    );
+  }
+}
+
+/* ======================================================
+   SAVE YOLO (HTTP‑BASED, FACTORY SAFE)
+====================================================== */
+
+async function saveYolo(payload) {
   const {
     image,
     width,
@@ -102,74 +136,49 @@ function saveYolo(payload) {
     !station ||
     !process
   ) {
-    
-    console.error("YOLO payload received:", JSON.stringify(payload, null, 2));
     throw new Error("Invalid YOLO payload");
   }
 
   const srcImagePath = path.join(PHOTOS_DIR, image);
   if (!fs.existsSync(srcImagePath)) {
-    throw new Error("Source image not found");
+    throw new Error("Source image not found on PC");
   }
 
-  const imagesDir = path.join(
-    DATASET_ROOT,
-    station,
-    process,
-    "images"
-  );
-
-  const labelsDir = path.join(
-    DATASET_ROOT,
-    station,
-    process,
-    "labels"
-  );
-
-  ensureDir(imagesDir);
-  ensureDir(labelsDir);
-
-  const baseName = path.parse(image).name;
-  const dstImagePath = path.join(imagesDir, image);
-  const labelPath = path.join(labelsDir, `${baseName}.txt`);
-
-  const yoloLines = buildYoloFile(
+  const labelText = buildYoloFile(
     boxes,
     classMap,
     width,
     height
-  );
+  ).join("\n");
 
-  fs.writeFileSync(labelPath, yoloLines.join("\n"));
-  moveFileSafe(srcImagePath, dstImagePath);
+  try {
+    await uploadToTrainingServer({
+      imagePath: srcImagePath,
+      imageName: image,
+      labelText,
+      station,
+      process
+    });
+  } catch (err) {
+    console.error("[UPLOAD] Failed:", err.message);
 
-  lastSaved = {
-    image,
-    from: srcImagePath,
-    to: dstImagePath,
-    labelPath
-  };
+    throw new Error("Upload failed, image kept on PC");
+  }
+
+  // ---- delete ONLY after server ACK ----
+  deleteFileSafe(srcImagePath);
 
   return { status: "ok" };
 }
 
-/**
- * Undo the last YOLO save operation.
- *
- * @returns {{ status: string, image: string }}
- */
+/* ======================================================
+   UNDO (NOT SUPPORTED AFTER SERVER SAVE)
+====================================================== */
+
 function undoLastSave() {
-  if (!lastSaved) {
-    throw new Error("Nothing to undo");
-  }
-
-  moveFileSafe(lastSaved.to, lastSaved.from);
-  deleteFileSafe(lastSaved.labelPath);
-
-  const image = lastSaved.image;
-  lastSaved = null;
-
-  return { status: "ok", image };
+  throw new Error(
+    "Undo is not supported after server persistence"
+  );
 }
 
 module.exports = {

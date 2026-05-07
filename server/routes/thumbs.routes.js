@@ -101,16 +101,10 @@ router.get("/datasets/:station/:process/:image", async (req, res) => {
     "thumbs",
     image
   );
-
-  try {
-    const ok = await ensureThumb(fullImagePath, thumbPath);
-    if (!ok) return res.status(404).send("Image not found");
-
-    res.sendFile(thumbPath);
-  } catch (err) {
-    console.error("[Thumbs][Datasets]", err);
-    res.status(500).send("Thumbnail error");
-  }
+  const ok = await ensureThumb(fullImagePath, thumbPath);
+  if (!ok) return res.status(404).send("Image not found");
+  res.sendFile(thumbPath);
+  D
 });
 
 module.exports = router;

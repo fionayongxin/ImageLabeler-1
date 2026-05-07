@@ -45,6 +45,10 @@ let currentRunName = null;
 let lossChart = null;
 let mapChart  = null;
 
+let STATION = null;
+let PROCESS = null;
+
+
 /* ======================================================
    HELPERS
 ====================================================== */
@@ -61,6 +65,24 @@ function generateExperimentName() {
   return `${model}_${ts}`;
 }
 
+async function loadIdentity() {
+  const res = await fetch("/api/system/identity");
+  if (!res.ok) {
+    throw new Error("Failed to load system identity");
+  }
+
+  const data = await res.json();
+
+  STATION = data.station;
+  PROCESS = data.process;
+
+  const stationInput = document.getElementById("station");
+  const processInput = document.getElementById("process");
+
+  if (stationInput) stationInput.value = STATION;
+  if (processInput) processInput.value = PROCESS;
+}
+
 /* ======================================================
    INITIALIZATION
 ====================================================== */
@@ -74,6 +96,16 @@ modelSelect.addEventListener("change", () => {
     runNameInput.value = generateExperimentName();
   }
 });
+
+(async () => {
+  try {
+    await loadIdentity();
+  } catch (err) {
+    console.error(err);
+    setStatus("System identity not available", "error");
+  }
+})();
+
 
 /* ======================================================
    LOSS CHART
@@ -274,6 +306,8 @@ startBtn.onclick = async () => {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
+      station: STATION,         
+      process: PROCESS,      
       model: modelSelect.value,
       epochs: Number(document.getElementById("epochs").value),
       imgsz:  Number(document.getElementById("imgsz").value),

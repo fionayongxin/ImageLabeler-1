@@ -74,7 +74,6 @@ async function capturePhoto() {
       throw new Error("Basler capture failed");
     }
 
-    // ✅ THIS updates "latest"
     await loadLatestImages();
 
   } catch (err) {
@@ -101,13 +100,23 @@ async function loadLatestImages(limit = 2) {
   latestImagesContainer.innerHTML = "";
   const frag = document.createDocumentFragment();
 
+
   images.forEach(src => {
     const img = document.createElement("img");
-    img.src = `${src}?t=${Date.now()}`; // cache‑bust
+
+    img.src = `${src}?t=${Date.now()}`; 
+
     img.onclick = () =>
       window.open(src.replace("/thumbs/", "/"), "_blank");
+
+    img.onerror = () => {
+      console.warn("[Camera] Thumbnail removed (file missing):", src);
+      img.remove();
+    };
+
     frag.appendChild(img);
   });
+
 
   latestImagesContainer.appendChild(frag);
 }

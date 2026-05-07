@@ -7,16 +7,14 @@
  * - This file ONLY forwards requests via HTTP
  */
 
-const TRAIN_SERVER = "http://10.192.74.39:8002";
-
 /**
  * Start training on remote server.
  */
 
-const { FASTAPI_BASE_URL, STATION, PROCESS } = require("../config/env");
+const { TRAINING_SERVER_BASE, STATION, PROCESS } = require("../config/env");
 
 async function startTraining(cfg) {
-  const res = await fetch(`${FASTAPI_BASE_URL}/train/start`, {
+  const res = await fetch(`${TRAINING_SERVER_BASE}/train/start`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -41,7 +39,7 @@ async function startTraining(cfg) {
  */
 async function stopTraining() {
 
-  const res = await fetch(`${TRAIN_SERVER}/train/stop`, {
+  const res = await fetch(`${TRAINING_SERVER_BASE}/train/stop`, {
     method: "POST"
   });
 
@@ -58,7 +56,7 @@ async function stopTraining() {
  * Get training progress from remote server.
  */
 async function getTrainingProgress() {
-  const res = await fetch(`${TRAIN_SERVER}/train/progress`);
+  const res = await fetch(`${TRAINING_SERVER_BASE}/train/progress`);
   if (!res.ok) return { status: "idle" };
   return res.json();
 }
@@ -67,7 +65,7 @@ async function getTrainingProgress() {
  * Get training metrics from remote server.
  */
 async function getTrainingMetrics() {
-  const res = await fetch(`${TRAIN_SERVER}/train/metrics`);
+  const res = await fetch(`${TRAINING_SERVER_BASE}/train/metrics`);
   if (!res.ok) return [];
   return res.json();
 }

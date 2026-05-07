@@ -46,7 +46,6 @@ process.on("exit", () => {
 // UI assets
 app.use(express.static(path.join(__dirname, "public")));
 
-// ✅ Photos (with cache headers)
 app.use(
   "/photos",
   express.static(PHOTOS_DIR, {
@@ -55,7 +54,6 @@ app.use(
   })
 );
 
-// ✅ Datasets (read-only browsing)
 app.use(
   "/datasets",
   express.static(path.join(__dirname, "..", "datasets"), {
@@ -63,7 +61,6 @@ app.use(
   })
 );
 
-// ⚠️ Training artifacts (consider removing later)
 app.use(
   "/training",
   express.static(path.join(__dirname, "training"))

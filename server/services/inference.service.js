@@ -19,7 +19,7 @@ const axios = require("axios");
 const fs = require("fs/promises");
 const path = require("path");
 
-const { FASTAPI_BASE_URL } = require("../config/env");
+const { TRAINING_SERVER_BASE } = require("../config/env");
 
 // -----------------------------------------------------------------------------
 // INSPECTION CONFIG PATH (single source of truth)
@@ -37,7 +37,7 @@ const INSPECTION_CONFIG_PATH = path.join(
 // -----------------------------------------------------------------------------
 
 async function runInference() {
-  const res = await axios.get(`${FASTAPI_BASE_URL}/infer`);
+  const res = await axios.get(`${TRAINING_SERVER_BASE}/infer`);
   return res.data;
 }
 

@@ -8,7 +8,8 @@
 
 const express = require("express");
 const router = express.Router();
-
+const fetch = require("node-fetch");
+const { TRAINING_SERVER_BASE } = require("../config/env");
 const experimentsService = require("../services/experiments.service");
 
 /**
@@ -32,7 +33,7 @@ router.get("/:run/metrics", async (req, res) => {
     const runName = req.params.run;
 
     const response = await fetch(
-      `http://10.192.74.39:8002/train/metrics?run=${encodeURIComponent(runName)}`
+      `${TRAINING_SERVER_BASE}/train/metrics?run=${encodeURIComponent(runName)}`
     );
 
     if (!response.ok) {
