@@ -7,8 +7,6 @@ const trainingService = require("../services/training.service");
  * Start a new training run.
  */
 router.post("/start", async (req, res) => {
-  console.log(">>> NODE /api/train/start HIT <<<");
-  console.log(">>> PAYLOAD FROM FRONTEND <<<", req.body);
   try {
     const result = await trainingService.startTraining(req.body);
     res.json(result);
