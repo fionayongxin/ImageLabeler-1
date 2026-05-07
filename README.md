@@ -22,11 +22,11 @@ A comprehensive computer vision inspection system for automated quality control 
 - YOLO format export with normalized coordinates
 - Thumbnail navigation and batch processing
 
-### 🤖 **Model Training**
-- Ultralytics YOLO training with CLI interface
-- Multiple model support (YOLOv5, YOLOv8, etc.)
-- Experiment tracking with metrics visualization
-- Automatic dataset validation
+### 🤖 Model Training (Orchestration)
+- Training job orchestration and control
+- Training progress and metrics visualization
+- Experiment history and model management
+- Delegates training execution to Training Server
 
 ### 📊 **Experiment Management**
 - Training run history and metrics
@@ -49,7 +49,7 @@ Node.js Express Server (Port 3000)
     ↓ REST APIs
 ├── Camera Service (Python/Flask - Port 8001)
 ├── Inference Service (Python/FastAPI - Port 8000)
-├── Training Service (Python CLI)
+├── Training Server (Python/FastAPI - Port 8002)
 └── File System (Datasets, Models, Photos)
 ```
 
@@ -58,7 +58,7 @@ Node.js Express Server (Port 3000)
 - **Node.js Server**: HTTP API gateway, static assets, service orchestration
 - **Camera Service**: Basler camera control, MJPEG streaming, image capture
 - **Inference Service**: YOLO model loading, real-time inference, inspection logic
-- **Training Service**: Dataset training, experiment tracking, model export
+- **Training Server**: YOLO training execution, experiment tracking, metrics, model export
 
 ## Prerequisites
 
@@ -98,9 +98,9 @@ This project uses `pip-tools` to keep dependencies reproducible.
    ```
 
 ### Required Packages
-- `ultralytics` - YOLO training and inference
-- `fastapi` - REST API framework
-- `uvicorn` - ASGI server
+- `node-fetch / axios` (service communication)
+- `chart.js` (metrics visualization)
+- `opencv-python` (optional, inspection utilities)
 - `torch` - PyTorch (with CUDA support for GPU)
 - `opencv-python` - Image processing
 - `flask` - Camera streaming service
