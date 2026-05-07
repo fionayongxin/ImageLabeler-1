@@ -28,13 +28,6 @@ const MODELS_DIR = path.join(SERVER_ROOT, "models");
 const ACTIVE_MODEL_META = path.join(MODELS_DIR, "active_model.json");
 
 /* ======================================================
-   CAMERA (SIMULATED IMAGE)
-====================================================== */
-const CAMERA_IMAGE_PATH = path.join(DATASET_ROOT,
-  "station_01/final_inspection/images/" +
-  "92762c6d__331aa42d-Image__2026-03-25__15-47-02.jpg");
-
-/* ======================================================
    EXPORT
 ====================================================== */
 module.exports = {
@@ -47,5 +40,4 @@ module.exports = {
   MODELS_DIR,
   ACTIVE_MODEL_META,
 
-  CAMERA_IMAGE_PATH
 };

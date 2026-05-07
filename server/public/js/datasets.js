@@ -40,12 +40,9 @@ function renderPage(images) {
     img.loading = "lazy";
     img.onclick = () =>
       window.open(
-        src
-          .replace("/thumbs/datasets/", "/datasets/")
-          .replace(/\/([^/]+)$/, "/images/$1"),
+        src.replace("/thumbs/", "/"),
         "_blank"
       );
-
     fragment.appendChild(img);
   });
 
@@ -72,6 +69,16 @@ function updatePaginationUI() {
 
 /* ===================== LOAD ===================== */
 
+async function loadIdentity() {
+  const res = await fetch("/api/system/identity");
+  if (!res.ok) throw new Error("Failed to load system identity");
+
+  const data = await res.json();
+
+  stationSelect.value = data.station;
+  processSelect.value = data.process;
+}
+
 async function loadImages(page = 1) {
   const station = stationSelect.value;
   const process = processSelect.value;
@@ -80,11 +87,8 @@ async function loadImages(page = 1) {
   gallery.innerHTML = "";
   currentPage = page;
 
-  const stationsToLoad =
-    station === "ALL" ? ["station_01", "station_02"] : [station];
-
-  const processesToLoad =
-    process === "ALL" ? ["final_inspection", "pre_inspection"] : [process];
+  const stationsToLoad = [station];
+  const processesToLoad = [process];
 
   try {
     const requests = [];
@@ -92,9 +96,11 @@ async function loadImages(page = 1) {
     for (const st of stationsToLoad) {
       for (const pr of processesToLoad) {
         requests.push(
-          fetch(
-            `/api/datasets/images?station=${encodeURIComponent(st)}&process=${encodeURIComponent(pr)}&page=${page}&limit=${PAGE_SIZE}`
-          ).then(r => (r.ok ? r.json() : { total: 0, images: [] }))
+          fetch(`/api/datasets/images?station=${encodeURIComponent(st)}&process=${encodeURIComponent(pr)}&page=${page}&limit=${PAGE_SIZE}`)            .then(async (r) => {
+              if (!r.ok) return { total: 0, images: [] };
+              const data = await r.json();
+              return data;
+            })
         );
       }
     }
@@ -146,4 +152,13 @@ processSelect.onchange = () => loadImages(1);
 
 /* ===================== INIT ===================== */
 
-loadImages();
+
+(async () => {
+  try {
+    await loadIdentity();
+    loadImages(1);
+  } catch (err) {
+    console.error(err);
+    statusBox.textContent = "Failed to load dataset identity.";
+  }
+})();

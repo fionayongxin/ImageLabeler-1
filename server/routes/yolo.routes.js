@@ -45,10 +45,10 @@ router.post("/save", (req, res) => {
   }
 });
 
-router.get("/classes", (req, res) => {
+router.get("/classes", async (req, res) => {
   try {
     const { station, process } = req.query;
-    const classes = yoloService.getClasses(station, process);
+    const classes = await yoloService.getClasses(station, process);
     res.json({ classes });
   } catch (error) {
     console.error("[YOLO] classes error", error);

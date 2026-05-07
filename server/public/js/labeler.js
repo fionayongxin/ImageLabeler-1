@@ -1,6 +1,6 @@
 /**
  ======================================================
- * trainer.js
+ * labeler.js
  * ======================================================
  */
 
@@ -450,6 +450,7 @@ deleteImageBtn.onclick = async () => {
 
 classSelect.onchange = updateSaveButtonState;
 
+
 saveYoloBtn.onclick = async () => {
   if (!currentImage) return;
 
@@ -477,12 +478,13 @@ saveYoloBtn.onclick = async () => {
   updateSaveButtonState();
 
   images.splice(currentIndex, 1);
+
+  clearImageView();
   renderThumbnails();
 
   if (images.length > 0) {
-    loadImage(Math.min(currentIndex, images.length - 1));
+    loadImage(0);
   } else {
-    clearImageView();
     setStatus("All images labeled", "success");
   }
 };

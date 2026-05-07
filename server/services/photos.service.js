@@ -19,10 +19,13 @@ if (!fs.existsSync(PHOTOS_DIR)) {
 ====================================================== */
 
 function listPhotosPaged(page = 1, limit = 24) {
+const { randomUUID } = require("crypto");
+const filename = `photo_${Date.now()}_${randomUUID()}.png`;
+
   const files = fs
     .readdirSync(PHOTOS_DIR)
     .filter(name => IMAGE_REGEX.test(name))
-    .sort((a, b) => b.localeCompare(a)); // newest first
+    .sort((a, b) => b.localeCompare(a)); 
 
   const total = files.length;
   const start = (page - 1) * limit;
@@ -43,6 +46,7 @@ async function savePhoto(base64Image) {
   if (!match) throw new Error("Invalid image");
 
   const buffer = Buffer.from(match[1], "base64");
+
   const filename = `photo_${Date.now()}.png`;
   const fullPath = path.join(PHOTOS_DIR, filename);
 
@@ -50,8 +54,7 @@ async function savePhoto(base64Image) {
 
   return {
     filename,
-    url: `/photos/${filename}`,
-    thumb: `/thumbs/photos/${filename}` 
+    url: `/photos/${filename}`
   };
 }
 

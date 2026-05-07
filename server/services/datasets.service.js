@@ -1,75 +1,52 @@
 /**
  * ======================================================
- * datasets.service.js  (UNIFIED – NO THUMB LOGIC)
+ * datasets.service.js (FIXED - LOCAL ONLY)
  * ======================================================
  */
 
-const fs = require("fs");
-const path = require("path");
-const { DATASET_ROOT } = require("../config/paths");
+const fetch = require("node-fetch");
+const { TRAINING_SERVER_BASE } = require("../config/env");
 
-const IMAGE_REGEX = /\.(png|jpg|jpeg)$/i;
-
-/* ======================================================
-   DATASET DISCOVERY
-====================================================== */
-
-function listDatasets(station, process) {
-  if (!station || !process) return [];
-
-  const dir = path.join(DATASET_ROOT, station, process);
-  if (!fs.existsSync(dir)) return [];
-
-  return fs
-    .readdirSync(dir)
-    .filter(name =>
-      fs.statSync(path.join(dir, name)).isDirectory()
-    );
-}
-
-/* ======================================================
-   PAGINATED IMAGE LISTING
-====================================================== */
-
-function listDatasetImagesPaged(
+/**
+ * Paginated dataset images (via training server)
+ */
+async function listDatasetImagesPaged(
   station,
   process,
   page = 1,
   limit = 24
 ) {
+
   if (!station || !process) {
     return { total: 0, images: [] };
   }
 
-  const imagesDir = path.join(
-    DATASET_ROOT,
-    station,
-    process,
-    "images"
-  );
+  const url =
+    `${TRAINING_SERVER_BASE}/datasets/images` +
+    `?station=${encodeURIComponent(station)}` +
+    `&process=${encodeURIComponent(process)}` +
+    `&page=${page}` +
+    `&limit=${limit}`;
 
-  if (!fs.existsSync(imagesDir)) {
+  const res = await fetch(url);
+
+  if (!res.ok) {
     return { total: 0, images: [] };
   }
 
-  const files = fs
-    .readdirSync(imagesDir)
-    .filter(name => IMAGE_REGEX.test(name))
-    .sort();
+  const data = await res.json();
 
-  const total = files.length;
-  const start = (page - 1) * limit;
-  const slice = files.slice(start, start + limit);
+  const images = (data.images || []).map(
+    name =>
+      `${TRAINING_SERVER_BASE}/datasets/${station}/${process}/images/thumbs/${name}`
+  );
 
   return {
-    total,
-    images: slice.map(
-      name => `/thumbs/datasets/${station}/${process}/${name}` // ✅ unified
-    )
+    total: data.total || 0,
+    images
   };
 }
 
 module.exports = {
-  listDatasets,
   listDatasetImagesPaged
 };

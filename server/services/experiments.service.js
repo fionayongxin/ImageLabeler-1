@@ -13,7 +13,9 @@
  * ======================================================
  */
 
-const TRAIN_SERVER = "http://10.192.74.39:8002";
+const fetch = require("node-fetch");
+
+const { TRAINING_SERVER_BASE } = require("../config/env");
 
 /**
  * List all experiments.
@@ -21,7 +23,7 @@ const TRAIN_SERVER = "http://10.192.74.39:8002";
  * @returns {Array}
  */
 async function listExperiments() {
-  const res = await fetch(`${TRAIN_SERVER}/experiments`);
+  const res = await fetch(`${TRAINING_SERVER_BASE}/experiments`);
   if (!res.ok) return [];
   return res.json();
 }
@@ -34,7 +36,7 @@ async function listExperiments() {
  */
 async function getExperimentMetrics(runName) {
   const res = await fetch(
-    `${TRAIN_SERVER}/train/metrics?run=${encodeURIComponent(runName)}`
+    `${TRAINING_SERVER_BASE}/train/metrics?run=${encodeURIComponent(runName)}`
   );
   if (!res.ok) return [];
   return res.json();
@@ -48,7 +50,7 @@ async function getExperimentMetrics(runName) {
  */
 function getWeightsDownload(runName) {
   return {
-    url: `${TRAIN_SERVER}/experiments/${encodeURIComponent(runName)}/weights`,
+    url: `${TRAINING_SERVER_BASE}/experiments/${encodeURIComponent(runName)}/weights`,
     filename: `${runName}_best.pt`
   };
 }
