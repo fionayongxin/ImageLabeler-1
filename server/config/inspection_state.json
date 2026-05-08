@@ -1,32 +1,88 @@
 {
   "model": "C:\\Users\\pnayeuoo\\OneDrive - Flex\\Documents\\AISetup\\interface\\server\\training\\station_01-final_inspection-yolo26m-1777254365548\\weights\\best.pt",
   "confidence": 0.35,
-  "currentStep": 2,
+  "currentStep": 1778229110089,
   "steps": [
     {
-      "step": 1,
-      "required": [
-        "T_Body"
-      ],
-      "forbidden": [
-        "T_Bushing",
-        "T_SN_label"
-      ]
-    },
-    {
-      "step": 2,
+      "id": 1778229109176,
+      "name": "Step 1",
       "required": [
         "T_Bushing"
       ],
       "forbidden": [
-        "T_SN_label"
+        "T_2_label"
       ]
     },
     {
-      "step": 3,
+      "id": 1778229109424,
+      "name": "Step 2",
       "required": [
-        "T_SN_label"
+        "T_Body"
       ],
+      "forbidden": [
+        "T_Hole_Plug"
+      ]
+    },
+    {
+      "id": 1778229109592,
+      "name": "Step 3",
+      "required": [
+        "T_Inner_opening"
+      ],
+      "forbidden": [
+        "T_Inner_opening"
+      ]
+    },
+    {
+      "id": 1778229109928,
+      "name": "Step 4",
+      "required": [
+        "T_Missing_2_label"
+      ],
+      "forbidden": [
+        "T_Missing_2_label"
+      ]
+    },
+    {
+      "id": 1778229110089,
+      "name": "Step 5",
+      "required": [],
+      "forbidden": []
+    },
+    {
+      "id": 1778229110960,
+      "name": "Step 6",
+      "required": [],
+      "forbidden": []
+    },
+    {
+      "id": 1778229111089,
+      "name": "Step 7",
+      "required": [],
+      "forbidden": []
+    },
+    {
+      "id": 1778229111280,
+      "name": "Step 8",
+      "required": [],
+      "forbidden": []
+    },
+    {
+      "id": 1778229111464,
+      "name": "Step 9",
+      "required": [],
+      "forbidden": []
+    },
+    {
+      "id": 1778229111640,
+      "name": "Step 10",
+      "required": [],
+      "forbidden": []
+    },
+    {
+      "id": 1778229111776,
+      "name": "Step 11",
+      "required": [],
       "forbidden": []
     }
   ]
