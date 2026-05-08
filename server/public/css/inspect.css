@@ -1,5 +1,5 @@
 /* ======================================================
-   RESET & GLOBAL
+   GLOBAL RESET
 ====================================================== */
 
 * {
@@ -9,6 +9,7 @@
 html, body {
   height: 100%;
   margin: 0;
+  overflow: hidden;
 }
 
 body {
@@ -19,7 +20,7 @@ body {
 
 
 /* ======================================================
-   APP ROOT
+   APP LAYOUT
 ====================================================== */
 
 .app-root {
@@ -28,9 +29,17 @@ body {
   grid-template-rows: 48px 1fr;
 }
 
+.stage {
+  height: 100%;
+}
+
+.hidden {
+  display: none !important;
+}
+
 
 /* ======================================================
-   HEADER — FIXED HEIGHT, SINGLE BASELINE
+   HEADER
 ====================================================== */
 
 .app-header {
@@ -38,19 +47,18 @@ body {
   display: grid;
   grid-template-columns: auto auto 1fr auto;
   align-items: center;
-  padding: 0 24px;
+  padding: 0 20px;
   column-gap: 12px;
 }
 
-/* Title */
 .app-title {
   font-size: 14px;
   font-weight: 600;
-  white-space: nowrap;
 }
 
+
 /* ======================================================
-   MODE TABS — INLINE WITH TITLE
+   TABS
 ====================================================== */
 
 .top-tabs {
@@ -71,13 +79,12 @@ body {
 
 .top-tab.active {
   background: #2563eb;
-  border-color: #2563eb;
-  color: #ffffff;
+  color: #fff;
 }
 
 
 /* ======================================================
-   HEADER STATUS — HARD RIGHT
+   STATUS
 ====================================================== */
 
 .status-pill {
@@ -91,38 +98,15 @@ body {
   font-weight: 700;
 }
 
-.status-pass    { background: #14532d; color: #dcfce7; }
-.status-fail    { background: #78350f; color: #fef3c7; }
-.status-unknown { background: #374151; color: #d1d5db; }
+.status-pass    { background: #14532d; }
+.status-fail    { background: #78350f; }
+.status-unknown { background: #374151; }
 
 
 /* ======================================================
-   MAIN STAGE — SINGLE CENTER SYSTEM
+   OPERATOR VIEW
 ====================================================== */
 
-.stage {
-  display: grid;
-  place-items: center;          /* TRUE CENTERING */
-}
-
-/* Shared center column */
-.stage-center {
-  width: 100%;
-  max-width: 1200px;
-  display: grid;
-  place-items: center;
-}
-
-
-/* ======================================================
-   OPERATOR MODE — CAMERA ONLY
-====================================================== */
-
-.operator-layout {
-  width: 100%;
-}
-
-/* Camera frame */
 .camera-frame {
   position: relative;
   width: 100%;
@@ -130,160 +114,383 @@ body {
   background: #020617;
   border-radius: 14px;
   overflow: hidden;
-  box-shadow:
-    0 40px 120px rgba(0,0,0,0.6),
-    inset 0 0 0 1px rgba(255,255,255,0.04);
 }
 
-/* Camera image */
 .camera-stream {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  position: relative;
-  z-index: 1;
 }
 
-/* Canvas overlay */
 #overlayCanvas {
   position: absolute;
   inset: 0;
-  z-index: 5;
-  pointer-events: none;
-}
-/* ======================================================
-   GUIDE IMAGE (Bottom Right Reference)
-====================================================== */
-
-.guide-image-box {
-  position: absolute;
-  bottom: 16px;
-  right: 16px;
-
-  width: 300px;
-  height: 200px;
-
-  background: #020617;
-  border: 2px solid #374151;
-  border-radius: 10px;
-
-  padding: 6px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.6);
-
-  z-index: 8;
 }
 
-.guide-image-box img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  border-radius: 6px;
-}
-
-/* Placeholder */
 .cam-placeholder {
   position: absolute;
   inset: 0;
   display: grid;
   place-items: center;
   color: #6b7280;
-  letter-spacing: 0.12em;
-  font-size: 13px;
-  z-index: 3;
 }
 
-/* PASS / FAIL badge */
 .result-overlay {
   position: absolute;
   right: 16px;
   bottom: 16px;
-  height: 44px;
-  min-width: 120px;
-  padding: 0 20px;
+  padding: 6px 14px;
   border-radius: 999px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 22px;
   font-weight: 700;
-  z-index: 6;
-  box-shadow: 0 12px 40px rgba(0,0,0,0.6);
 }
 
 
 /* ======================================================
-   ENGINEER MODE — CONFIG ONLY
+   ENGINEER GRID
 ====================================================== */
 
-.engineer-layout {
+.engineer-grid {
+  display: grid;
+  height: calc(100vh - 48px);
+
+  grid-template-columns: 360px 1fr 1fr;
+  grid-template-rows: 280px minmax(0, 1fr);
+
+  gap: 12px;
+  padding: 12px;
+}
+
+
+/* ======================================================
+   PANEL BASE
+====================================================== */
+
+.panel {
+  background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+  border-radius: 12px;
+  border: 1px solid #1f2937;
+  padding: 10px 12px;
+
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.panel h4 {
+  margin: 2px 0 6px;
+  font-size: 13px;
+  line-height: 1.2;
+}
+
+
+/* ======================================================
+   PANEL POSITIONING
+====================================================== */
+
+.left-panel {
+  grid-row: 1 / span 2;
+}
+
+.center-panel {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.right-top {
+  grid-column: 3;
+  grid-row: 1;
+}
+
+.steps-panel {
+  grid-column: 2 / span 2;
+  grid-row: 2;
+
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+
+/* ======================================================
+   FORM STRUCTURE
+====================================================== */
+
+.form-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+label {
+  font-size: 13px;
+  margin: 4px 0 2px;
+}
+
+
+/* ======================================================
+   INPUTS
+====================================================== */
+
+.center-panel input {
+  width: 100%;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid #1f2937;
+  background: #020617;
+  color: white;
+  padding: 0 8px;
+}
+
+.center-panel input[type="range"] {
+  accent-color: #2563eb;
+}
+
+
+/* ======================================================
+   FILE INPUT
+====================================================== */
+
+.file-input {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  background: #020617;
+  border: 1px solid #1f2937;
+  border-radius: 8px;
+
+  padding: 6px 8px;
+}
+
+#fileBtn {
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+#fileName {
+  font-size: 12px;
+  color: #9ca3af;
+
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 160px;
+}
+
+
+/* ======================================================
+   CONFIG LIST
+====================================================== */
+
+.config-list {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.config-list div {
+  padding: 6px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.config-list div:hover {
+  background: #1e293b;
+}
+
+.config-list .active {
+  background: #2563eb;
+}
+
+
+/* ======================================================
+   CONFIG ACTIONS (BOTTOM DISTRIBUTED)
+====================================================== */
+
+.config-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  margin-top: auto;   
+}
+
+.config-actions button {
   width: 100%;
 }
 
-/* Config card */
-.config-card {
-  width: 420px;
-  background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
-  border-radius: 16px;
-  padding: 22px;
-  box-shadow:
-    0 60px 160px rgba(0,0,0,0.7),
-    inset 0 1px 0 rgba(255,255,255,0.04);
+
+/* ======================================================
+   CLASSES PANEL
+====================================================== */
+
+.class-view {
+  flex: 1;
+  overflow-y: auto;
+
+  background: #020617;
+  border: 1px solid #1f2937;
+  border-radius: 8px;
+
+  padding: 8px;
 }
 
-/* Card title */
-.config-card h3 {
-  margin: 0 0 18px;
-  font-size: 14px;
-  font-weight: 600;
-}
-
-/* Labels */
-.config-card label {
-  display: block;
+.class-item {
+  padding: 3px 4px;
   font-size: 12px;
-  color: #9ca3af;
+}
+
+.class-item:hover {
+  background: #1e293b;
+}
+
+
+/* ======================================================
+   STEPS HEADER (GRID ALIGNED)
+====================================================== */
+
+.steps-header {
+  display: grid;
+  grid-template-columns: 170px 1fr;
+  align-items: center;
   margin-bottom: 6px;
 }
 
-/* Inputs */
-.config-card select,
-.config-card input[type="file"],
-.config-card input[type="range"] {
-  width: 100%;
-  height: 40px;
-  margin-bottom: 18px;
-  border-radius: 10px;
-  border: 1px solid #1f2937;
-  background: #020617;
-  color: #e5e7eb;
-  padding: 0 12px;
+.steps-header h4 {
+  margin: 0;
 }
 
-/* Slider accent */
-.config-card input[type="range"] {
-  accent-color: #2563eb;
-  padding: 0;
+.step-title-inline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-left: 6px;
+}
+
+.step-title-inline label {
+  white-space: nowrap;
+}
+
+.step-title-inline input {
+  width: 100%;
+  height: 30px;
 }
 
 
 /* ======================================================
-   VISIBILITY HELPERS
+   STEPS CONTENT
 ====================================================== */
 
-.hidden {
-  display: none !important;
+.steps-container {
+  display: grid;
+  grid-template-columns: 170px 1fr;
+  gap: 10px;
+
+  flex: 1;
+  min-height: 0;
 }
-@media (max-height: 800px) {
-  .camera-frame {
-    max-height: calc(100vh - 90px);
-  }
 
-  .guide-image-box {
-    width: 180px;
-  }
 
-  .result-overlay {
-    height: 36px;
-    font-size: 18px;
-  }
+/* Step list */
+
+.steps-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 0;
+}
+
+#stepsList {
+  flex: 1;
+  overflow-y: auto;
+}
+
+#stepsList div {
+  padding: 5px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+#stepsList .active {
+  background: #2563eb;
+}
+
+
+/* Step editor */
+
+.steps-editor {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.step-editor-body {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+
+  flex: 1;
+  min-height: 0;
+}
+
+
+/* ======================================================
+   REQUIRED / FORBIDDEN
+====================================================== */
+
+.step-column {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.step-column h5 {
+  margin-bottom: 4px;
+  font-size: 12px;
+  opacity: 0.85;
+}
+
+.class-box {
+  flex: 1;
+  overflow-y: auto;
+
+  background: #020617;
+  border: 1px solid #1f2937;
+  border-radius: 8px;
+
+  padding: 6px;
+}
+
+.class-box.error {
+  border-color: #dc2626;
+}
+
+.class-box label {
+  display: block;
+  padding: 3px 0;
+  font-size: 12px;
+}
+
+
+/* ======================================================
+   BUTTONS
+====================================================== */
+
+button {
+  height: 32px;
+  border-radius: 8px;
+  border: none;
+  background: #2563eb;
+  color: white;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+button:hover {
+  opacity: 0.9;
+}
+
+button.danger {
+  background: #dc2626;
 }

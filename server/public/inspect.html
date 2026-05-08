@@ -1,20 +1,21 @@
-<!-- ======================================================
-     inspect.html
-====================================================== -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <title>Live PCB Inspection</title>
 
+  <!-- ✅ Make sure this path is correct -->
   <link rel="stylesheet" href="/css/inspect.css" />
 </head>
 
 <body>
 <div class="app-root">
 
-  <!-- ================= HEADER ================= -->
+  <!-- ======================================================
+       HEADER
+  ====================================================== -->
   <header class="app-header">
+
     <div class="header-left">
       <span class="app-title">Live PCB Inspection</span>
 
@@ -27,12 +28,19 @@
     <div id="headerStatus" class="status-pill status-unknown">
       WAITING
     </div>
+
   </header>
 
-  <!-- ================= OPERATOR ================= -->
+
+  <!-- ======================================================
+       OPERATOR VIEW
+  ====================================================== -->
   <main class="stage operator-layout">
+
     <div class="stage-center">
+
       <div class="camera-frame">
+
         <img id="liveCam" class="camera-stream" />
         <canvas id="overlayCanvas"></canvas>
 
@@ -43,41 +51,149 @@
         <div id="cameraResult" class="result-overlay status-unknown">
           WAITING
         </div>
-        
-<div class="guide-image-box">
-  <img
-    id="guideImage"
-    src="http://localhost:3000/datasets/station_01/final_inspection/images/00833093__1baf9cb4-Image__2026-03-25__15-34-47.jpg"
-    alt="Inspection Guide"
-  />
-</div>
 
       </div>
+
     </div>
+
   </main>
 
-  <!-- ================= ENGINEER ================= -->
+
+  <!-- ======================================================
+       ENGINEER VIEW
+  ====================================================== -->
   <main class="stage engineer-layout hidden">
-    <div class="stage-center">
-      <div class="config-card">
-        <h3>Inspection Configuration</h3>
 
-        <label>Product / Program</label>
-        <select>
-          <option>Station 01 - Final Inspection</option>
-        </select>
+    <div class="engineer-grid">
 
-        <label>Model File</label>
-        <input type="file" accept=".pt" />
+      <!-- ======================================================
+           LEFT PANEL (CONFIG LIST)
+      ====================================================== -->
 
-        <label>Confidence Threshold</label>
-        <input type="range" min="0" max="1" step="0.05" />
+      <div class="panel left-panel">
+
+        <h4>Configs</h4>
+
+        <div id="configList" class="config-list"></div>
+
+        <div class="config-actions">
+
+          <button id="addConfigBtn">Add Config</button>
+
+          <button id="deleteConfigBtn" class="danger">Delete Config</button>
+
+          <button id="saveConfigBtn" class="primary">Save</button>
+
+        </div>
       </div>
+
+      <!-- ======================================================
+           CENTER PANEL (CONFIG DETAILS)
+      ====================================================== -->
+      <div class="panel center-panel">
+
+        <h4>Config Details</h4>
+
+        <div class="form-block">
+
+          <label>Name</label>
+          <input id="configName" />
+
+          <label>Model (.pt)</label>
+
+          <div class="file-input">
+
+            <input type="file" id="modelFile" hidden />
+
+            <button type="button" id="fileBtn">Upload Model</button>
+
+            <span id="fileName">No file selected</span>
+
+          </div>
+
+          <label>Confidence</label>
+          <input type="range" id="confidence" min="0" max="1" step="0.05" />
+
+        </div>
+      </div>
+
+
+      <!-- ======================================================
+           RIGHT PANEL (CLASSES)
+      ====================================================== -->
+      <div class="panel right-top">
+
+        <h4>Classes</h4>
+
+        <div id="classList" class="class-view"></div>
+
+      </div>
+
+
+      <!-- ======================================================
+           STEPS PANEL
+      ====================================================== -->
+      <div class="panel steps-panel">
+
+        <!-- ✅ HEADER ROW (aligned horizontally) -->
+        <div class="steps-header">
+
+          <h4>Steps</h4>
+
+          <div class="step-title-inline">
+            <label for="stepName">Step Title</label>
+            <input id="stepName" />
+          </div>
+
+        </div>
+
+
+        <!-- ✅ MAIN CONTENT -->
+        <div class="steps-container">
+
+          <!-- LEFT: Step list -->
+          <div class="steps-list">
+
+            <div id="stepsList"></div>
+
+            <button id="addStepBtn">Add Step</button>
+            <button id="deleteStepBtn" class="danger">Delete Step</button>
+
+          </div>
+
+
+          <!-- RIGHT: Step editor -->
+          <div class="steps-editor">
+
+            <div class="step-editor-body">
+
+              <!-- Required -->
+              <div class="step-column">
+                <h5>Required</h5>
+                <div class="steps-required class-box"></div>
+              </div>
+
+              <!-- Forbidden -->
+              <div class="step-column">
+                <h5>Forbidden</h5>
+                <div class="steps-forbidden class-box error"></div>
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
     </div>
+
   </main>
 
 </div>
 
 <script src="/js/inspect.js"></script>
+
 </body>
 </html>

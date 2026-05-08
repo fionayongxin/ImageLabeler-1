@@ -16,6 +16,7 @@
 
 const express = require("express");
 const router = express.Router();
+const { TRAINING_SERVER_BASE } = require("../config/env");
 
 const {
   runInference,
@@ -64,6 +65,44 @@ router.post("/step/:step", async (req, res) => {
   const step = Number(req.params.step);
   const updated = await setCurrentStep(step);
   res.json({ status: "ok", currentStep: updated.currentStep });
+});
+
+const multer = require("multer");
+const upload = multer({ dest: "uploads/" });
+
+router.post("/model/classes", upload.single("model"), async (req, res) => {
+  try {
+    const fs = require("fs");
+    const path = require("path");
+    const fetch = require("node-fetch");
+    const FormData = require("form-data");
+
+    const filePath = req.file.path;
+
+    const form = new FormData();
+    form.append("file", fs.createReadStream(filePath));
+
+    const response = await fetch(
+      `${TRAINING_SERVER_BASE}/model/classes`,
+      {
+        method: "POST",
+        body: form,
+        headers: form.getHeaders()
+      }
+    );
+
+    const data = await response.json();
+
+    fs.unlink(filePath, (err) => {
+      if (err) console.warn("Failed to clean upload:", err);
+    });
+
+    res.json(data);
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to extract classes" });
+  }
 });
 
 module.exports = router;

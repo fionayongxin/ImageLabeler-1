@@ -37,8 +37,75 @@ const INSPECTION_CONFIG_PATH = path.join(
 // -----------------------------------------------------------------------------
 
 async function runInference() {
+  // ================= CALL FASTAPI =================
   const res = await axios.get(`${TRAINING_SERVER_BASE}/infer`);
-  return res.data;
+  const data = res.data;
+
+  // ================= READ CONFIG =================
+  let config;
+  try {
+    const raw = await fs.readFile(INSPECTION_CONFIG_PATH, "utf-8");
+    config = JSON.parse(raw);
+  } catch {
+    return {
+      status: "unknown",
+      detections: data.detections || [],
+      names: data.names || {}
+    };
+  }
+
+  const steps = config.steps || [];
+  const currentStep = config.currentStep;
+
+  const step = steps.find(s => s.id === currentStep);
+
+  if (!step) {
+    return {
+      status: "unknown",
+      detections: data.detections || [],
+      names: data.names || {}
+    };
+  }
+
+  // ================= EXTRACT DETECTED CLASSES =================
+
+  const detectedClassNames = new Set(
+    (data.detections || [])
+      .filter(det => det.conf >= 0.3) //
+      .map(det => data.names?.[det.cls] || det.name)
+  );
+
+  // ================= APPLY RULES =================
+
+  let pass = true;
+
+  if (step.required?.length) {
+    for (const r of step.required) {
+      if (!detectedClassNames.has(r)) {
+        pass = false;
+        break;
+      }
+    }
+  }
+
+  if (pass && step.forbidden?.length) {
+    for (const f of step.forbidden) {
+      if (detectedClassNames.has(f)) {
+        pass = false;
+        break;
+      }
+    }
+  }
+
+  // ================= FINAL RESULT =================
+
+  const status = pass ? "PASS" : "FAIL";
+
+  return {
+    status,
+    detections: data.detections || [],
+    names: data.names || {}
+  };
 }
 
 // -----------------------------------------------------------------------------

@@ -1,40 +1,29 @@
 /**
- * =================================================GRADE * ======================================================
- * ------------------------------------------------------
- * Role separation:
- *  Operator mode
- *    - Camera visible (Basler MJPEG)
- *    - Inference polling active
- *  Engineer mode
- *    - No camera
- *    - No inference
- *
- * Architecture:
- * Browser → Node → Python
+ * ======================================================
+ * INSPECT.JS — FINAL CLEAN VERSION (STABLE)
  * ======================================================
  */
 
+
 /* ======================================================
-   API ENDPOINTS (Node‑owned)
+   CONSTANTS
 ====================================================== */
 
-// ✅ Basler camera stream (MJPEG)
 const CAMERA_URL = "/api/camera/stream";
-
-// ✅ Inference status endpoint
 const STATUS_URL = "/api/inference/status";
 
+
 /* ======================================================
-   DOM ELEMENTS
+   DOM
 ====================================================== */
 
-const camImg        = document.getElementById("liveCam");
-const placeholder   = document.getElementById("camPlaceholder");
-const headerStatus  = document.getElementById("headerStatus");
-const cameraResult  = document.getElementById("cameraResult");
+const camImg = document.getElementById("liveCam");
+const placeholder = document.getElementById("camPlaceholder");
+const headerStatus = document.getElementById("headerStatus");
+const cameraResult = document.getElementById("cameraResult");
 
 const canvas = document.getElementById("overlayCanvas");
-const ctx    = canvas.getContext("2d");
+const ctx = canvas.getContext("2d");
 
 const tabOperator = document.getElementById("tabOperator");
 const tabEngineer = document.getElementById("tabEngineer");
@@ -42,39 +31,28 @@ const tabEngineer = document.getElementById("tabEngineer");
 const operatorLayout = document.querySelector(".operator-layout");
 const engineerLayout = document.querySelector(".engineer-layout");
 
+const stepsListEl = document.getElementById("stepsList");
+const stepNameInput = document.getElementById("stepName");
+
+document.getElementById("deleteStepBtn")?.addEventListener("click", deleteStep);
+
 /* ======================================================
    STATE
 ====================================================== */
 
 let polling = false;
+let pollingBusy = false;
 let pollingTimer = null;
 let lastStatus = null;
 let cameraReady = false;
+
 let classNames = {};
+let steps = [];
+let activeStepId = null;
+
 
 /* ======================================================
-   CLASS COLORS
-====================================================== */
-
-const CLASS_COLORS = {
-  T_Body: "#22c55e",
-  T_Top_view: "#16a34a",
-  T_Inner_opening: "#a855f7",
-  T_Bushing: "#f97316",
-  T_Hole_Plug: "#0ea5e9",
-  T_SN_label: "#3b82f6",
-  T_2_label: "#6366f1",
-
-  T_Missing_2_label: "#ef4444",
-  T_Missing_Hole_Plug: "#dc2626",
-  T_Missing_SN_label: "#b91c1c",
-  T_Without_Bushing: "#7f1d1d",
-
-  Unassigned: "#9ca3af"
-};
-
-/* ======================================================
-   STATUS UI
+   STATUS
 ====================================================== */
 
 function setStatus(status, text) {
@@ -85,49 +63,42 @@ function setStatus(status, text) {
   cameraResult.className = `result-overlay status-${status}`;
 }
 
+
 /* ======================================================
-   CANVAS
+   CAMERA
 ====================================================== */
 
 function resizeCanvas() {
-  canvas.width  = camImg.clientWidth;
+  canvas.width = camImg.clientWidth;
   canvas.height = camImg.clientHeight;
 }
 
 window.addEventListener("resize", resizeCanvas);
 
-/* ======================================================
-   CAMERA CONTROL
-====================================================== */
-
 function startCamera() {
-  cameraReady = false;
-  camImg.src = CAMERA_URL;   // ✅ Fixed: defined URL
+  camImg.src = CAMERA_URL;
 }
 
 function stopCamera() {
   camImg.src = "";
-  cameraReady = false;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   placeholder.style.display = "flex";
 }
 
 camImg.onload = () => {
   resizeCanvas();
-  cameraReady = true;
   placeholder.style.display = "none";
 
   lastStatus = null;
   setStatus("unknown", "WAITING");
-
   startPolling();
 };
 
-camImg.onerror = () => {
-  cameraReady = false;
-  placeholder.style.display = "flex";
-  setStatus("unknown", "CAMERA ERROR");
-};
+function reindexSteps() {
+  steps.forEach((step, index) => {
+    step.name = `Step ${index + 1}`;
+  });
+}
 
 /* ======================================================
    POLLING
@@ -136,69 +107,21 @@ camImg.onerror = () => {
 function startPolling() {
   if (polling) return;
   polling = true;
+
   pollingTimer = setInterval(pollInspectionStatus, 1000);
 }
 
 function stopPolling() {
   polling = false;
   clearInterval(pollingTimer);
-  pollingTimer = null;
 }
-
-/* ======================================================
-   DRAW DETECTIONS
-====================================================== */
-
-function drawBoxes(detections) {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-  if (!cameraReady || !detections?.length) return;
-
-  const imgW = camImg.naturalWidth;
-  const imgH = camImg.naturalHeight;
-  if (!imgW || !imgH) return;
-
-  const scale = Math.min(canvas.width / imgW, canvas.height / imgH);
-  const offsetX = (canvas.width  - imgW * scale) / 2;
-  const offsetY = (canvas.height - imgH * scale) / 2;
-
-  detections.forEach(det => {
-    if (det.conf < 0.3) return;
-
-    const [x1, y1, x2, y2] = det.xyxy;
-    const clsName = classNames[det.cls] || det.name || "Unassigned";
-    const color = CLASS_COLORS[clsName] || "#facc15";
-
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 2;
-    ctx.strokeRect(
-      x1 * scale + offsetX,
-      y1 * scale + offsetY,
-      (x2 - x1) * scale,
-      (y2 - y1) * scale
-    );
-
-    ctx.fillStyle = color;
-    ctx.font = "14px sans-serif";
-    ctx.fillText(
-      `${clsName} ${(det.conf * 100).toFixed(1)}%`,
-      x1 * scale + offsetX,
-      Math.max(16, y1 * scale + offsetY - 4)
-    );
-  });
-}
-
-/* ======================================================
-   INFERENCE
-====================================================== */
 
 async function pollInspectionStatus() {
-  if (!polling) return;
+  if (!polling || pollingBusy) return;
+  pollingBusy = true;
 
   try {
-    const res = await fetch(STATUS_URL, { cache: "no-store" });
-    if (!res.ok) throw new Error();
-
+    const res = await fetch(STATUS_URL);
     const data = await res.json();
 
     if (data.names) {
@@ -209,38 +132,283 @@ async function pollInspectionStatus() {
 
     if (data.status !== lastStatus) {
       lastStatus = data.status;
-      setStatus(
-        data.status === "PASS" ? "pass" :
-        data.status === "FAIL" ? "fail" : "unknown",
-        data.status
-      );
+      setStatus(data.status.toLowerCase(), data.status);
     }
+
   } catch {
     setStatus("unknown", "DISCONNECTED");
   }
+
+  pollingBusy = false;
+}
+
+
+/* ======================================================
+   DRAW
+====================================================== */
+
+function drawBoxes(detections = []) {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  detections
+    .filter(d => d.conf >= 0.3)
+    .forEach(d => {
+      const [x1, y1, x2, y2] = d.xyxy;
+      ctx.strokeStyle = "#22c55e";
+      ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+    });
+}
+
+
+/* ======================================================
+   MODEL LOAD
+====================================================== */
+
+
+/* ======================================================
+   MODEL LOAD (UPLOAD + UI SYNC)
+====================================================== */
+
+document.getElementById("modelFile")?.addEventListener("change", async (e) => {
+  const file = e.target.files[0];
+
+  if (!file) {
+    fileName.textContent = "No file selected";
+    return;
+  }
+
+  fileName.textContent = file.name;
+
+  try {
+    const form = new FormData();
+    form.append("model", file);
+
+    const res = await fetch("/api/inference/model/classes", {
+      method: "POST",
+      body: form
+    });
+
+    const data = await res.json();
+
+    classNames = {};
+    data.classes.forEach((c, i) => {
+      classNames[i] = c;
+    });
+
+    renderAll();
+
+  } catch (err) {
+    console.error("[MODEL LOAD ERROR]", err);
+    fileName.textContent = "Upload failed";
+  }
+});
+
+function deleteStep() {
+  if (!steps.length) return;
+
+  const index = steps.findIndex(s => s.id === activeStepId);
+  if (index === -1) return;
+
+  steps.splice(index, 1);
+
+  reindexSteps();
+
+  if (steps.length === 0) {
+    activeStepId = null;
+  } else {
+    const nextIndex = Math.min(index, steps.length - 1);
+    activeStepId = steps[nextIndex].id;
+  }
+
+  renderAll();
 }
 
 /* ======================================================
-   MODE SWITCHING
+   STEP SYSTEM
+====================================================== */
+
+function getActiveStep() {
+  return steps.find(s => s.id === activeStepId);
+}
+
+function selectStep(id) {
+  activeStepId = id;
+  renderAll();
+}
+
+function addStep() {
+  const id = Date.now();
+
+  steps.push({
+    id,
+    name: `Step ${steps.length + 1}`,
+    required: [],
+    forbidden: []
+  });
+
+  activeStepId = id;
+  renderAll();
+}
+
+
+/* ======================================================
+   RENDER PIPELINE
+====================================================== */
+
+function renderAll() {
+  renderStepsList();
+  renderStepEditor();
+  renderClassList();
+  renderCheckboxGroups();
+}
+
+
+/* ------------ Steps List ------------ */
+
+function renderStepsList() {
+  stepsListEl.innerHTML = "";
+
+  steps.forEach(step => {
+    const div = document.createElement("div");
+
+    div.textContent = step.name;
+    div.className = step.id === activeStepId ? "active" : "";
+
+    div.onclick = () => selectStep(step.id);
+
+    stepsListEl.appendChild(div);
+  });
+}
+
+
+/* ------------ Step Editor ------------ */
+
+function renderStepEditor() {
+  const step = getActiveStep();
+  if (!step) return;
+
+  stepNameInput.value = step.name;
+}
+
+
+/* ------------ Classes (read-only) ------------ */
+
+function renderClassList() {
+  const el = document.getElementById("classList");
+  if (!el) return;
+
+  el.innerHTML = "";
+
+  Object.values(classNames).forEach(name => {
+    const div = document.createElement("div");
+    div.textContent = name;
+    el.appendChild(div);
+  });
+}
+
+
+/* ------------ Checkbox Groups ------------ */
+
+function renderCheckboxGroups() {
+  renderGroup(".steps-required", "required");
+  renderGroup(".steps-forbidden", "forbidden");
+}
+
+function renderGroup(selector, type) {
+  const container = document.querySelector(selector);
+  if (!container) return;
+
+  const step = getActiveStep();
+  const selected = step ? step[type] : [];
+
+  container.innerHTML = "";
+
+  Object.values(classNames).forEach(name => {
+    const label = document.createElement("label");
+
+    const checked = selected.includes(name) ? "checked" : "";
+
+    label.innerHTML = `
+      <input type="checkbox" value="${name}" ${checked}>
+      ${name}
+    `;
+
+    container.appendChild(label);
+  });
+
+  container.onchange = () => {
+    const step = getActiveStep();
+    if (!step) return;
+
+    step[type] = Array.from(
+      container.querySelectorAll("input:checked")
+    ).map(cb => cb.value);
+  };
+}
+
+
+/* ======================================================
+   SAVE
+====================================================== */
+
+async function saveConfig() {
+  await fetch("/api/inference/config", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      steps,
+      currentStep: activeStepId
+    })
+  });
+
+  alert("Saved");
+}
+
+
+/* ======================================================
+   EVENTS
+====================================================== */
+
+document.getElementById("addStepBtn")?.addEventListener("click", addStep);
+
+stepNameInput?.addEventListener("input", (e) => {
+  const step = getActiveStep();
+  if (!step) return;
+
+  step.name = e.target.value;
+  renderStepsList();
+});
+
+document.getElementById("saveConfigBtn")?.addEventListener("click", saveConfig);
+const fileInput = document.getElementById("modelFile");
+const fileBtn = document.getElementById("fileBtn");
+const fileName = document.getElementById("fileName");
+
+fileBtn.onclick = () => {
+  fileInput.click();  
+};
+
+/* ======================================================
+   MODE SWITCH
 ====================================================== */
 
 tabOperator.onclick = () => {
-  tabOperator.classList.add("active");
-  tabEngineer.classList.remove("active");
-
   operatorLayout.classList.remove("hidden");
   engineerLayout.classList.add("hidden");
+
+  tabOperator.classList.add("active");
+  tabEngineer.classList.remove("active");
 
   stopPolling();
   startCamera();
 };
 
 tabEngineer.onclick = () => {
-  tabEngineer.classList.add("active");
-  tabOperator.classList.remove("active");
-
   operatorLayout.classList.add("hidden");
   engineerLayout.classList.remove("hidden");
+
+  tabEngineer.classList.add("active");
+  tabOperator.classList.remove("active");
 
   stopPolling();
   stopCamera();
