@@ -11,7 +11,6 @@ const THUMB_SIZE = 256;
 ====================================================== */
 
 async function ensureThumb(fullImagePath, thumbPath) {
-  // ✅ original image gone → cleanup stale thumb
   if (!fs.existsSync(fullImagePath)) {
     if (fs.existsSync(thumbPath)) {
       fs.unlinkSync(thumbPath);
@@ -104,7 +103,6 @@ router.get("/datasets/:station/:process/:image", async (req, res) => {
   const ok = await ensureThumb(fullImagePath, thumbPath);
   if (!ok) return res.status(404).send("Image not found");
   res.sendFile(thumbPath);
-  D
 });
 
 module.exports = router;
