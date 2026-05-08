@@ -17,6 +17,11 @@ const express = require("express");
 const router = express.Router();
 
 const { STATION, PROCESS } = require("../config/env");
+const { getSystemInfo } = require("../services/system.service");
+
+router.get("/", (_req, res) => {
+  res.json(getSystemInfo());
+});
 
 /**
  * GET /api/system/identity

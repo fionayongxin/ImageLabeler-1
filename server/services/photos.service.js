@@ -19,9 +19,7 @@ if (!fs.existsSync(PHOTOS_DIR)) {
 ====================================================== */
 
 function listPhotosPaged(page = 1, limit = 24) {
-const { randomUUID } = require("crypto");
-const filename = `photo_${Date.now()}_${randomUUID()}.png`;
-
+  
   const files = fs
     .readdirSync(PHOTOS_DIR)
     .filter(name => IMAGE_REGEX.test(name))
