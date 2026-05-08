@@ -43,7 +43,13 @@ async function loadExperiments() {
   if (!res.ok) return;
 
   allExperiments = await res.json();
-  currentPage = 1;
+
+  allExperiments.sort((a, b) => {
+    const t1 = new Date(a.startedAt || 0).getTime();
+    const t2 = new Date(b.startedAt || 0).getTime();
+    return t2 - t1;
+  });
+    currentPage = 1;
   renderPage();
 }
 
