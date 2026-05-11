@@ -426,7 +426,7 @@ async function saveConfig() {
     body: JSON.stringify(cfg)
   });
 
-  alert("Saved");
+  alert("Config Saved");
 }
 
 /* ======================================================
