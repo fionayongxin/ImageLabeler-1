@@ -1,9 +1,15 @@
 /**
  * ======================================================
- * INSPECT.JS — FINAL STABLE VERSION (CONFIG + STEPS FIXED)
+ * INSPECT.JS — FINAL STABLE VERSION
+ * ------------------------------------------------------
+ * ✅ Configs auto-indexed
+ * ✅ Steps auto-indexed
+ * ✅ Model isolated per config
+ * ✅ Confidence threshold (0–1) with validation
+ * ✅ No global leakage
+ * ✅ Always at least 1 config + 1 step
  * ======================================================
  */
-
 
 /* ======================================================
    CONSTANTS
@@ -12,9 +18,8 @@
 const CAMERA_URL = "/api/camera/stream";
 const STATUS_URL = "/api/inference/status";
 
-
 /* ======================================================
-   DOM
+   DOM REFERENCES
 ====================================================== */
 
 const camImg = document.getElementById("liveCam");
@@ -23,6 +28,8 @@ const headerStatus = document.getElementById("headerStatus");
 const cameraResult = document.getElementById("cameraResult");
 
 const configNameInput = document.getElementById("configName");
+const stepNameInput = document.getElementById("stepName");
+const confidenceInput = document.getElementById("confidence");
 
 const canvas = document.getElementById("overlayCanvas");
 const ctx = canvas.getContext("2d");
@@ -34,13 +41,11 @@ const operatorLayout = document.querySelector(".operator-layout");
 const engineerLayout = document.querySelector(".engineer-layout");
 
 const stepsListEl = document.getElementById("stepsList");
-const stepNameInput = document.getElementById("stepName");
 const configListEl = document.getElementById("configList");
 
 const fileInput = document.getElementById("modelFile");
 const fileBtn = document.getElementById("fileBtn");
 const fileName = document.getElementById("fileName");
-
 
 /* ======================================================
    STATE
@@ -51,43 +56,33 @@ let pollingBusy = false;
 let pollingTimer = null;
 let lastStatus = null;
 
-let classNames = {};   // class names from model
-
 let configs = [];
 let activeConfigId = null;
 let activeStepId = null;
 
-
 /* ======================================================
-   HELPERS
+   STATE HELPERS
 ====================================================== */
 
-function getActiveConfig() {
-  return configs.find(c => c.id === activeConfigId);
-}
+const getActiveConfig = () =>
+  configs.find(c => c.id === activeConfigId);
 
-function getSteps() {
-  const cfg = getActiveConfig();
-  return cfg ? cfg.steps : [];
-}
+const getSteps = () =>
+  getActiveConfig()?.steps ?? [];
 
-function getActiveStep() {
-  return getSteps().find(s => s.id === activeStepId);
-}
-
+const getActiveStep = () =>
+  getSteps().find(s => s.id === activeStepId);
 
 /* ======================================================
-   STATUS
+   STATUS UI
 ====================================================== */
 
 function setStatus(status, text) {
   headerStatus.textContent = text;
   cameraResult.textContent = text;
-
   headerStatus.className = `status-pill status-${status}`;
   cameraResult.className = `result-overlay status-${status}`;
 }
-
 
 /* ======================================================
    CAMERA
@@ -113,15 +108,13 @@ function stopCamera() {
 camImg.onload = () => {
   resizeCanvas();
   placeholder.style.display = "none";
-
   lastStatus = null;
   setStatus("unknown", "WAITING");
   startPolling();
 };
 
-
 /* ======================================================
-   POLLING
+   POLLING (OPERATOR MODE)
 ====================================================== */
 
 function startPolling() {
@@ -143,8 +136,6 @@ async function pollInspectionStatus() {
     const res = await fetch(STATUS_URL);
     const data = await res.json();
 
-    if (data.names) classNames = data.names;
-
     drawBoxes(data.detections);
 
     if (data.status !== lastStatus) {
@@ -159,16 +150,15 @@ async function pollInspectionStatus() {
   pollingBusy = false;
 }
 
-
 /* ======================================================
-   DRAW
+   DRAWING
 ====================================================== */
 
 function drawBoxes(detections = []) {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   detections
-    .filter(d => d.conf >= 0.3)
+    .filter(d => d.conf >= 0.3) // draw-only threshold
     .forEach(d => {
       const [x1, y1, x2, y2] = d.xyxy;
       ctx.strokeStyle = "#22c55e";
@@ -176,90 +166,64 @@ function drawBoxes(detections = []) {
     });
 }
 
-
 /* ======================================================
-   CONFIG SYSTEM
+   CONFIG + STEP MANAGEMENT
 ====================================================== */
 
 function createDefaultStep() {
-  const id = Date.now() + Math.random();
   return {
-    id,
+    id: Date.now() + Math.random(),
     name: "Step 1",
     required: [],
     forbidden: []
   };
 }
 
+function reindexConfigs() {
+  configs.forEach((cfg, i) => {
+    cfg.name = `Config ${i + 1}`;
+  });
+}
+
+function reindexSteps() {
+  getSteps().forEach((step, i) => {
+    step.name = `Step ${i + 1}`;
+  });
+}
+
 function addConfig() {
   const id = Date.now().toString();
-  const firstStep = createDefaultStep();
+  const step = createDefaultStep();
 
   configs.push({
     id,
-    name: `Config ${configs.length + 1}`,
+    name: "",
     model: null,
-    confidence: 0.5,
-    steps: [firstStep]
+    confidence: 0.5,     // ✅ normalized default
+    steps: [step]
   });
 
+  reindexConfigs();
   activeConfigId = id;
-  activeStepId = firstStep.id;
-
-  renderConfigList();
+  activeStepId = step.id;
   renderAll();
 }
 
 function deleteConfig() {
-  const index = configs.findIndex(c => c.id === activeConfigId);
-  if (index === -1) return;
+  configs = configs.filter(c => c.id !== activeConfigId);
 
-  configs.splice(index, 1);
+  if (configs.length === 0) ensureDefaultConfig();
 
-  if (configs.length === 0) {
-    ensureDefaultConfig();
-  } else {
-    const cfg = configs[0];
-    activeConfigId = cfg.id;
-    activeStepId = cfg.steps[0]?.id || null;
-  }
-
-  renderConfigList();
+  reindexConfigs();
+  activeConfigId = configs[0].id;
+  activeStepId = configs[0].steps[0].id;
   renderAll();
 }
 
 function selectConfig(id) {
   activeConfigId = id;
-
-  const steps = getSteps();
-  activeStepId = steps[0]?.id || null;
-
-  renderConfigList();
+  activeStepId = getSteps()[0]?.id ?? null;
   renderAll();
-}
-
-function renderConfigList() {
-  configListEl.innerHTML = "";
-
-  configs.forEach(cfg => {
-    const div = document.createElement("div");
-
-    div.textContent = cfg.name;
-    div.className = cfg.id === activeConfigId ? "active" : "";
-
-    div.onclick = () => selectConfig(cfg.id);
-    configListEl.appendChild(div);
-  });
-}
-
-
-/* ======================================================
-   STEPS
-====================================================== */
-
-function reindexSteps() {
-  const steps = getSteps();
-  steps.forEach((step, i) => step.name = `Step ${i + 1}`);
 }
 
 function addStep() {
@@ -267,17 +231,10 @@ function addStep() {
   if (!cfg) return;
 
   const id = Date.now();
-
-  cfg.steps.push({
-    id,
-    name: "",
-    required: [],
-    forbidden: []
-  });
+  cfg.steps.push({ id, name: "", required: [], forbidden: [] });
 
   reindexSteps();
   activeStepId = id;
-
   renderAll();
 }
 
@@ -285,73 +242,73 @@ function deleteStep() {
   const cfg = getActiveConfig();
   if (!cfg) return;
 
-  const steps = cfg.steps;
-  const index = steps.findIndex(s => s.id === activeStepId);
-  if (index === -1) return;
+  cfg.steps = cfg.steps.filter(s => s.id !== activeStepId);
 
-  steps.splice(index, 1);
-
-  if (steps.length === 0) {
-    const newStep = createDefaultStep();
-    steps.push(newStep);
-    activeStepId = newStep.id;
-  } else {
-    activeStepId = steps[index]?.id || steps[index - 1]?.id;
+  if (cfg.steps.length === 0) {
+    cfg.steps.push(createDefaultStep());
   }
 
   reindexSteps();
+  activeStepId = cfg.steps[0].id;
   renderAll();
 }
-
-function selectStep(id) {
-  activeStepId = id;
-  renderAll();
-}
-
 
 /* ======================================================
-   MODEL LOAD
+   MODEL LOAD (PER CONFIG)
 ====================================================== */
 
 fileBtn.onclick = () => fileInput.click();
 
-fileInput.addEventListener("change", async (e) => {
+fileInput.addEventListener("change", async e => {
+  const cfg = getActiveConfig();
   const file = e.target.files[0];
-
-  if (!file) {
-    fileName.textContent = "No file selected";
-    return;
-  }
+  if (!cfg || !file) return;
 
   fileName.textContent = file.name;
 
-  try {
-    const form = new FormData();
-    form.append("model", file);
+  const form = new FormData();
+  form.append("model", file);
 
-    const res = await fetch("/api/inference/model/classes", {
-      method: "POST",
-      body: form
-    });
+  const res = await fetch("/api/inference/model/classes", {
+    method: "POST",
+    body: form
+  });
 
-    const data = await res.json();
+  const data = await res.json();
 
-    classNames = {};
-    data.classes.forEach((c, i) => classNames[i] = c);
+  cfg.model = {
+    filename: file.name,
+    classes: data.classes
+  };
 
-    renderAll();
-
-  } catch {
-    fileName.textContent = "Upload failed";
-  }
+  renderAll();
 });
 
+/* ======================================================
+   CONFIDENCE THRESHOLD (0–1)
+====================================================== */
+
+confidenceInput.addEventListener("input", e => {
+  const cfg = getActiveConfig();
+  if (!cfg) return;
+
+  const value = parseFloat(e.target.value);
+
+  if (isNaN(value) || value < 0 || value > 1) {
+    confidenceInput.classList.add("invalid");
+    return;
+  }
+
+  confidenceInput.classList.remove("invalid");
+  cfg.confidence = value;
+});
 
 /* ======================================================
-   RENDER
+   RENDER PIPELINE
 ====================================================== */
 
 function renderAll() {
+  renderConfigList();
   renderConfigDetails();
   renderStepsList();
   renderStepEditor();
@@ -359,42 +316,57 @@ function renderAll() {
   renderCheckboxGroups();
 }
 
+function renderConfigList() {
+  configListEl.innerHTML = "";
+
+  configs.forEach(cfg => {
+    const div = document.createElement("div");
+    div.textContent = cfg.name;
+    div.className = cfg.id === activeConfigId ? "active" : "";
+    div.onclick = () => selectConfig(cfg.id);
+    configListEl.appendChild(div);
+  });
+}
+
 function renderConfigDetails() {
   const cfg = getActiveConfig();
   if (!cfg) return;
 
   configNameInput.value = cfg.name;
+  fileName.textContent = cfg.model?.filename ?? "No file selected";
+
+  confidenceInput.value = cfg.confidence.toFixed(2);
+  confidenceInput.classList.remove("invalid");
 }
 
 function renderStepsList() {
-  const steps = getSteps();
   stepsListEl.innerHTML = "";
 
-  steps.forEach(step => {
+  getSteps().forEach(step => {
     const div = document.createElement("div");
-
     div.textContent = step.name;
     div.className = step.id === activeStepId ? "active" : "";
-    div.onclick = () => selectStep(step.id);
-
+    div.onclick = () => {
+      activeStepId = step.id;
+      renderAll();
+    };
     stepsListEl.appendChild(div);
   });
 }
 
 function renderStepEditor() {
   const step = getActiveStep();
-  if (!step) return;
-
-  stepNameInput.value = step.name;
+  if (step) stepNameInput.value = step.name;
 }
 
 function renderClassList() {
+  const cfg = getActiveConfig();
   const el = document.getElementById("classList");
   el.innerHTML = "";
 
-  Object.values(classNames).forEach(name => {
+  cfg?.model?.classes?.forEach(cls => {
     const div = document.createElement("div");
-    div.textContent = name;
+    div.textContent = cls;
     el.appendChild(div);
   });
 }
@@ -405,43 +377,48 @@ function renderCheckboxGroups() {
 }
 
 function renderGroup(selector, type) {
-  const container = document.querySelector(selector);
+  const cfg = getActiveConfig();
   const step = getActiveStep();
+  const box = document.querySelector(selector);
+  box.innerHTML = "";
 
-  if (!container) return;
-
-  if (!step) {
-    container.innerHTML = "<div style='opacity:0.5'>No step</div>";
+  if (!cfg?.model || !step) {
+    box.innerHTML = "<div style='opacity:.5'>No model</div>";
     return;
   }
 
-  container.innerHTML = "";
-
-  Object.values(classNames).forEach(name => {
-    const checked = step[type].includes(name) ? "checked" : "";
-
+  cfg.model.classes.forEach(cls => {
+    const checked = step[type].includes(cls);
     const label = document.createElement("label");
-    label.innerHTML = `
-      <input type="checkbox" value="${name}" ${checked}>
-      ${name}
-    `;
-    container.appendChild(label);
-  });
 
-  container.onchange = () => {
-    step[type] = Array.from(container.querySelectorAll("input:checked"))
-      .map(cb => cb.value);
-  };
+    label.innerHTML = `<input type="checkbox" ${checked ? "checked" : ""}> ${cls}`;
+
+    label.querySelector("input").onchange = e => {
+      step[type] = e.target.checked
+        ? [...step[type], cls]
+        : step[type].filter(x => x !== cls);
+    };
+
+    box.appendChild(label);
+  });
 }
 
-
 /* ======================================================
-   SAVE
+   SAVE (SERVER-SIDE)
 ====================================================== */
 
 async function saveConfig() {
   const cfg = getActiveConfig();
-  if (!cfg) return alert("No config");
+
+  if (!cfg) {
+    alert("No config");
+    return;
+  }
+
+  if (confidenceInput.classList.contains("invalid")) {
+    alert("Confidence must be between 0 and 1");
+    return;
+  }
 
   await fetch("/api/inference/config", {
     method: "POST",
@@ -452,30 +429,28 @@ async function saveConfig() {
   alert("Saved");
 }
 
-
 /* ======================================================
-   EVENTS
+   EVENT BINDINGS
 ====================================================== */
 
-document.getElementById("addStepBtn").onclick = addStep;
-document.getElementById("deleteStepBtn").onclick = deleteStep;
 document.getElementById("addConfigBtn").onclick = addConfig;
 document.getElementById("deleteConfigBtn").onclick = deleteConfig;
+document.getElementById("addStepBtn").onclick = addStep;
+document.getElementById("deleteStepBtn").onclick = deleteStep;
 document.getElementById("saveConfigBtn").onclick = saveConfig;
 
-configNameInput.addEventListener("input", e => {
+configNameInput.oninput = e => {
   const cfg = getActiveConfig();
   if (cfg) cfg.name = e.target.value;
-});
-
+};
 
 /* ======================================================
    MODE SWITCH
 ====================================================== */
 
 tabOperator.onclick = () => {
-  operatorLayout.classList.remove("hidden");
   engineerLayout.classList.add("hidden");
+  operatorLayout.classList.remove("hidden");
   stopPolling();
   startCamera();
 };
@@ -487,30 +462,14 @@ tabEngineer.onclick = () => {
   stopCamera();
 };
 
-
 /* ======================================================
    INIT
 ====================================================== */
 
 function ensureDefaultConfig() {
-  if (configs.length === 0) {
-    const id = Date.now().toString();
-    const step = createDefaultStep();
-
-    configs.push({
-      id,
-      name: "Config 1",
-      model: null,
-      confidence: 0.5,
-      steps: [step]
-    });
-
-    activeConfigId = id;
-    activeStepId = step.id;
-  }
+  if (configs.length === 0) addConfig();
 }
 
 ensureDefaultConfig();
-renderConfigList();
 renderAll();
 startCamera();
