@@ -1,73 +1,106 @@
 /**
  * ======================================================
- * inference.service.js — FINAL CORRECT VERSION
+ * inference.service.js — LOCAL FILESYSTEM VERSION
  * ------------------------------------------------------
- * Responsibilities:
- * ✅ Orchestrate inference via FastAPI
- * ✅ Evaluate inspection rules (PASS / FAIL)
- * ✅ Proxy config read/write to FastAPI
- *
- * Design rules:
- * - NO local filesystem config IO
- * - FastAPI owns config persistence
- * - Node owns inspection logic
+ * ✅ No server config
+ * ✅ No FastAPI inference
+ * ✅ Load config from local folder
+ * ✅ Apply inspection rules
+ * ✅ Placeholder for local detection runner
  * ======================================================
  */
 
-const axios = require("axios");
-const { TRAINING_SERVER_BASE } = require("../config/env");
+const fs = require("fs");
+const path = require("path");
 
 /* ======================================================
-   CONFIG PROXY (SERVER IS SOURCE OF TRUTH)
+   CONFIG ROOT
 ====================================================== */
 
-async function readInspectionState() {
-  const res = await axios.get(
-    `${TRAINING_SERVER_BASE}/inspection/config`
-  );
-  return res.data;
-}
+const CONFIG_ROOT = path.join(__dirname, "..", "..", "config");
 
-async function updateInspectionConfig(config) {
-  await axios.post(
-    `${TRAINING_SERVER_BASE}/inspection/config`,
-    config,
-    { headers: { "Content-Type": "application/json" } }
-  );
-  return config;
-}
+/* ======================================================
+   CURRENT ACTIVE CONFIG (MEMORY POINTER)
+====================================================== */
 
-async function setCurrentStep(stepId) {
-  const state = await readInspectionState();
-  if (!state) return null;
+let activeConfigName = null;
+let activeConfig = null;
 
-  state.currentStep = stepId;
-  await updateInspectionConfig(state);
-  return state;
+/* ======================================================
+   LOAD CONFIG FROM FILESYSTEM
+====================================================== */
+
+function loadConfig(configName) {
+  try {
+    const configPath = path.join(
+      CONFIG_ROOT,
+      configName,
+      "config.json"
+    );
+
+    if (!fs.existsSync(configPath)) {
+      console.warn("[CONFIG] Not found:", configPath);
+      return null;
+    }
+
+    const raw = fs.readFileSync(configPath, "utf-8");
+    const cfg = JSON.parse(raw);
+
+    activeConfigName = configName;
+    activeConfig = cfg;
+
+    return cfg;
+
+  } catch (err) {
+    console.error("[LOAD CONFIG ERROR]", err);
+    return null;
+  }
 }
 
 /* ======================================================
-   INFERENCE PIPELINE
+   LIST AVAILABLE CONFIGS (FOLDERS)
+====================================================== */
+
+function listConfigs() {
+  try {
+    return fs.readdirSync(CONFIG_ROOT)
+      .filter(name => {
+        const full = path.join(CONFIG_ROOT, name);
+        return fs.statSync(full).isDirectory();
+      });
+
+  } catch {
+    return [];
+  }
+}
+
+/* ======================================================
+   LOCAL INFERENCE PLACEHOLDER
+   ⚠ Replace with actual YOLO runner later
+====================================================== */
+
+async function runLocalDetection() {
+  // TODO: integrate YOLO CLI / python / binding
+
+  // Temporary fake detections
+  return {
+    detections: [],
+    names: {}
+  };
+}
+
+/* ======================================================
+   MAIN INFERENCE PIPELINE
 ====================================================== */
 
 async function runInference() {
-  // --------------------------------------------------
-  // 1. CALL FASTAPI (DETECTION ONLY)
-  // --------------------------------------------------
-  const inferRes = await axios.get(`${TRAINING_SERVER_BASE}/infer`);
-  const inferData = inferRes.data;
 
-  // --------------------------------------------------
-  // 2. LOAD CONFIG FROM SERVER
-  // --------------------------------------------------
-  let config;
-  try {
-    config = await readInspectionState();
-  } catch {
+  if (!activeConfig) {
     return {
       status: "UNKNOWN",
-      detections: inferData.detections || [],
-      names: inferData.names || {}
+      reason: "No config loaded",
+      detections: [],
+      names: {}
     };
   }
 
@@ -75,24 +108,30 @@ async function runInference() {
     steps = [],
     currentStep,
     confidence = 0.5
-  } = config;
+  } = activeConfig;
 
   if (!steps.length) {
     return {
       status: "UNKNOWN",
-      detections: inferData.detections || [],
-      names: inferData.names || {}
+      reason: "No steps defined",
+      detections: [],
+      names: {}
     };
   }
 
   // --------------------------------------------------
-  // 3. DETERMINE ACTIVE STEP
+  // 1. RUN LOCAL DETECTION
+  // --------------------------------------------------
+  const inferData = await runLocalDetection();
+
+  // --------------------------------------------------
+  // 2. GET ACTIVE STEP
   // --------------------------------------------------
   const step =
     steps.find(s => s.id === currentStep) || steps[0];
 
   // --------------------------------------------------
-  // 4. FILTER DETECTIONS BY CONFIDENCE
+  // 3. FILTER BY CONFIDENCE
   // --------------------------------------------------
   const filtered = (inferData.detections || []).filter(
     d => d.conf >= confidence
@@ -103,7 +142,7 @@ async function runInference() {
   );
 
   // --------------------------------------------------
-  // 5. APPLY RULES
+  // 4. APPLY RULES
   // --------------------------------------------------
   let pass = true;
   let reason = "";
@@ -127,7 +166,7 @@ async function runInference() {
   }
 
   // --------------------------------------------------
-  // 6. RETURN RESULT
+  // 5. RETURN RESULT
   // --------------------------------------------------
   return {
     status: pass ? "PASS" : "FAIL",
@@ -139,12 +178,20 @@ async function runInference() {
 }
 
 /* ======================================================
+   SET ACTIVE CONFIG
+====================================================== */
+
+function setActiveConfig(configName) {
+  return loadConfig(configName);
+}
+
+/* ======================================================
    EXPORTS
 ====================================================== */
 
 module.exports = {
   runInference,
-  readInspectionState,
-  updateInspectionConfig,
-  setCurrentStep
+  loadConfig,
+  setActiveConfig,
+  listConfigs
 };

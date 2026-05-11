@@ -505,3 +505,24 @@ input.invalid {
   border-color: #dc2626;
   background: rgba(220, 38, 38, 0.08);
 }
+
+.operator-grid {
+  display: grid;
+  grid-template-columns: 1fr 260px;
+  gap: 12px;
+  height: 100%;
+}
+
+.operator-panel {
+  padding: 12px;
+}
+
+.operator-panel select {
+  width: 100%;
+  margin-bottom: 10px;
+}
+
+.operator-info {
+  margin-top: 10px;
+  font-size: 14px;
+}
