@@ -34,24 +34,58 @@
 
   <!-- ======================================================
        OPERATOR VIEW
+       - Select LOCAL config folder
+       - System auto loads model + JSON
   ====================================================== -->
   <main class="stage operator-layout">
 
-    <div class="stage-center">
-      <div class="camera-frame">
+    <div class="operator-grid">
 
-        <img id="liveCam" class="camera-stream" />
-        <canvas id="overlayCanvas"></canvas>
+      <!-- CENTER: Camera -->
+      <div class="stage-center">
+        <div class="camera-frame">
 
-        <div id="camPlaceholder" class="cam-placeholder">
-          CAMERA NOT STARTED
+          <img id="liveCam" class="camera-stream" />
+          <canvas id="overlayCanvas"></canvas>
+
+          <div id="camPlaceholder" class="cam-placeholder">
+            CAMERA NOT STARTED
+          </div>
+
+          <div id="cameraResult" class="result-overlay status-unknown">
+            WAITING
+          </div>
+
         </div>
+      </div>
 
-        <div id="cameraResult" class="result-overlay status-unknown">
-          WAITING
+      <!-- RIGHT: Operator Control Panel -->
+      <div class="panel operator-panel">
+
+        <h4>Inspection Control</h4>
+
+        <div class="form-block">
+
+          <!-- ✅ Local config selection -->
+          <label>Config (Local)</label>
+          <select id="operatorConfigSelect"></select>
+
+          <!-- ✅ Step selection -->
+          <label>Current Step</label>
+          <select id="operatorStepSelect"></select>
+
+          <!-- ✅ Runtime status -->
+          <div class="operator-info">
+            <div>
+              <strong>Status:</strong>
+              <span id="operatorStatus">WAITING</span>
+            </div>
+          </div>
+
         </div>
 
       </div>
+
     </div>
 
   </main>
@@ -59,6 +93,10 @@
 
   <!-- ======================================================
        ENGINEER VIEW
+       - Create config
+       - Upload model
+       - Define steps
+       - Save → local folder
   ====================================================== -->
   <main class="stage engineer-layout hidden">
 
@@ -67,14 +105,15 @@
       <!-- ================= LEFT PANEL ================= -->
       <div class="panel left-panel">
 
-        <h4>Configs</h4>
+        <h4>Configs (Local)</h4>
 
+        <!-- ✅ Represents local config folders -->
         <div id="configList" class="config-list"></div>
 
         <div class="config-actions">
           <button id="addConfigBtn">Add Config</button>
           <button id="deleteConfigBtn" class="danger">Delete Config</button>
-          <button id="saveConfigBtn" class="primary">Save</button>
+          <button id="saveConfigBtn" class="primary">Save to Local</button>
         </div>
 
       </div>
@@ -87,17 +126,24 @@
 
         <div class="form-block">
 
-          <!-- Config name -->
+          <!-- ✅ Config name (maps to folder name) -->
           <label>Name</label>
           <input id="configName" />
 
-          <!-- Model upload -->
+          <!-- ✅ Model upload -->
           <label>Model (.pt)</label>
           <div class="file-input">
-            <input type="file" id="modelFile" hidden />
+            <input type="file" id="modelFile" accept=".pt" hidden />
             <button type="button" id="fileBtn">Upload Model</button>
             <span id="fileName">No file selected</span>
           </div>
+
+          <!-- ✅ Model validation state -->
+          <div class="hint" id="modelStatus">
+            No model loaded
+          </div>
+
+          <!-- ✅ Confidence -->
           <label>
             Confidence Threshold
             <span class="hint">(0.00 – 1.00)</span>
@@ -119,7 +165,8 @@
       <!-- ================= RIGHT PANEL ================= -->
       <div class="panel right-top">
 
-        <h4>Classes</h4>
+        <!-- ✅ Read-only classes from model -->
+        <h4>Classes (Read-only)</h4>
         <div id="classList" class="class-view"></div>
 
       </div>
@@ -129,12 +176,9 @@
       <div class="panel steps-panel">
 
         <div class="steps-header">
+
           <h4>Steps</h4>
 
-          <div class="step-title-inline">
-            <label for="stepName">Step Title</label>
-            <input id="stepName" />
-          </div>
         </div>
 
         <div class="steps-container">
@@ -142,25 +186,30 @@
           <!-- Step list -->
           <div class="steps-list">
             <div id="stepsList"></div>
+
             <button id="addStepBtn">Add Step</button>
             <button id="deleteStepBtn" class="danger">Delete Step</button>
           </div>
 
           <!-- Step editor -->
           <div class="steps-editor">
+
             <div class="step-editor-body">
 
+              <!-- ✅ Required classes -->
               <div class="step-column">
                 <h5>Required</h5>
                 <div class="steps-required class-box"></div>
               </div>
 
+              <!-- ✅ Forbidden classes -->
               <div class="step-column">
                 <h5>Forbidden</h5>
                 <div class="steps-forbidden class-box error"></div>
               </div>
 
             </div>
+
           </div>
 
         </div>
@@ -168,11 +217,15 @@
       </div>
 
     </div>
+
   </main>
 
 </div>
 
-<!-- Main logic -->
+<!-- ======================================================
+     MAIN LOGIC
+====================================================== -->
 <script src="/js/inspect.js"></script>
+
 </body>
 </html>
