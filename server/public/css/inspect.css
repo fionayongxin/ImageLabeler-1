@@ -494,3 +494,14 @@ button:hover {
 button.danger {
   background: #dc2626;
 }
+
+.hint {
+  font-size: 11px;
+  color: #9ca3af;
+  margin-left: 6px;
+}
+
+input.invalid {
+  border-color: #dc2626;
+  background: rgba(220, 38, 38, 0.08);
+}

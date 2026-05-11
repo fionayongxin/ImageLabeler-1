@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <title>Live PCB Inspection</title>
 
-  <!-- ✅ Make sure this path is correct -->
+  <!-- Main stylesheet -->
   <link rel="stylesheet" href="/css/inspect.css" />
 </head>
 
@@ -38,7 +38,6 @@
   <main class="stage operator-layout">
 
     <div class="stage-center">
-
       <div class="camera-frame">
 
         <img id="liveCam" class="camera-stream" />
@@ -53,7 +52,6 @@
         </div>
 
       </div>
-
     </div>
 
   </main>
@@ -66,10 +64,7 @@
 
     <div class="engineer-grid">
 
-      <!-- ======================================================
-           LEFT PANEL (CONFIG LIST)
-      ====================================================== -->
-
+      <!-- ================= LEFT PANEL ================= -->
       <div class="panel left-panel">
 
         <h4>Configs</h4>
@@ -77,110 +72,95 @@
         <div id="configList" class="config-list"></div>
 
         <div class="config-actions">
-
           <button id="addConfigBtn">Add Config</button>
-
           <button id="deleteConfigBtn" class="danger">Delete Config</button>
-
           <button id="saveConfigBtn" class="primary">Save</button>
-
         </div>
+
       </div>
 
-      <!-- ======================================================
-           CENTER PANEL (CONFIG DETAILS)
-      ====================================================== -->
+
+      <!-- ================= CENTER PANEL ================= -->
       <div class="panel center-panel">
 
         <h4>Config Details</h4>
 
         <div class="form-block">
 
+          <!-- Config name -->
           <label>Name</label>
           <input id="configName" />
 
+          <!-- Model upload -->
           <label>Model (.pt)</label>
-
           <div class="file-input">
-
             <input type="file" id="modelFile" hidden />
-
             <button type="button" id="fileBtn">Upload Model</button>
-
             <span id="fileName">No file selected</span>
-
           </div>
+          <label>
+            Confidence Threshold
+            <span class="hint">(0.00 – 1.00)</span>
+          </label>
 
-          <label>Confidence</label>
-          <input type="range" id="confidence" min="0" max="1" step="0.05" />
-
+          <input
+            type="number"
+            id="confidence"
+            min="0"
+            max="1"
+            step="0.01"
+            placeholder="0.50"
+          />
         </div>
+
       </div>
 
 
-      <!-- ======================================================
-           RIGHT PANEL (CLASSES)
-      ====================================================== -->
+      <!-- ================= RIGHT PANEL ================= -->
       <div class="panel right-top">
 
         <h4>Classes</h4>
-
         <div id="classList" class="class-view"></div>
 
       </div>
 
 
-      <!-- ======================================================
-           STEPS PANEL
-      ====================================================== -->
+      <!-- ================= STEPS PANEL ================= -->
       <div class="panel steps-panel">
 
-        <!-- ✅ HEADER ROW (aligned horizontally) -->
         <div class="steps-header">
-
           <h4>Steps</h4>
 
           <div class="step-title-inline">
             <label for="stepName">Step Title</label>
             <input id="stepName" />
           </div>
-
         </div>
 
-
-        <!-- ✅ MAIN CONTENT -->
         <div class="steps-container">
 
-          <!-- LEFT: Step list -->
+          <!-- Step list -->
           <div class="steps-list">
-
             <div id="stepsList"></div>
-
             <button id="addStepBtn">Add Step</button>
             <button id="deleteStepBtn" class="danger">Delete Step</button>
-
           </div>
 
-
-          <!-- RIGHT: Step editor -->
+          <!-- Step editor -->
           <div class="steps-editor">
-
             <div class="step-editor-body">
 
-              <!-- Required -->
               <div class="step-column">
                 <h5>Required</h5>
                 <div class="steps-required class-box"></div>
               </div>
 
-              <!-- Forbidden -->
               <div class="step-column">
                 <h5>Forbidden</h5>
                 <div class="steps-forbidden class-box error"></div>
               </div>
 
             </div>
-
           </div>
 
         </div>
@@ -188,12 +168,11 @@
       </div>
 
     </div>
-
   </main>
 
 </div>
 
+<!-- Main logic -->
 <script src="/js/inspect.js"></script>
-
 </body>
 </html>
