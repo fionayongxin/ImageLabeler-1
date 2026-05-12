@@ -9,6 +9,7 @@ const path = require("path");
 const { spawn } = require("child_process");
 const { SERVER_PORT } = require("./config/env");
 const { PHOTOS_DIR } = require("./config/paths");
+const authMiddleware = require("./middleware/auth");
 
 const thumbsRoutes = require("./routes/thumbs.routes");
 
@@ -19,6 +20,7 @@ const app = express();
 ====================================================== */
 
 app.use(express.json({ limit: "10mb" }));
+app.use(authMiddleware);
 
 /* ======================================================
    AUTO-START BASLER CAMERA SERVICE
