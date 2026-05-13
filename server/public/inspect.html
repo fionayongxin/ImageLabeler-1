@@ -14,29 +14,35 @@
   <!-- ======================================================
        HEADER
   ====================================================== -->
-<header class="app-header">
+  <header class="app-header">
 
-  <div class="header-left">
-    <span class="app-title">Live PCB Inspection</span>
+    <div class="header-left">
+      <span class="app-title">Live PCB Inspection</span>
 
-    <div class="top-tabs">
-      <button id="tabOperator" class="top-tab active">Operator</button>
-      <button id="tabEngineer" class="top-tab">Engineer</button>
+      <div class="top-tabs">
+        <button id="tabOperator" class="top-tab active">Operator</button>
+        <button id="tabEngineer" class="top-tab">Engineer</button>
+      </div>
     </div>
-  </div>
-<div id="headerStatus" class="status-pill status-unknown">
+
+    <div id="headerStatus" class="status-pill status-unknown">
       WAITING
     </div>
-  <div class="header-right">
-    <div id="loginUser" class="login-user">
-      Logged User : Loading...
+
+    <div class="header-right">
+      <div id="loginUser" class="login-user">
+        Logged User : Loading...
+      </div>
     </div>
-  </div>
-</header>
+
+  </header>
 
 
   <!-- ======================================================
-       OPERATOR VIEW
+       ✅ OPERATOR VIEW (AUTOMATED MODE)
+       - NO step selection
+       - Step is controlled by backend
+       - UI shows step info only
   ====================================================== -->
   <main class="stage operator-layout">
 
@@ -45,31 +51,28 @@
       <!-- ================= CAMERA ================= -->
       <div class="stage-center">
         
-        <!-- ✅ Single camera container ONLY -->
         <div class="camera-frame" style="position: relative;">
 
-          <!-- ✅ Live camera stream -->
+          <!-- Live camera -->
           <img id="liveCam" class="camera-stream" />
 
-          <!-- ✅ Overlay canvas (draw bounding boxes here) -->
-          <canvas
-            id="overlay"
-            style="position:absolute; top:0; left:0; pointer-events:none;">
-          </canvas>
+          <!-- Detection overlay -->
+          <canvas id="overlay"
+            style="position:absolute; top:0; left:0; pointer-events:none;"></canvas>
 
-          <!-- ✅ Placeholder -->
+          <!-- Camera placeholder -->
           <div id="camPlaceholder" class="cam-placeholder">
             CAMERA NOT STARTED
           </div>
 
-          <!-- ✅ Result overlay -->
+          <!-- PASS / FAIL overlay -->
           <div id="cameraResult" class="result-overlay status-unknown">
             WAITING
           </div>
 
         </div>
-
       </div>
+
 
       <!-- ================= CONTROL PANEL ================= -->
       <div class="panel operator-panel">
@@ -78,16 +81,33 @@
 
         <div class="form-block">
 
-          <!-- ✅ Config (local folder) -->
+          <!-- ✅ Config selection stays -->
           <label>Config (Local)</label>
           <select id="operatorConfigSelect"></select>
 
-          <!-- ✅ Step selection -->
+          <!-- ✅ NEW: Current Step (READ ONLY) -->
           <label>Current Step</label>
-          <select id="operatorStepSelect"></select>
+          <div id="currentStepDisplay" class="readonly-box">
+            Step 1
+          </div>
+
+          <!-- ✅ NEW: Required / Forbidden display -->
+          <div id="stepInfo" class="step-info-box">
+
+            <div>
+              <strong>Required:</strong>
+              <div id="requiredDisplay">-</div>
+            </div>
+
+            <div style="margin-top:8px;">
+              <strong>Forbidden:</strong>
+              <div id="forbiddenDisplay">-</div>
+            </div>
+
+          </div>
 
           <!-- ✅ Runtime status -->
-          <div class="operator-info">
+          <div class="operator-info" style="margin-top:10px;">
             <div>
               <strong>Status:</strong>
               <span id="operatorStatus">WAITING</span>
@@ -104,17 +124,14 @@
 
 
   <!-- ======================================================
-       ENGINEER VIEW
+       ENGINEER VIEW (UNCHANGED)
   ====================================================== -->
   <main class="stage engineer-layout hidden">
 
     <div class="engineer-grid">
 
-      <!-- ================= LEFT PANEL ================= -->
       <div class="panel left-panel">
-
         <h4>Configs (Local)</h4>
-
         <div id="configList" class="config-list"></div>
 
         <div class="config-actions">
@@ -122,17 +139,12 @@
           <button id="deleteConfigBtn" class="danger">Delete Config</button>
           <button id="saveConfigBtn" class="primary">Save to Local</button>
         </div>
-
       </div>
 
-
-      <!-- ================= CENTER PANEL ================= -->
       <div class="panel center-panel">
-
         <h4>Config Details</h4>
 
         <div class="form-block">
-
           <label>Name</label>
           <input id="configName" />
 
@@ -161,18 +173,13 @@
             placeholder="0.50"
           />
         </div>
-
       </div>
 
-
-      <!-- ================= CLASS PANEL ================= -->
       <div class="panel right-top">
         <h4>Classes (Read-only)</h4>
         <div id="classList" class="class-view"></div>
       </div>
 
-
-      <!-- ================= STEPS PANEL ================= -->
       <div class="panel steps-panel">
 
         <div class="steps-header">
@@ -181,33 +188,26 @@
 
         <div class="steps-container">
 
-          <!-- Step list -->
           <div class="steps-list">
             <div id="stepsList"></div>
-
             <button id="addStepBtn">Add Step</button>
             <button id="deleteStepBtn" class="danger">Delete Step</button>
           </div>
 
-          <!-- Step editor -->
           <div class="steps-editor">
-
             <div class="step-editor-body">
 
-              <!-- Required -->
               <div class="step-column">
                 <h5>Required</h5>
                 <div class="steps-required class-box"></div>
               </div>
 
-              <!-- Forbidden -->
               <div class="step-column">
                 <h5>Forbidden</h5>
                 <div class="steps-forbidden class-box error"></div>
               </div>
 
             </div>
-
           </div>
 
         </div>

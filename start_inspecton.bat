@@ -1,34 +1,38 @@
 @echo off
 title Inspection System Startup
 
-echo ================================
-echo Starting Basler Inference Camera
-echo ================================
-start "InferCam" cmd /k python inspect/basler_infer_stream.py
+echo Starting system...
 
-timeout /t 3 >nul
+:: ================================
+:: Basler Inference Camera
+:: ================================
+start "InferCam" /min cmd /c python inspect/basler_infer_stream.py
 
-echo ================================
-echo Starting Inference Server
-echo ================================
-start "Inference" cmd /k ^
+:: Small delay to ensure camera ready
+timeout /t 2 >nul
+
+:: ================================
+:: Inference Server
+:: ================================
+start "Inference" /min cmd /c ^
 cd inspect ^&^& ^
 call ..\.venv\Scripts\activate ^&^& ^
 python -m uvicorn inference_server:app --host 127.0.0.1 --port 8005
+
+:: ================================
+:: MJPEG Display (optional)
+:: ================================
+start "Display" /min cmd /c python basler_stream.py
+
+:: ================================
+:: Node UI Server
+:: ================================
+start "Node" /min cmd /c node server/server.js
+
+:: ================================
+:: Open browser (nice UX)
+:: ================================
 timeout /t 2 >nul
+start http://localhost:3000
 
-echo ================================
-echo Starting MJPEG Display
-echo ================================
-start "Display" cmd /k python basler_stream.py
-
-timeout /t 2 >nul
-
-echo ================================
-echo Starting Node UI Server
-echo ================================
-start "Node" cmd /k node server/server.js
-
-echo ================================
-echo System startup complete
-echo ================================
+echo System started.

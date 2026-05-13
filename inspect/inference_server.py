@@ -169,7 +169,7 @@ def load_model_for_config(cfg: Dict[str, Any]) -> None:
 
 @app.get("/infer")
 def infer() -> Dict[str, Any]:
-    global last_decision, stable_count
+    global last_decision, stable_count, inspection_cfg
 
     if frame_buf is None:
         return {"status": "WAITING"}
@@ -234,12 +234,39 @@ def infer() -> Dict[str, Any]:
         stable_count = 1
         last_decision = decision
 
-    if stable_count < STABLE_FRAMES_REQUIRED:
-        decision = "WAITING"
+    config_done = False
+
+    if decision == "PASS" and stable_count >= STABLE_FRAMES_REQUIRED:
+        steps = cfg.get("steps", [])
+
+        step_ids = [s.get("id") for s in steps]
+        if current_step_id in step_ids:
+            idx = step_ids.index(current_step_id)
+
+            if idx < len(step_ids) - 1:
+                next_step = step_ids[idx + 1]
+                cfg["currentStep"] = next_step
+                print(f"[Inference] Step advanced → {next_step}")
+
+            else:
+                cfg["currentStep"] = step_ids[0]
+                config_done = True
+                print("[Inference] CONFIG DONE → reset to Step 1")
+
+            with open(INSPECTION_STATE_PATH, "w") as f:
+                json.dump(cfg, f, indent=2)
+
+            # ✅ FIX cache sync
+            inspection_cfg = cfg
+
+        # ✅ prevent multiple trigger
+        stable_count = 0
+        last_decision = None
 
     return {
         "status": decision,
-        "currentStep": current_step_id,
+        "currentStep": cfg.get("currentStep"),
+        "configDone": config_done, 
         "missing": list(missing),
         "forbidden": list(violated),
         "detections": detections,
@@ -252,13 +279,13 @@ def infer() -> Dict[str, Any]:
 
 @app.post("/reload")
 def reload_model():
-    """
-    Force model reload from inspection_state.json.
-    """
     cfg = load_inspection_config()
     load_model_for_config(cfg)
+
     return {
         "status": "ok",
         "model": model_path,
+        "currentStep": cfg.get("currentStep"),
         "device": device
     }
+

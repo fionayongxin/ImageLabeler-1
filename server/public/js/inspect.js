@@ -44,7 +44,6 @@ const configNameInput = document.getElementById("configName");
 const confidenceInput = document.getElementById("confidence");
 
 const operatorConfigSelect = document.getElementById("operatorConfigSelect");
-const operatorStepSelect = document.getElementById("operatorStepSelect");
 
 const modelFileInput = document.getElementById("modelFile");
 const fileBtn = document.getElementById("fileBtn");
@@ -217,94 +216,45 @@ function renderAll() {
 
   renderConfigList();
   renderSteps();
-  renderOperator();
   renderClasses();
   renderStepClassCheckboxes();
-
-function renderStepClassCheckboxes() {
-  if (!activeConfig || !activeConfig.steps || !activeConfig.classes) return;
-
-  const stepIndex = activeConfig.steps.findIndex(s => s.id === activeStepId);
-  if (stepIndex === -1) return;
-
-  const step = activeConfig.steps[stepIndex];
-
-  step.required = step.required || [];
-  step.forbidden = step.forbidden || [];
-
-  requiredBox.innerHTML = "";
-  forbiddenBox.innerHTML = "";
-
-  activeConfig.classes.forEach(cls => {
-    const reqLabel = document.createElement("label");
-    const reqCb = document.createElement("input");
-    reqCb.type = "checkbox";
-    reqCb.checked = step.required.includes(cls);
-
-    reqCb.onchange = () => {
-      if (reqCb.checked) {
-        step.required = Array.from(new Set([...step.required, cls]));
-        step.forbidden = step.forbidden.filter(c => c !== cls);
-      } else {
-        step.required = step.required.filter(c => c !== cls);
-      }
-      enforceStepHasClass(stepIndex);
-    };
-
-    reqLabel.appendChild(reqCb);
-    reqLabel.append(" " + cls);
-    requiredBox.appendChild(reqLabel);
-
-    const forbLabel = document.createElement("label");
-    const forbCb = document.createElement("input");
-    forbCb.type = "checkbox";
-    forbCb.checked = step.forbidden.includes(cls);
-
-    forbCb.onchange = () => {
-      if (forbCb.checked) {
-        step.forbidden = Array.from(new Set([...step.forbidden, cls]));
-        step.required = step.required.filter(c => c !== cls);
-      } else {
-        step.forbidden = step.forbidden.filter(c => c !== cls);
-      }
-      enforceStepHasClass(stepIndex);
-    };
-
-    forbLabel.appendChild(forbCb);
-    forbLabel.append(" " + cls);
-    forbiddenBox.appendChild(forbLabel);
-  });
+  renderOperatorStepInfo();
 }
 
-async function enforceStepHasClass(stepIndex) {
-  const step = activeConfig.steps[stepIndex];
+/* ======================================================
+   OPERATOR STEP DISPLAY (AUTO MODE)
+====================================================== */
+
+function renderOperatorStepInfo() {
+  if (!activeConfig || !activeConfig.steps) return;
+
+  const step = activeConfig.steps.find(s => s.id === activeConfig.currentStep);
   if (!step) return;
 
-  const hasAny =
-    step.required.length > 0 || step.forbidden.length > 0;
+  // ✅ Step number
+  const stepIndex = activeConfig.steps.findIndex(s => s.id === step.id);
 
-  if (!hasAny) {
-    activeConfig.steps.splice(stepIndex, 1);
-
-    if (activeConfig.steps.length === 0) {
-      const id = Date.now().toString();
-      activeConfig.steps.push({ id, required: [], forbidden: [] });
-      activeStepId = id;
-      activeConfig.currentStep = id;
-    } else {
-      activeStepId = activeConfig.steps[0].id;
-      activeConfig.currentStep = activeStepId;
-    }
+  const stepDisplay = document.getElementById("currentStepDisplay");
+  if (stepDisplay) {
+    stepDisplay.textContent = `Step ${stepIndex + 1}`;
   }
 
-  renderAll();
-}
+  // ✅ Required classes
+  const reqEl = document.getElementById("requiredDisplay");
+  if (reqEl) {
+    reqEl.textContent = step.required?.length
+      ? step.required.join(", ")
+      : "-";
+  }
 
-/* ======================================================
+  // ✅ Forbidden classes
+  const forbEl = document.getElementById("forbiddenDisplay");
+  if (forbEl) {
+    forbEl.textContent = step.forbidden?.length
+      ? step.forbidden.join(", ")
+      : "-";
+  }
 }
-
-/* ======================================================
-   STEP CLASS CHECKBOXES
 
 function renderStepClassCheckboxes() {
   if (!activeConfig || !activeConfig.steps || !activeConfig.classes) return;
@@ -427,35 +377,6 @@ function deleteStep() {
   activeStepId = activeConfig.steps[0].id;
   activeConfig.currentStep = activeStepId;
   renderAll();
-}
-
-/* ======================================================
-   OPERATOR STEP
-====================================================== */
-
-operatorStepSelect.onchange = async () => {
-  if (!activeConfig?.steps?.length) return;
-
-  const index = operatorStepSelect.selectedIndex;
-  if (index < 0 || index >= activeConfig.steps.length) return;
-
-  const step = activeConfig.steps[index];
-  activeStepId = step.id;
-  activeConfig.currentStep = step.id;
-  
-  await syncInspectionState();
-
-  renderAll();
-};
-
-function renderOperator() {
-  operatorStepSelect.innerHTML = "";
-  activeConfig.steps.forEach((step, i) => {
-    const opt = document.createElement("option");
-    opt.textContent = `Step ${i + 1}`;
-    if (step.id === activeConfig.currentStep) opt.selected = true;
-    operatorStepSelect.appendChild(opt);
-  });
 }
 
 /* ======================================================
@@ -646,6 +567,13 @@ async function pollStatus() {
       lastStatus = data.status;
       setStatus(data.status.toLowerCase(), data.status);
     }
+    
+    if (data.currentStep && activeConfig) {
+      activeConfig.currentStep = data.currentStep;
+      activeStepId = data.currentStep;
+      renderOperatorStepInfo();
+    }
+
   } catch {}
 
   pollingBusy = false;
