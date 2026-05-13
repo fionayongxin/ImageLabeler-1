@@ -1,24 +1,59 @@
-/**
- * ======================================================
- * server.js  (FIXED)
- * ======================================================
- */
-
+const NodeSSPI = require("node-sspi");
 const express = require("express");
 const path = require("path");
 const { spawn } = require("child_process");
 const { SERVER_PORT } = require("./config/env");
 const { PHOTOS_DIR } = require("./config/paths");
+const authMiddleware = require("./middleware/auth");
 
 const thumbsRoutes = require("./routes/thumbs.routes");
 
 const app = express();
+const nodeSSPI = new NodeSSPI({
+  retrieveGroups: true
+});
+
+
+app.use((req, res, next) => {
+  nodeSSPI.authenticate(req, res, (err) => {
+    if (err) {
+      console.error("SSPI error:", err);
+      return res.status(500).send("Windows authentication failed.");
+    }
+
+    if (res.finished) return;
+    next();
+  });
+});
+app.get("/whoami", (req, res) => {
+  res.json({
+    user: req.connection.user || null,
+    userSid: req.connection.userSid || null,
+    groups: req.connection.userGroups || []
+  });
+});
 
 /* ======================================================
    MIDDLEWARE
 ====================================================== */
 
 app.use(express.json({ limit: "10mb" }));
+app.use(authMiddleware);
+app.get("/api/test-db", (req, res) => {
+  res.json({
+    ok: true,
+    user: req.user || null
+  });
+});
+
+app.get("/api/me", (req, res) => {
+  res.json({
+    userId: req.user?.userId || null,
+    fullName: [req.user?.firstName, req.user?.lastName]
+      .filter(Boolean)
+      .join(" ")
+  });
+});
 
 /* ======================================================
    AUTO-START BASLER CAMERA SERVICE

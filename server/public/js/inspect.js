@@ -32,7 +32,7 @@ const camImg = document.getElementById("liveCam");
 const placeholder = document.getElementById("camPlaceholder");
 const headerStatus = document.getElementById("headerStatus");
 const cameraResult = document.getElementById("cameraResult");
-
+const loginUserEl = document.getElementById("loginUser");
 const configListEl = document.getElementById("configList");
 const stepsListEl = document.getElementById("stepsList");
 const classListEl = document.getElementById("classList");
@@ -77,8 +77,38 @@ function createDefaultConfig() {
 /* ======================================================
    INIT
 ====================================================== */
+async function loadCurrentUser() {
+  try {
+    const res = await fetch("/api/me", {
+      credentials: "include"
+    });
+
+    if (!res.ok) {
+      throw new Error("Failed to get current user");
+    }
+
+    const data = await res.json();
+
+    const fullName = data.fullName || "";
+    const userId = data.userId || "Unknown";
+
+    if (loginUserEl) {
+      loginUserEl.textContent = `Logged User : ${fullName || userId}`;
+      loginUserEl.title = userId;
+    }
+  } catch (err) {
+    console.error("Failed to load current user:", err);
+
+    if (loginUserEl) {
+      loginUserEl.textContent = "Logged User : Unknown";
+      loginUserEl.title = "";
+    }
+  }
+}
+
 
 async function init() {
+  await loadCurrentUser();
   await loadConfigList();
 
   if (configNames.length === 0) {
@@ -190,11 +220,91 @@ function renderAll() {
   renderOperator();
   renderClasses();
   renderStepClassCheckboxes();
+
+function renderStepClassCheckboxes() {
+  if (!activeConfig || !activeConfig.steps || !activeConfig.classes) return;
+
+  const stepIndex = activeConfig.steps.findIndex(s => s.id === activeStepId);
+  if (stepIndex === -1) return;
+
+  const step = activeConfig.steps[stepIndex];
+
+  step.required = step.required || [];
+  step.forbidden = step.forbidden || [];
+
+  requiredBox.innerHTML = "";
+  forbiddenBox.innerHTML = "";
+
+  activeConfig.classes.forEach(cls => {
+    const reqLabel = document.createElement("label");
+    const reqCb = document.createElement("input");
+    reqCb.type = "checkbox";
+    reqCb.checked = step.required.includes(cls);
+
+    reqCb.onchange = () => {
+      if (reqCb.checked) {
+        step.required = Array.from(new Set([...step.required, cls]));
+        step.forbidden = step.forbidden.filter(c => c !== cls);
+      } else {
+        step.required = step.required.filter(c => c !== cls);
+      }
+      enforceStepHasClass(stepIndex);
+    };
+
+    reqLabel.appendChild(reqCb);
+    reqLabel.append(" " + cls);
+    requiredBox.appendChild(reqLabel);
+
+    const forbLabel = document.createElement("label");
+    const forbCb = document.createElement("input");
+    forbCb.type = "checkbox";
+    forbCb.checked = step.forbidden.includes(cls);
+
+    forbCb.onchange = () => {
+      if (forbCb.checked) {
+        step.forbidden = Array.from(new Set([...step.forbidden, cls]));
+        step.required = step.required.filter(c => c !== cls);
+      } else {
+        step.forbidden = step.forbidden.filter(c => c !== cls);
+      }
+      enforceStepHasClass(stepIndex);
+    };
+
+    forbLabel.appendChild(forbCb);
+    forbLabel.append(" " + cls);
+    forbiddenBox.appendChild(forbLabel);
+  });
+}
+
+async function enforceStepHasClass(stepIndex) {
+  const step = activeConfig.steps[stepIndex];
+  if (!step) return;
+
+  const hasAny =
+    step.required.length > 0 || step.forbidden.length > 0;
+
+  if (!hasAny) {
+    activeConfig.steps.splice(stepIndex, 1);
+
+    if (activeConfig.steps.length === 0) {
+      const id = Date.now().toString();
+      activeConfig.steps.push({ id, required: [], forbidden: [] });
+      activeStepId = id;
+      activeConfig.currentStep = id;
+    } else {
+      activeStepId = activeConfig.steps[0].id;
+      activeConfig.currentStep = activeStepId;
+    }
+  }
+
+  renderAll();
+}
+
+/* ======================================================
 }
 
 /* ======================================================
    STEP CLASS CHECKBOXES
-====================================================== */
 
 function renderStepClassCheckboxes() {
   if (!activeConfig || !activeConfig.steps || !activeConfig.classes) return;
@@ -556,13 +666,21 @@ if (camImg) {
 /* ======================================================
    MODE SWITCH
 ====================================================== */
+function setMode(mode) {
+  if (mode === "operator") {
+    engineerLayout.classList.add("hidden");
+    operatorLayout.classList.remove("hidden");
 
-tabOperator.onclick = () => {
-  engineerLayout.classList.add("hidden");
-  operatorLayout.classList.remove("hidden");
-};
+    tabOperator.classList.add("active");
+    tabEngineer.classList.remove("active");
+  } else {
+    operatorLayout.classList.add("hidden");
+    engineerLayout.classList.remove("hidden");
 
-tabEngineer.onclick = () => {
-  operatorLayout.classList.add("hidden");
-  engineerLayout.classList.remove("hidden");
-};
+    tabEngineer.classList.add("active");
+    tabOperator.classList.remove("active");
+  }
+}
+
+tabOperator.onclick = () => setMode("operator");
+tabEngineer.onclick = () => setMode("engineer");
