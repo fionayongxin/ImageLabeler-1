@@ -46,6 +46,15 @@ app.get("/api/test-db", (req, res) => {
   });
 });
 
+app.get("/api/me", (req, res) => {
+  res.json({
+    userId: req.user?.userId || null,
+    fullName: [req.user?.firstName, req.user?.lastName]
+      .filter(Boolean)
+      .join(" ")
+  });
+});
+
 /* ======================================================
    AUTO-START BASLER CAMERA SERVICE
 ====================================================== */

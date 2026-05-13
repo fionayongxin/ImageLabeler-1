@@ -27,7 +27,7 @@ const camImg = document.getElementById("liveCam");
 const placeholder = document.getElementById("camPlaceholder");
 const headerStatus = document.getElementById("headerStatus");
 const cameraResult = document.getElementById("cameraResult");
-
+const loginUserEl = document.getElementById("loginUser");
 const configListEl = document.getElementById("configList");
 const stepsListEl = document.getElementById("stepsList");
 const classListEl = document.getElementById("classList");
@@ -69,8 +69,38 @@ function createDefaultConfig() {
 /* ======================================================
    INIT
 ====================================================== */
+async function loadCurrentUser() {
+  try {
+    const res = await fetch("/api/me", {
+      credentials: "include"
+    });
+
+    if (!res.ok) {
+      throw new Error("Failed to get current user");
+    }
+
+    const data = await res.json();
+
+    const fullName = data.fullName || "";
+    const userId = data.userId || "Unknown";
+
+    if (loginUserEl) {
+      loginUserEl.textContent = `Logged User : ${fullName || userId}`;
+      loginUserEl.title = userId;
+    }
+  } catch (err) {
+    console.error("Failed to load current user:", err);
+
+    if (loginUserEl) {
+      loginUserEl.textContent = "Logged User : Unknown";
+      loginUserEl.title = "";
+    }
+  }
+}
+
 
 async function init() {
+  await loadCurrentUser();
   await loadConfigList();
 
   if (configNames.length === 0) {
@@ -438,13 +468,21 @@ if (camImg) {
 /* ======================================================
    MODE SWITCH
 ====================================================== */
+function setMode(mode) {
+  if (mode === "operator") {
+    engineerLayout.classList.add("hidden");
+    operatorLayout.classList.remove("hidden");
 
-tabOperator.onclick = () => {
-  engineerLayout.classList.add("hidden");
-  operatorLayout.classList.remove("hidden");
-};
+    tabOperator.classList.add("active");
+    tabEngineer.classList.remove("active");
+  } else {
+    operatorLayout.classList.add("hidden");
+    engineerLayout.classList.remove("hidden");
 
-tabEngineer.onclick = () => {
-  operatorLayout.classList.add("hidden");
-  engineerLayout.classList.remove("hidden");
-};
+    tabEngineer.classList.add("active");
+    tabOperator.classList.remove("active");
+  }
+}
+
+tabOperator.onclick = () => setMode("operator");
+tabEngineer.onclick = () => setMode("engineer");

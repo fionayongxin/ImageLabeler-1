@@ -41,15 +41,49 @@ body {
 /* ======================================================
    HEADER
 ====================================================== */
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+
+.login-user {
+  font-size: 13px;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  padding: 6px 12px;
+  border-radius: 999px;
+  white-space: nowrap;
+  height: 32px;
+  display: flex;
+  align-items: center;
+}
 
 .app-header {
   height: 48px;
-  display: grid;
-  grid-template-columns: auto auto 1fr auto;
+  display: flex;
+  justify-content: space-between;
   align-items: center;
   padding: 0 20px;
-  column-gap: 12px;
+  gap: 12px;
 }
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
+}
+
 
 .app-title {
   font-size: 14px;
@@ -87,9 +121,9 @@ body {
    STATUS
 ====================================================== */
 
+
 .status-pill {
-  justify-self: end;
-  height: 24px;
+  height: 32px;
   padding: 0 12px;
   border-radius: 999px;
   display: flex;
@@ -97,6 +131,7 @@ body {
   font-size: 12px;
   font-weight: 700;
 }
+
 
 .status-pass    { background: #14532d; }
 .status-fail    { background: #78350f; }
@@ -106,7 +141,6 @@ body {
 /* ======================================================
    OPERATOR VIEW
 ====================================================== */
-
 .camera-frame {
   position: relative;
   width: 100%;
