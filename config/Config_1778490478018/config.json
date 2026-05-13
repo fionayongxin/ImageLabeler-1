@@ -2,13 +2,47 @@
   "id": "cfg_1778490478018",
   "name": "Config_1778490478018",
   "confidence": 0.5,
-  "currentStep": "1778490478018",
+  "currentStep": "1778653423871",
   "steps": [
     {
       "id": "1778490478018",
       "required": [],
       "forbidden": []
+    },
+    {
+      "id": "1778653423586",
+      "required": [
+        "T_Bushing"
+      ],
+      "forbidden": [
+        "T_Body"
+      ]
+    },
+    {
+      "id": "1778653423871",
+      "required": [
+        "T_2_label",
+        "T_Bushing"
+      ],
+      "forbidden": [
+        "T_Body",
+        "T_Hole_Plug"
+      ]
     }
   ],
-  "classes": []
+  "classes": [
+    "T_2_label",
+    "T_Body",
+    "T_Bushing",
+    "T_Hole_Plug",
+    "T_Inner_opening",
+    "T_Missing_2_label",
+    "T_Missing_Hole_Plug",
+    "T_Missing_SN_label",
+    "T_SN_label",
+    "T_Top_view",
+    "T_Without_Bushing",
+    "T_rear_side",
+    "Unassigned"
+  ]
 }

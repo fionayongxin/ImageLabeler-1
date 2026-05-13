@@ -75,109 +75,6 @@ function listConfigs() {
 }
 
 /* ======================================================
-   LOCAL INFERENCE PLACEHOLDER
-   ⚠ Replace with actual YOLO runner later
-====================================================== */
-
-async function runLocalDetection() {
-  // TODO: integrate YOLO CLI / python / binding
-
-  // Temporary fake detections
-  return {
-    detections: [],
-    names: {}
-  };
-}
-
-/* ======================================================
-   MAIN INFERENCE PIPELINE
-====================================================== */
-
-async function runInference() {
-
-  if (!activeConfig) {
-    return {
-      status: "UNKNOWN",
-      reason: "No config loaded",
-      detections: [],
-      names: {}
-    };
-  }
-
-  const {
-    steps = [],
-    currentStep,
-    confidence = 0.5
-  } = activeConfig;
-
-  if (!steps.length) {
-    return {
-      status: "UNKNOWN",
-      reason: "No steps defined",
-      detections: [],
-      names: {}
-    };
-  }
-
-  // --------------------------------------------------
-  // 1. RUN LOCAL DETECTION
-  // --------------------------------------------------
-  const inferData = await runLocalDetection();
-
-  // --------------------------------------------------
-  // 2. GET ACTIVE STEP
-  // --------------------------------------------------
-  const step =
-    steps.find(s => s.id === currentStep) || steps[0];
-
-  // --------------------------------------------------
-  // 3. FILTER BY CONFIDENCE
-  // --------------------------------------------------
-  const filtered = (inferData.detections || []).filter(
-    d => d.conf >= confidence
-  );
-
-  const detectedClasses = new Set(
-    filtered.map(d => inferData.names?.[d.cls] || d.name)
-  );
-
-  // --------------------------------------------------
-  // 4. APPLY RULES
-  // --------------------------------------------------
-  let pass = true;
-  let reason = "";
-
-  for (const r of step.required || []) {
-    if (!detectedClasses.has(r)) {
-      pass = false;
-      reason = `Missing required: ${r}`;
-      break;
-    }
-  }
-
-  if (pass) {
-    for (const f of step.forbidden || []) {
-      if (detectedClasses.has(f)) {
-        pass = false;
-        reason = `Forbidden detected: ${f}`;
-        break;
-      }
-    }
-  }
-
-  // --------------------------------------------------
-  // 5. RETURN RESULT
-  // --------------------------------------------------
-  return {
-    status: pass ? "PASS" : "FAIL",
-    reason,
-    detections: filtered,
-    names: inferData.names || {},
-    currentStep: step.id
-  };
-}
-
-/* ======================================================
    SET ACTIVE CONFIG
 ====================================================== */
 
@@ -190,7 +87,6 @@ function setActiveConfig(configName) {
 ====================================================== */
 
 module.exports = {
-  runInference,
   loadConfig,
   setActiveConfig,
   listConfigs

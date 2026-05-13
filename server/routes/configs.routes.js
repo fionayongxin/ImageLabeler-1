@@ -1,9 +1,19 @@
 /**
  * ======================================================
- * config.routes.js — CLEAN & HARDENED VERSION
+ * config.routes.js — FILESYSTEM ONLY (STEP 5 FINAL)
  * ======================================================
+ *
+ * Responsibilities:
+ * - List available configs (folders)
+ * - Load config.json
+ * - Save config.json + optional model
+ * - Delete config folder
+ *
+ * Design rules:
+ * - ❌ NO active config in memory
+ * - ❌ NO inference logic
+ * - ✅ Filesystem is the source of truth
  */
-
 const express = require("express");
 const router = express.Router();
 
@@ -11,30 +21,30 @@ const fs = require("fs");
 const path = require("path");
 const multer = require("multer");
 
-const {
-  setActiveConfig,
-  listConfigs
-} = require("../services/inference.service");
-
 /* ======================================================
-   CONFIG ROOT
+   PATHS
 ====================================================== */
 
 const CONFIG_ROOT = path.join(__dirname, "..", "..", "config");
-
-/* ======================================================
-   MULTER (TEMP UPLOAD)
-====================================================== */
-
 const upload = multer({ dest: "uploads/" });
 
 /* ======================================================
    LIST CONFIGS
+   GET /api/configs
 ====================================================== */
 
 router.get("/", (_req, res) => {
   try {
-    const configs = listConfigs();
+    if (!fs.existsSync(CONFIG_ROOT)) {
+      return res.json({ configs: [] });
+    }
+
+    const configs = fs.readdirSync(CONFIG_ROOT)
+      .filter(name => {
+        const full = path.join(CONFIG_ROOT, name);
+        return fs.statSync(full).isDirectory();
+      });
+
     res.json({ configs });
 
   } catch (err) {
@@ -44,24 +54,24 @@ router.get("/", (_req, res) => {
 });
 
 /* ======================================================
-   SELECT CONFIG
+   LOAD CONFIG
+   POST /api/configs/select
 ====================================================== */
 
 router.post("/select", (req, res) => {
   try {
     const { name } = req.body;
-
     if (!name) {
       return res.status(400).json({ error: "Config name required" });
     }
 
-    const cfg = setActiveConfig(name);
-
-    if (!cfg) {
+    const configPath = path.join(CONFIG_ROOT, name, "config.json");
+    if (!fs.existsSync(configPath)) {
       return res.status(404).json({ error: "Config not found" });
     }
 
-    res.json({ status: "ok", config: cfg });
+    const config = JSON.parse(fs.readFileSync(configPath, "utf-8"));
+    res.json({ status: "ok", config });
 
   } catch (err) {
     console.error("[SELECT CONFIG ERROR]", err);
@@ -70,58 +80,37 @@ router.post("/select", (req, res) => {
 });
 
 /* ======================================================
-   SAVE CONFIG ✅ FIXED
+   SAVE CONFIG + OPTIONAL MODEL
+   POST /api/configs/save
 ====================================================== */
 
 router.post("/save", upload.single("model"), (req, res) => {
   try {
     const { config } = req.body;
-    const file = req.file;
-
     if (!config) {
       return res.status(400).json({ error: "Config data missing" });
     }
 
-    let parsed;
-    try {
-      parsed = JSON.parse(config);
-    } catch (err) {
-      console.error("[JSON PARSE ERROR]", err);
-      return res.status(400).json({ error: "Invalid JSON config" });
-    }
-
-    if (!parsed.name || parsed.name.trim() === "") {
+    const parsed = JSON.parse(config);
+    if (!parsed.name) {
       return res.status(400).json({ error: "Config name required" });
     }
 
-    const folderPath = path.join(CONFIG_ROOT, parsed.name);
+    const folder = path.join(CONFIG_ROOT, parsed.name);
+    fs.mkdirSync(folder, { recursive: true });
 
-    // ✅ ensure folder exists
-    fs.mkdirSync(folderPath, { recursive: true });
+    // save config.json
+    fs.writeFileSync(
+      path.join(folder, "config.json"),
+      JSON.stringify(parsed, null, 2),
+      "utf-8"
+    );
 
-    // ✅ save config.json
-    const jsonPath = path.join(folderPath, "config.json");
-    fs.writeFileSync(jsonPath, JSON.stringify(parsed, null, 2));
-
-    // ✅ save model (ONLY if provided)
-    if (file) {
-      try {
-        const modelPath = path.join(folderPath, file.originalname);
-
-        fs.copyFileSync(file.path, modelPath);
-
-        // ✅ cleanup temp file safely
-        fs.unlink(file.path, err => {
-          if (err) console.warn("[CLEANUP ERROR]", err);
-        });
-
-        console.log("[MODEL SAVED]", modelPath);
-
-      } catch (err) {
-        console.error("[MODEL SAVE ERROR]", err);
-      }
-    } else {
-      console.log("[SAVE CONFIG] No model uploaded (allowed update)");
+    // save model if provided
+    if (req.file) {
+      const modelPath = path.join(folder, req.file.originalname);
+      fs.copyFileSync(req.file.path, modelPath);
+      fs.unlink(req.file.path, () => {});
     }
 
     res.json({ status: "ok" });
@@ -133,30 +122,23 @@ router.post("/save", upload.single("model"), (req, res) => {
 });
 
 /* ======================================================
-   DELETE CONFIG ✅ FIXED
+   DELETE CONFIG
+   POST /api/configs/delete
 ====================================================== */
 
 router.post("/delete", (req, res) => {
   try {
     const { name } = req.body;
-
     if (!name) {
       return res.status(400).json({ error: "Config name required" });
     }
 
-    const folderPath = path.join(CONFIG_ROOT, name);
-
-    if (!fs.existsSync(folderPath)) {
+    const folder = path.join(CONFIG_ROOT, name);
+    if (!fs.existsSync(folder)) {
       return res.status(404).json({ error: "Config not found" });
     }
 
-    fs.rmSync(folderPath, {
-      recursive: true,
-      force: true
-    });
-
-    console.log("[CONFIG DELETED]", name);
-
+    fs.rmSync(folder, { recursive: true, force: true });
     res.json({ status: "ok" });
 
   } catch (err) {

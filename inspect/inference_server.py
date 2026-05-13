@@ -1,62 +1,55 @@
 """
 ======================================================
-inference_server.py
+inference_server.py — FINAL CONFIG-DRIVEN VERSION
 ------------------------------------------------------
-Responsibility:
-- Persistent inference runtime (FastAPI)
-- Single source of truth for inspection decisions
-- Uses LIVE Basler frames written by basler_stream.py
-- Applies Engineer-defined step-based inspection rules
-- Serves PASS / FAIL / WAITING to Node.js
+Responsibilities:
+- Persistent YOLO inference runtime
+- Reads LIVE Basler frames from shared memory
+- Loads model based on operator-selected config
+- Applies step-based inspection rules
+- Serves PASS / FAIL / WAITING
 
 Design rules:
+- NO hardcoded model paths
 - NO per-request model loading
-- NO camera ownership here
+- NO camera ownership
 - NO dataset dependency
-- Thread-safe
+- NO filesystem image reads (except config + model)
 ======================================================
 """
 
 from fastapi import FastAPI
 from ultralytics import YOLO
+from multiprocessing import shared_memory
 import json
 import os
 import threading
 import torch
-from typing import Dict, Any
+import numpy as np
+from typing import Dict, Any, Optional
 
 # ======================================================
-# PATH CONFIGURATION (WINDOWS ONLY)
+# SHARED MEMORY CONFIG (MUST MATCH basler_stream.py)
 # ======================================================
 
-# Active model metadata written by Node.js
-MODEL_META_PATH = (
-    r"C:\Users\pnayeuoo\OneDrive - Flex\Documents\AISetup\interface"
-    r"\server\public\js\models\active_model.json"
-)
+SHM_NAME = "basler_frame"
+FRAME_WIDTH = 1280
+FRAME_HEIGHT = 1024
+FRAME_CHANNELS = 3  # BGR uint8
 
-# Fallback model if active_model.json is missing or invalid
-DEFAULT_MODEL_PATH = (
-    r"C:\Users\pnayeuoo\OneDrive - Flex\Documents\AISetup\interface"
-    r"\server\training"
-    r"\station_01-final_inspection-yolo26m-1777254365548"
-    r"\weights\best.pt"
-)
+# ======================================================
+# PATH CONFIGURATION
+# ======================================================
 
-# LIVE Basler latest frame (written continuously by basler_stream.py)
-LATEST_FRAME_PATH = (
-    r"C:\Users\pnayeuoo\OneDrive - Flex\Documents\AISetup\interface"
-    r"\server\runtime\basler_latest.jpg"
-)
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+CONFIG_ROOT = os.path.join(BASE_DIR, "..", "config")
+INSPECTION_STATE_PATH = os.path.join(CONFIG_ROOT, "inspection_state.json")
 
-# Engineer inspection configuration
-INSPECTION_CONFIG_PATH = (
-    r"C:\Users\pnayeuoo\OneDrive - Flex\Documents\AISetup\interface"
-    r"\server\config\inspection_state.json"
-)
+# ======================================================
+# INFERENCE PARAMETERS
+# ======================================================
 
-# Inference parameters
-IMG_SIZE = 640
+IMG_SIZE = 960
 STABLE_FRAMES_REQUIRED = 3
 
 # ======================================================
@@ -71,90 +64,104 @@ app = FastAPI()
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
-model = None
-model_path = None
+model: Optional[YOLO] = None
+model_path: Optional[str] = None
 model_lock = threading.Lock()
 
-inspection_cfg: Dict[str, Any] | None = None
-inspection_mtime: float | None = None
+inspection_cfg: Optional[Dict[str, Any]] = None
+inspection_mtime: Optional[float] = None
 cfg_lock = threading.Lock()
 
-# Decision stability (anti-flicker)
-last_decision = None
+last_decision: Optional[str] = None
 stable_count = 0
 
 # ======================================================
-# MODEL MANAGEMENT
+# SHARED MEMORY ATTACH
 # ======================================================
 
-def resolve_model_path() -> str:
-    """
-    Resolve YOLO model path.
-    Priority:
-    1. active_model.json (Engineer selection)
-    2. DEFAULT_MODEL_PATH
-    """
-    if os.path.exists(MODEL_META_PATH):
-        try:
-            with open(MODEL_META_PATH, "r") as f:
-                meta = json.load(f)
-                return meta.get("path", DEFAULT_MODEL_PATH)
-        except Exception as e:
-            print("[Inference] Failed to read active_model.json:", e)
-
-    return DEFAULT_MODEL_PATH
-
-
-def load_model() -> None:
-    """
-    Load YOLO model into memory.
-    Called ONLY on startup or explicit reload.
-    """
-    global model, model_path
-
-    with model_lock:
-        model_path = resolve_model_path()
-        print(f"[Inference] Loading model: {model_path}")
-
-        model = YOLO(model_path).to(device)
-
-        # Optional warm-up using current Basler frame
-        if os.path.exists(LATEST_FRAME_PATH):
-            try:
-                _ = model(
-                    LATEST_FRAME_PATH,
-                    imgsz=IMG_SIZE,
-                    conf=0.01,
-                    verbose=False
-                )
-                print("[Inference] Warm-up complete")
-            except Exception as e:
-                print("[Inference] Warm-up skipped:", e)
-
-
-# Load model once on startup
-load_model()
+try:
+    shm = shared_memory.SharedMemory(name=SHM_NAME)
+    frame_buf = np.ndarray(
+        (FRAME_HEIGHT, FRAME_WIDTH, FRAME_CHANNELS),
+        dtype=np.uint8,
+        buffer=shm.buf
+    )
+    print("[Inference] Shared memory attached")
+except FileNotFoundError:
+    shm = None
+    frame_buf = None
+    print("[Inference] Shared memory not available")
 
 # ======================================================
-# INSPECTION CONFIG MANAGEMENT
+# INSPECTION STATE LOADING
 # ======================================================
 
 def load_inspection_config() -> Dict[str, Any]:
     """
-    Load Engineer inspection configuration with file change detection.
+    Load inspection_state.json with mtime tracking.
+    This file is the SINGLE source of runtime truth.
     """
     global inspection_cfg, inspection_mtime
 
     with cfg_lock:
-        stat = os.stat(INSPECTION_CONFIG_PATH)
+        if not os.path.exists(INSPECTION_STATE_PATH):
+            return {}
+
+        stat = os.stat(INSPECTION_STATE_PATH)
 
         if inspection_cfg is None or stat.st_mtime != inspection_mtime:
-            with open(INSPECTION_CONFIG_PATH, "r") as f:
+            with open(INSPECTION_STATE_PATH, "r") as f:
                 inspection_cfg = json.load(f)
             inspection_mtime = stat.st_mtime
-            print("[Inference] Inspection config reloaded")
+            print("[Inference] Inspection state reloaded")
 
         return inspection_cfg
+
+# ======================================================
+# MODEL RESOLUTION (CONFIG-DRIVEN)
+# ======================================================
+
+def resolve_model_path(cfg: Dict[str, Any]) -> Optional[str]:
+    """
+    Resolve model path from selected config folder.
+    """
+    config_name = cfg.get("configName")
+    if not config_name:
+        return None
+
+    config_dir = os.path.join(CONFIG_ROOT, config_name)
+    if not os.path.isdir(config_dir):
+        return None
+
+    for f in os.listdir(config_dir):
+        if f.endswith(".pt"):
+            return os.path.join(config_dir, f)
+
+    return None
+
+
+def load_model_for_config(cfg: Dict[str, Any]) -> None:
+    """
+    Load YOLO model ONLY when config changes.
+    """
+    global model, model_path
+
+    with model_lock:
+        path = resolve_model_path(cfg)
+
+        if not path:
+            if model is not None:
+                print("[Inference] Model cleared (no config / no model)")
+            model = None
+            model_path = None
+            return
+
+        if path == model_path:
+            return  # already loaded
+
+        print(f"[Inference] Loading model: {path}")
+        model = YOLO(path).to(device)
+        model_path = path
 
 # ======================================================
 # INFERENCE ENDPOINT
@@ -162,67 +169,45 @@ def load_inspection_config() -> Dict[str, Any]:
 
 @app.get("/infer")
 def infer() -> Dict[str, Any]:
-    """
-    Run inspection on live Basler frame.
-    Returns ONLY operator-safe states:
-    - WAITING
-    - PASS
-    - FAIL
-    """
     global last_decision, stable_count
 
-    # --------------------------------------------------
-    # Load inspection configuration
-    # --------------------------------------------------
+    if frame_buf is None:
+        return {"status": "WAITING"}
+
     cfg = load_inspection_config()
+    load_model_for_config(cfg)
+
+    if model is None:
+        return {"status": "WAITING"}
 
     confidence = float(cfg.get("confidence", 0.25))
-    step_id = int(cfg.get("currentStep", 1))
+    current_step_id = cfg.get("currentStep")
 
     step_cfg = next(
-        (s for s in cfg.get("steps", []) if s.get("step") == step_id),
+        (s for s in cfg.get("steps", []) if s.get("id") == current_step_id),
         None
     )
 
     if not step_cfg:
-        return {
-            "status": "WAITING",
-            "detections": [],
-            "names": {}
-        }
+        return {"status": "WAITING"}
 
-    # --------------------------------------------------
-    # Verify live Basler frame exists
-    # --------------------------------------------------
-    if not os.path.exists(LATEST_FRAME_PATH):
-        return {
-            "status": "WAITING",
-            "detections": [],
-            "names": model.names
-        }
-
-    # --------------------------------------------------
-    # Run YOLO inference (thread-safe)
-    # --------------------------------------------------
     with model_lock:
         results = model(
-            LATEST_FRAME_PATH,
+            frame_buf,
             imgsz=IMG_SIZE,
             conf=confidence,
             verbose=False
         )
 
-    detections = []
     detected_classes = set()
+    detections = []
 
     for r in results:
-        if not r.boxes:
-            continue
-
-        for box in r.boxes:
+        for box in r.boxes or []:
             cls_id = int(box.cls)
             cls_name = model.names.get(cls_id, "Unassigned")
 
+            detected_classes.add(cls_name)
             detections.append({
                 "cls": cls_id,
                 "name": cls_name,
@@ -230,11 +215,6 @@ def infer() -> Dict[str, Any]:
                 "xyxy": box.xyxy[0].tolist()
             })
 
-            detected_classes.add(cls_name)
-
-    # --------------------------------------------------
-    # Step-based inspection logic
-    # --------------------------------------------------
     required = set(step_cfg.get("required", []))
     forbidden = set(step_cfg.get("forbidden", []))
 
@@ -248,9 +228,6 @@ def infer() -> Dict[str, Any]:
     else:
         decision = "PASS"
 
-    # --------------------------------------------------
-    # Decision stabilization (anti-flicker)
-    # --------------------------------------------------
     if decision == last_decision:
         stable_count += 1
     else:
@@ -260,12 +237,9 @@ def infer() -> Dict[str, Any]:
     if stable_count < STABLE_FRAMES_REQUIRED:
         decision = "WAITING"
 
-    # --------------------------------------------------
-    # Operator-facing response
-    # --------------------------------------------------
     return {
         "status": decision,
-        "currentStep": step_id,
+        "currentStep": current_step_id,
         "missing": list(missing),
         "forbidden": list(violated),
         "detections": detections,
@@ -273,15 +247,16 @@ def infer() -> Dict[str, Any]:
     }
 
 # ======================================================
-# MODEL RELOAD ENDPOINT
+# MODEL RELOAD (OPTIONAL MANUAL TRIGGER)
 # ======================================================
 
 @app.post("/reload")
 def reload_model():
     """
-    Reload YOLO model after Engineer updates active_model.json.
+    Force model reload from inspection_state.json.
     """
-    load_model()
+    cfg = load_inspection_config()
+    load_model_for_config(cfg)
     return {
         "status": "ok",
         "model": model_path,
