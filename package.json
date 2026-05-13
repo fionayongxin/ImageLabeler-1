@@ -14,9 +14,11 @@
     "axios": "^1.15.0",
     "express": "^5.2.1",
     "http-proxy": "^1.18.1",
+    "msnodesqlv8": "^5.2.0",
     "mssql": "^12.5.2",
     "multer": "^2.1.1",
     "node-fetch": "^2.7.0",
+    "node-sspi": "^0.2.11",
     "shark": "^2.3.0",
     "sharp": "^0.34.5",
     "spark": "^0.4.1"
