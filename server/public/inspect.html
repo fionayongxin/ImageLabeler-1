@@ -34,39 +34,48 @@
 
   <!-- ======================================================
        OPERATOR VIEW
-       - Select LOCAL config folder
-       - System auto loads model + JSON
   ====================================================== -->
   <main class="stage operator-layout">
 
     <div class="operator-grid">
 
-      <!-- CENTER: Camera -->
+      <!-- ================= CAMERA ================= -->
       <div class="stage-center">
-        <div class="camera-frame">
+        
+        <!-- ✅ Single camera container ONLY -->
+        <div class="camera-frame" style="position: relative;">
 
+          <!-- ✅ Live camera stream -->
           <img id="liveCam" class="camera-stream" />
-          <canvas id="overlayCanvas"></canvas>
 
+          <!-- ✅ Overlay canvas (draw bounding boxes here) -->
+          <canvas
+            id="overlay"
+            style="position:absolute; top:0; left:0; pointer-events:none;">
+          </canvas>
+
+          <!-- ✅ Placeholder -->
           <div id="camPlaceholder" class="cam-placeholder">
             CAMERA NOT STARTED
           </div>
 
+          <!-- ✅ Result overlay -->
           <div id="cameraResult" class="result-overlay status-unknown">
             WAITING
           </div>
 
         </div>
+
       </div>
 
-      <!-- RIGHT: Operator Control Panel -->
+      <!-- ================= CONTROL PANEL ================= -->
       <div class="panel operator-panel">
 
         <h4>Inspection Control</h4>
 
         <div class="form-block">
 
-          <!-- ✅ Local config selection -->
+          <!-- ✅ Config (local folder) -->
           <label>Config (Local)</label>
           <select id="operatorConfigSelect"></select>
 
@@ -93,10 +102,6 @@
 
   <!-- ======================================================
        ENGINEER VIEW
-       - Create config
-       - Upload model
-       - Define steps
-       - Save → local folder
   ====================================================== -->
   <main class="stage engineer-layout hidden">
 
@@ -107,7 +112,6 @@
 
         <h4>Configs (Local)</h4>
 
-        <!-- ✅ Represents local config folders -->
         <div id="configList" class="config-list"></div>
 
         <div class="config-actions">
@@ -126,11 +130,9 @@
 
         <div class="form-block">
 
-          <!-- ✅ Config name (maps to folder name) -->
           <label>Name</label>
           <input id="configName" />
 
-          <!-- ✅ Model upload -->
           <label>Model (.pt)</label>
           <div class="file-input">
             <input type="file" id="modelFile" accept=".pt" hidden />
@@ -138,12 +140,10 @@
             <span id="fileName">No file selected</span>
           </div>
 
-          <!-- ✅ Model validation state -->
           <div class="hint" id="modelStatus">
             No model loaded
           </div>
 
-          <!-- ✅ Confidence -->
           <label>
             Confidence Threshold
             <span class="hint">(0.00 – 1.00)</span>
@@ -162,13 +162,10 @@
       </div>
 
 
-      <!-- ================= RIGHT PANEL ================= -->
+      <!-- ================= CLASS PANEL ================= -->
       <div class="panel right-top">
-
-        <!-- ✅ Read-only classes from model -->
         <h4>Classes (Read-only)</h4>
         <div id="classList" class="class-view"></div>
-
       </div>
 
 
@@ -176,9 +173,7 @@
       <div class="panel steps-panel">
 
         <div class="steps-header">
-
           <h4>Steps</h4>
-
         </div>
 
         <div class="steps-container">
@@ -196,13 +191,13 @@
 
             <div class="step-editor-body">
 
-              <!-- ✅ Required classes -->
+              <!-- Required -->
               <div class="step-column">
                 <h5>Required</h5>
                 <div class="steps-required class-box"></div>
               </div>
 
-              <!-- ✅ Forbidden classes -->
+              <!-- Forbidden -->
               <div class="step-column">
                 <h5>Forbidden</h5>
                 <div class="steps-forbidden class-box error"></div>

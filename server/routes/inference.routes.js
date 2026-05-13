@@ -1,13 +1,18 @@
 /**
  * ======================================================
- * inference.routes.js — FINAL HARDENED PRODUCTION VERSION
+ * inference.routes.js — FINAL LOCAL‑ONLY VERSION (FIXED)
  * ======================================================
  *
- * ✅ Express routes use PATHS only (no full URLs)
- * ✅ Training server address used ONLY in fetch()
- * ✅ Safe temp file handling
- * ✅ Clear FastAPI error visibility
- * ✅ No feature removed
+ * RESPONSIBILITY:
+ * - Proxy inference status to Python inference server
+ * - Persist inspection runtime state (JSON)
+ * - Handle model class extraction (training-time only)
+ *
+ * DESIGN RULES:
+ * - ❌ NO inference logic in Node
+ * - ❌ NO runInference()
+ * - ✅ Python is the single source of truth
+ * - ✅ Node is HTTP + filesystem boundary only
  */
 
 const express = require("express");
@@ -17,49 +22,70 @@ const multer = require("multer");
 const upload = multer({ dest: "uploads/" });
 
 const fs = require("fs");
+const path = require("path");
 const fetch = require("node-fetch");
 const FormData = require("form-data");
 
-// ✅ centralised training server address
-const { TRAINING_SERVER_BASE } = require("../config/env");
+const { TRAINING_SERVER_BASE, INFERENCE_SERVER_BASE} = require("../config/env");
 
-// ✅ local inference (unchanged)
-const {
-  runInference
-} = require("../services/inference.service");
 
 /* ======================================================
-   INFERENCE STATUS (LOCAL ONLY)
+   RUNTIME INSPECTION STATE PATH (CRITICAL)
+====================================================== */
+
+const INSPECTION_STATE_PATH = path.join(
+  __dirname,
+  "..",
+  "..",
+  "config",
+  "inspection_state.json"
+);
+
+/* ======================================================
+   INFERENCE STATUS (PROXY ONLY)
+   Browser → Node → Python
 ====================================================== */
 
 router.get("/status", async (_req, res) => {
   try {
-    const result = await runInference();
-    res.json(result);
+
+    const response = await fetch(
+      `${INFERENCE_SERVER_BASE}/infer`,
+      { method: "GET" }
+    );
+
+    if (!response.ok) {
+      const text = await response.text();
+      console.error("[INFERENCE PROXY ERROR]", text);
+      return res.status(500).json({
+        status: "ERROR",
+        error: "Inference server error"
+      });
+    }
+
+    const data = await response.json();
+    res.json(data);
 
   } catch (err) {
-    console.error("[INFERENCE ERROR]", err);
+    console.error("[INFERENCE PROXY FAILED]", err);
     res.status(500).json({
       status: "ERROR",
-      error: "Local inference failed"
+      error: "Inference server unavailable"
     });
   }
 });
 
+
 /* ======================================================
-   MODEL CLASS EXTRACTION
-   - Upload via browser
-   - Forward to FastAPI training server
+   MODEL CLASS EXTRACTION (ENGINEER ONLY)
 ====================================================== */
 
 router.post(
-  "/model/classes",            // ✅ PATH ONLY (IMPORTANT)
-  upload.single("model"),      // ✅ frontend must send "model"
+  "/model/classes",
+  upload.single("model"),
   async (req, res) => {
 
-    // ✅ validate upload
     if (!req.file) {
-      console.error("[UPLOAD ERROR] req.file missing");
       return res.status(400).json({
         classes: [],
         error: "No file uploaded"
@@ -67,15 +93,13 @@ router.post(
     }
 
     const filePath = req.file.path;
-    console.log("[UPLOAD RECEIVED]", filePath);
 
     try {
-      // ✅ forward file to FastAPI
       const form = new FormData();
       form.append("file", fs.createReadStream(filePath));
 
       const response = await fetch(
-        `${TRAINING_SERVER_BASE}/model/classes`,   // ✅ CORRECT TARGET
+        `${TRAINING_SERVER_BASE}/model/classes`,
         {
           method: "POST",
           body: form,
@@ -83,11 +107,9 @@ router.post(
         }
       );
 
-      // ✅ FastAPI error visibility
       if (!response.ok) {
         const text = await response.text();
-        console.error("[FASTAPI ERROR]", text);
-
+        console.error("[CLASS EXTRACTION ERROR]", text);
         return res.status(500).json({
           classes: [],
           error: text
@@ -95,29 +117,51 @@ router.post(
       }
 
       const data = await response.json();
-      console.log("[CLASSES RECEIVED]", data.classes);
-
-      res.json({
-        classes: data.classes || []
-      });
+      res.json({ classes: data.classes || [] });
 
     } catch (err) {
       console.error("[MODEL CLASS ERROR]", err);
-
       res.status(500).json({
         classes: [],
-        error: err.message || "Class extraction failed"
+        error: err.message
       });
 
     } finally {
-      // ✅ ALWAYS cleanup temp file
-      fs.unlink(filePath, err => {
-        if (err) {
-          console.warn("[CLEANUP WARNING]", err);
-        }
-      });
+      fs.unlink(filePath, () => {});
     }
   }
 );
+
+/* ======================================================
+   INSPECTION STATE (UI → PYTHON BRIDGE)
+====================================================== */
+
+router.post("/state", (req, res) => {
+  try {
+    const state = req.body;
+
+    if (!state || !state.steps || !state.currentStep) {
+      return res.status(400).json({
+        status: "error",
+        message: "Invalid inspection state"
+      });
+    }
+
+    fs.writeFileSync(
+      INSPECTION_STATE_PATH,
+      JSON.stringify(state, null, 2),
+      "utf-8"
+    );
+
+    res.json({ status: "ok" });
+
+  } catch (err) {
+    console.error("[INSPECTION STATE ERROR]", err);
+    res.status(500).json({
+      status: "error",
+      message: "Failed to save inspection state"
+    });
+  }
+});
 
 module.exports = router;

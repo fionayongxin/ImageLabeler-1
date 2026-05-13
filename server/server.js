@@ -78,7 +78,7 @@ app.use("/api/train", require("./routes/training.routes"));
 app.use("/api/experiments", require("./routes/experiments.routes"));
 app.use("/api/inference", require("./routes/inference.routes"));
 app.use("/api/system", require("./routes/system.routes"));
-app.use("/api/configs", require("./routes/config.routes"));
+app.use("/api/configs", require("./routes/configs.routes"));
 app.use("/thumbs", thumbsRoutes);
 
 /* ======================================================
