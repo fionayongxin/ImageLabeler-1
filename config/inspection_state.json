@@ -1,31 +1,57 @@
 {
-  "configName": "Config_1778490478018",
+  "configName": "Config_1778637461237",
   "confidence": 0.5,
-  "currentStep": "1778653423871",
+  "currentStep": "1778637461237",
   "steps": [
     {
-      "id": "1778490478018",
-      "required": [],
-      "forbidden": []
-    },
-    {
-      "id": "1778653423586",
-      "required": [
-        "T_Bushing"
-      ],
-      "forbidden": [
-        "T_Body"
-      ]
-    },
-    {
-      "id": "1778653423871",
+      "id": "1778637461237",
       "required": [
         "T_2_label",
-        "T_Bushing"
+        "T_Top_view"
       ],
       "forbidden": [
         "T_Body",
-        "T_Hole_Plug"
+        "T_Bushing",
+        "T_SN_label",
+        "T_Missing_Hole_Plug"
+      ]
+    },
+    {
+      "id": "1778637479653",
+      "required": [
+        "T_Missing_Hole_Plug",
+        "T_SN_label"
+      ],
+      "forbidden": [
+        "T_Missing_SN_label",
+        "T_Top_view"
+      ]
+    },
+    {
+      "id": "1778637483269",
+      "required": [
+        "Unassigned"
+      ],
+      "forbidden": [
+        "T_rear_side"
+      ]
+    },
+    {
+      "id": "1778637483452",
+      "required": [
+        "T_Without_Bushing"
+      ],
+      "forbidden": [
+        "T_Top_view"
+      ]
+    },
+    {
+      "id": "1778637483604",
+      "required": [
+        "Unassigned"
+      ],
+      "forbidden": [
+        "T_rear_side"
       ]
     }
   ]

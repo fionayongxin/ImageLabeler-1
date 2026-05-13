@@ -220,11 +220,91 @@ function renderAll() {
   renderOperator();
   renderClasses();
   renderStepClassCheckboxes();
+
+function renderStepClassCheckboxes() {
+  if (!activeConfig || !activeConfig.steps || !activeConfig.classes) return;
+
+  const stepIndex = activeConfig.steps.findIndex(s => s.id === activeStepId);
+  if (stepIndex === -1) return;
+
+  const step = activeConfig.steps[stepIndex];
+
+  step.required = step.required || [];
+  step.forbidden = step.forbidden || [];
+
+  requiredBox.innerHTML = "";
+  forbiddenBox.innerHTML = "";
+
+  activeConfig.classes.forEach(cls => {
+    const reqLabel = document.createElement("label");
+    const reqCb = document.createElement("input");
+    reqCb.type = "checkbox";
+    reqCb.checked = step.required.includes(cls);
+
+    reqCb.onchange = () => {
+      if (reqCb.checked) {
+        step.required = Array.from(new Set([...step.required, cls]));
+        step.forbidden = step.forbidden.filter(c => c !== cls);
+      } else {
+        step.required = step.required.filter(c => c !== cls);
+      }
+      enforceStepHasClass(stepIndex);
+    };
+
+    reqLabel.appendChild(reqCb);
+    reqLabel.append(" " + cls);
+    requiredBox.appendChild(reqLabel);
+
+    const forbLabel = document.createElement("label");
+    const forbCb = document.createElement("input");
+    forbCb.type = "checkbox";
+    forbCb.checked = step.forbidden.includes(cls);
+
+    forbCb.onchange = () => {
+      if (forbCb.checked) {
+        step.forbidden = Array.from(new Set([...step.forbidden, cls]));
+        step.required = step.required.filter(c => c !== cls);
+      } else {
+        step.forbidden = step.forbidden.filter(c => c !== cls);
+      }
+      enforceStepHasClass(stepIndex);
+    };
+
+    forbLabel.appendChild(forbCb);
+    forbLabel.append(" " + cls);
+    forbiddenBox.appendChild(forbLabel);
+  });
+}
+
+async function enforceStepHasClass(stepIndex) {
+  const step = activeConfig.steps[stepIndex];
+  if (!step) return;
+
+  const hasAny =
+    step.required.length > 0 || step.forbidden.length > 0;
+
+  if (!hasAny) {
+    activeConfig.steps.splice(stepIndex, 1);
+
+    if (activeConfig.steps.length === 0) {
+      const id = Date.now().toString();
+      activeConfig.steps.push({ id, required: [], forbidden: [] });
+      activeStepId = id;
+      activeConfig.currentStep = id;
+    } else {
+      activeStepId = activeConfig.steps[0].id;
+      activeConfig.currentStep = activeStepId;
+    }
+  }
+
+  renderAll();
+}
+
+/* ======================================================
 }
 
 /* ======================================================
    STEP CLASS CHECKBOXES
-====================================================== */
 
 function renderStepClassCheckboxes() {
   if (!activeConfig || !activeConfig.steps || !activeConfig.classes) return;
