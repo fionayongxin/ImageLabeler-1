@@ -10,9 +10,9 @@
 
 .camera-preview {
   width: 100%;
-  height: auto;           /* ✅ preserve aspect ratio */
-  object-fit: contain;    /* ✅ no cropping */
-  background: black;      /* optional, makes borders visible */
+  height: auto;   
+  object-fit: contain;   
+  background: black;    
 }
 
 

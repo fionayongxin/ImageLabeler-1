@@ -1,6 +1,5 @@
 /* =========================================================
-   EXPERIMENTS TABLE
-   Primary results table styling
+   EXPERIMENTS TABLE — BASE STRUCTURE
    ========================================================= */
 
 #experimentsTable {
@@ -9,9 +8,16 @@
   color: var(--color-text-primary);
 }
 
-/* Table headers */
-#experimentsTable th {
+/* Shared cell layout */
+#experimentsTable th,
+#experimentsTable td {
+  padding: 20px 12px;
   text-align: left;
+  border-bottom: 1px solid #1f2937;
+}
+
+/* Header styles */
+#experimentsTable th {
   font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.02em;
@@ -20,38 +26,30 @@
   white-space: nowrap;
 }
 
-/* Shared cell spacing */
-#experimentsTable th,
-#experimentsTable td {
-  padding: 20px 12px;
-  text-align: left;
-  border-bottom: 1px solid #1f2937;
-}
-
 /* Body cell typography */
 #experimentsTable td {
   font-size: 13px;
   line-height: 1.35;
-  text-align: left;
   vertical-align: middle;
 }
 
+
 /* =========================================================
    STICKY HEADER
-   Keeps table header visible while scrolling
+   Keeps table header visible during scroll
    ========================================================= */
 
 #experimentsTable thead th {
   position: sticky;
   top: 0;
   z-index: 1;
-  text-align: left;
   background: var(--color-bg-app);
 }
 
 #experimentsTable thead {
   box-shadow: 0 1px 0 rgba(255, 255, 255, 0.04);
 }
+
 
 /* =========================================================
    COLUMN WIDTHS
@@ -76,6 +74,7 @@
   width: 25%;
 }
 
+
 /* =========================================================
    ROW INTERACTIONS
    ========================================================= */
@@ -88,9 +87,10 @@
   background: rgba(255, 255, 255, 0.045);
 }
 
+
 /* =========================================================
-   RUN NAME
-   Truncated with fade indicator
+   RUN NAME (COLUMN 1)
+   Truncated with gradient fade
    ========================================================= */
 
 #experimentsTable td:nth-child(1) {
@@ -109,16 +109,13 @@
   width: 28px;
   height: 100%;
   pointer-events: none;
-  background: linear-gradient(
-    to right,
-    transparent,
-    var(--color-bg-app)
-  );
+  background: linear-gradient(to right, transparent, var(--color-bg-app));
 }
 
 #experimentsTable tbody tr:hover td:nth-child(1)::after {
   opacity: 0;
 }
+
 
 /* =========================================================
    SECONDARY TEXT (DATASET / DATE)
@@ -131,6 +128,7 @@
   opacity: 0.85;
 }
 
+
 /* =========================================================
    NUMERIC COLUMNS
    ========================================================= */
@@ -138,14 +136,14 @@
 #experimentsTable td:nth-child(5),
 #experimentsTable td:nth-child(6),
 #experimentsTable td:nth-child(7) {
-  text-align: left;
   font-size: 12.5px;
+  text-align: left;
   font-variant-numeric: tabular-nums;
 }
 
+
 /* =========================================================
-   STATUS STYLES
-   Color-coded status text
+   STATUS BADGES
    ========================================================= */
 
 .status.Completed {
@@ -162,6 +160,7 @@
   color: #ef4444;
   background: rgba(239, 68, 68, 0.15);
 }
+
 
 /* =========================================================
    ACTIONS COLUMN
@@ -188,8 +187,9 @@
   opacity: 1;
 }
 
+
 /* =========================================================
-   SCROLLABLE WRAPPER
+   TABLE WRAPPER (SCROLL CONTAINER)
    ========================================================= */
 
 .experiments-table-wrapper {
@@ -197,6 +197,7 @@
   min-height: 0;
   overflow-y: auto;
 }
+
 
 /* =========================================================
    PAGINATION CONTROLS
@@ -211,17 +212,20 @@
   margin: 12px auto 0;
   padding: 8px 12px;
 
+  width: fit-content;
+
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid var(--color-border-default);
   border-radius: 999px;
-  width: fit-content;
 }
 
 .table-pagination button {
   min-width: 88px;
   padding: 6px 14px;
+
   font-size: 13px;
   font-weight: 600;
+
   border-radius: 999px;
   transition: background 0.15s ease, transform 0.1s ease;
 }
@@ -249,6 +253,7 @@
 
   border: 1px solid var(--color-border-muted);
   border-radius: 8px;
+
   font-size: 13px;
   text-align: center;
 }
@@ -264,7 +269,7 @@
   appearance: textfield;
 }
 
-/* Explicit go button styling */
+/* Go button (explicit override) */
 #goPage {
   background: #334155;
 }
@@ -272,6 +277,7 @@
 #goPage:hover {
   background: #475569;
 }
+
 
 /* =========================================================
    METRICS PANEL (OVERLAY)
@@ -286,7 +292,7 @@
   padding: 20px;
   border-radius: 12px;
 
-  background:#f0e8d5;
+  background: #f0e8d5;
   border: 1px solid var(--color-border-default);
 
   box-shadow:
@@ -297,7 +303,11 @@
   overflow: hidden;
 }
 
-/* Panel header */
+
+/* =========================================================
+   METRICS HEADER
+   ========================================================= */
+
 .metrics-header {
   display: flex;
   justify-content: space-between;
@@ -308,6 +318,7 @@
   margin: 0;
   color: #111827;
 }
+
 
 /* =========================================================
    METRICS CHARTS
@@ -321,13 +332,14 @@
 }
 
 .chart-card {
-  position: relative; /* required by Chart.js */
+  position: relative; /* required for Chart.js layout */
   height: 320px;
   min-height: 320px;
 }
 
+
 /* =========================================================
-   METRICS SUMMARY
+   METRICS SUMMARY CARDS
    ========================================================= */
 
 .metrics-summary {
@@ -339,6 +351,7 @@
 .metric-card {
   min-width: 120px;
   padding: 12px 16px;
+
   background: #020617;
   border-radius: 8px;
 }
@@ -354,6 +367,7 @@
   color: #38bdf8;
 }
 
+
 /* =========================================================
    MAIN CONTAINER
    ========================================================= */
@@ -365,14 +379,17 @@
   min-height: 0;
 }
 
+
 /* =========================================================
-   SECONDARY BUTTON
+   BUTTONS (SECONDARY)
    ========================================================= */
 
 .btn-secondary {
   padding: 6px 12px;
+
   background: #334155;
   color: var(--color-text-primary);
+
   border: none;
   border-radius: 6px;
   cursor: pointer;

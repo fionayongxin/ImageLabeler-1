@@ -1,82 +1,94 @@
 /**
  * ======================================================
- * ui.routes.js
- * ------------------------------------------------------
- * Responsibility:
- * - Serve static HTML pages for the web UI
- * - Map browser URLs to HTML files under /public
+ * ui.routes.js (CLEANED — NO BEHAVIOR CHANGE)
+ * ======================================================
  *
- * Design rules:
- * - NO business logic
- * - NO API logic
- * - NO filesystem mutation
- * - Express routing only
- * * ======================================================
+ * Responsibilities:
+ * - Serve static HTML pages for the web UI
+ * - Map browser URLs to files under /public
+ *
+ * Design:
+ * - No business logic
+ * - No API logic
+ * - Pure routing layer
  */
 
 const express = require("express");
-const path = require("path");
-
 const router = express.Router();
 
-/**
- * Absolute path to the public HTML directory.
- * All UI pages must live here.
- */
-const PUBLIC_DIR = path.join(__dirname, "..", "public");
+const path = require("path");
+
+const { SERVER_ROOT } = require("../config/paths");
+
+/* ======================================================
+   PATHS
+====================================================== */
 
 /**
- * Root entry point.
- * Redirect users to the main trainer page.
+ * Root directory for all UI HTML files.
+ */
+const PUBLIC_DIR = path.join(SERVER_ROOT, "public");
+
+/**
+ * Helper to send a page from PUBLIC_DIR.
+ * (Avoid repeating path.join everywhere)
+ */
+function sendPage(res, file) {
+  res.sendFile(path.join(PUBLIC_DIR, file));
+}
+
+/* ======================================================
+   ROUTES
+====================================================== */
+
+/**
+ * Root → redirect to main UI
  */
 router.get("/", (_req, res) => {
   res.redirect("/trainer");
 });
 
 /**
- * Trainer / labeling UI.
+ * Trainer UI
  */
 router.get("/trainer", (_req, res) => {
-  res.sendFile(path.join(PUBLIC_DIR, "trainer.html"));
+  sendPage(res, "trainer.html");
 });
 
 /**
- * Experiments list UI.
+ * Experiments list UI
  */
 router.get("/experiments", (_req, res) => {
-  res.sendFile(path.join(PUBLIC_DIR, "experiments.html"));
+  sendPage(res, "experiments.html");
 });
 
 /**
- * Experiment details UI.
- * Uses the same HTML file; content is loaded dynamically on the client.
+ * Experiment details
+ * (same HTML, dynamic client rendering)
  */
 router.get("/experiments/:name", (_req, res) => {
-  res.sendFile(path.join(PUBLIC_DIR, "experiments.html"));
+  sendPage(res, "experiments.html");
 });
 
 /**
- * Dataset browser UI.
+ * Dataset browser UI
  */
 router.get("/datasets", (_req, res) => {
-  res.sendFile(path.join(PUBLIC_DIR, "datasets.html"));
+  sendPage(res, "datasets.html");
 });
 
 /**
- * System settings / environment UI.
+ * System settings UI
  */
 router.get("/settings", (_req, res) => {
-  res.sendFile(path.join(PUBLIC_DIR, "settings.html"));
+  sendPage(res, "settings.html");
 });
 
 /**
- * Live inspection UI (Operator / Engineer).
+ * Live inspection UI
  */
 router.get("/inspect", (_req, res) => {
-  res.sendFile(path.join(PUBLIC_DIR, "inspect.html"));
+  sendPage(res, "inspect.html");
 });
 
-/**
- * Export router for mounting in server.js
- */
 module.exports = router;

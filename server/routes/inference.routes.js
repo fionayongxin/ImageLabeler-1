@@ -1,18 +1,17 @@
 /**
  * ======================================================
- * inference.routes.js — FINAL LOCAL‑ONLY VERSION (FIXED)
+ * inference.routes.js 
  * ======================================================
  *
- * RESPONSIBILITY:
- * - Proxy inference status to Python inference server
+ * Responsibilities:
+ * - Proxy inference status (Node → Python)
  * - Persist inspection runtime state (JSON)
- * - Handle model class extraction (training-time only)
+ * - Forward model class extraction to training server
  *
- * DESIGN RULES:
- * - ❌ NO inference logic in Node
- * - ❌ NO runInference()
- * - ✅ Python is the single source of truth
- * - ✅ Node is HTTP + filesystem boundary only
+ * Design Rules:
+ * - No inference logic in Node
+ * - Python is the single source of truth
+ * - Node handles HTTP + filesystem boundary
  */
 
 const express = require("express");
@@ -22,33 +21,25 @@ const multer = require("multer");
 const upload = multer({ dest: "uploads/" });
 
 const fs = require("fs");
-const path = require("path");
 const fetch = require("node-fetch");
 const FormData = require("form-data");
 
-const { TRAINING_SERVER_BASE, INFERENCE_SERVER_BASE} = require("../config/env");
+const {
+  TRAINING_SERVER_BASE,
+  INFERENCE_SERVER_BASE
+} = require("../config/env");
 
-
-/* ======================================================
-   RUNTIME INSPECTION STATE PATH (CRITICAL)
-====================================================== */
-
-const INSPECTION_STATE_PATH = path.join(
-  __dirname,
-  "..",
-  "..",
-  "config",
-  "inspection_state.json"
-);
+const {
+  INSPECTION_STATE_PATH
+} = require("../config/paths"); 
 
 /* ======================================================
-   INFERENCE STATUS (PROXY ONLY)
+   INFERENCE STATUS (PROXY)
    Browser → Node → Python
 ====================================================== */
 
 router.get("/status", async (_req, res) => {
   try {
-
     const response = await fetch(
       `${INFERENCE_SERVER_BASE}/infer`,
       { method: "GET" }
@@ -56,7 +47,8 @@ router.get("/status", async (_req, res) => {
 
     if (!response.ok) {
       const text = await response.text();
-      console.error("[INFERENCE PROXY ERROR]", text);
+      console.error("[Inference Proxy Error]", text);
+
       return res.status(500).json({
         status: "ERROR",
         error: "Inference server error"
@@ -67,7 +59,8 @@ router.get("/status", async (_req, res) => {
     res.json(data);
 
   } catch (err) {
-    console.error("[INFERENCE PROXY FAILED]", err);
+    console.error("[Inference Proxy Failed]", err);
+
     res.status(500).json({
       status: "ERROR",
       error: "Inference server unavailable"
@@ -77,7 +70,7 @@ router.get("/status", async (_req, res) => {
 
 
 /* ======================================================
-   MODEL CLASS EXTRACTION (ENGINEER ONLY)
+   MODEL CLASS EXTRACTION (ENGINEER)
 ====================================================== */
 
 router.post(
@@ -109,7 +102,8 @@ router.post(
 
       if (!response.ok) {
         const text = await response.text();
-        console.error("[CLASS EXTRACTION ERROR]", text);
+        console.error("[Class Extraction Error]", text);
+
         return res.status(500).json({
           classes: [],
           error: text
@@ -117,20 +111,26 @@ router.post(
       }
 
       const data = await response.json();
-      res.json({ classes: data.classes || [] });
+
+      res.json({
+        classes: data.classes || []
+      });
 
     } catch (err) {
-      console.error("[MODEL CLASS ERROR]", err);
+      console.error("[Model Class Error]", err);
+
       res.status(500).json({
         classes: [],
         error: err.message
       });
 
     } finally {
+      // Cleanup temp upload file
       fs.unlink(filePath, () => {});
     }
   }
 );
+
 
 /* ======================================================
    INSPECTION STATE (UI → PYTHON BRIDGE)
@@ -156,7 +156,8 @@ router.post("/state", (req, res) => {
     res.json({ status: "ok" });
 
   } catch (err) {
-    console.error("[INSPECTION STATE ERROR]", err);
+    console.error("[Inspection State Error]", err);
+
     res.status(500).json({
       status: "error",
       message: "Failed to save inspection state"

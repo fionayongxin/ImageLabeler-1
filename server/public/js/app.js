@@ -1,135 +1,140 @@
 /**
  * ======================================================
- * app.js  (Frontend – Basler Camera, Server‑Side Controlled)
- * ------------------------------------------------------
- * Responsibility:
- * - Display live Basler camera preview (MJPEG stream)
- * - Trigger still image capture via backend
- * - Display latest captured photos
+ * app.js (Frontend – Basler Camera, Server‑Side Controlled)
+ * ======================================================
  *
- * Design principles:
+ * RESPONSIBILITY:
+ * - Display live Basler MJPEG stream (via backend proxy)
+ * - Trigger server-side image capture
+ * - Render latest captured images
+ *
+ * DESIGN CONSTRAINTS:
  * - Browser NEVER accesses camera hardware
  * - Exactly ONE active camera owner (Python / pypylon)
- * - Frontend is view + trigger only
+ * - Frontend is strictly view + trigger layer
  * - Backend API contract is trusted
- * - Filenames / public URLs only
+ * - All image sources are public URLs only
  *
- * Backend endpoints:
+ * BACKEND ENDPOINTS:
  * - POST /api/camera/capture
  * - GET  /api/camera/stream
- * - GET  /api/photos/latest
- * ======================================================
+ * - GET  /api/photos (paginated)
  */
 
 document.addEventListener("DOMContentLoaded", () => {
+
   /* ======================================================
      DOM REFERENCES
-     ------------------------------------------------------
-     NOTE:
-     - `video` ID is intentionally retained for layout
-     - Element must be an <img>, NOT a <video>
-  ====================================================== */
+     ====================================================== */
+
+  // NOTE:
+  // - "video" ID retained for layout compatibility
+  // - Element MUST be <img>, NOT <video>
 
   const livePreview = document.getElementById("video"); // <img>
   const captureBtn = document.getElementById("captureBtn");
-  const captureInfo = document.getElementById("captureInfo");
+  const captureInfo = document.getElementById("captureInfo"); // currently unused but kept
   const latestImagesContainer = document.getElementById("latestImages");
 
+  // Guard clause — prevent runtime errors if DOM is incomplete
   if (!captureBtn || !latestImagesContainer) {
-    console.error("Camera DOM elements missing");
+    console.error("[Camera] Required DOM elements missing");
     return;
   }
 
   /* ======================================================
      LIVE PREVIEW INITIALIZATION
-     ------------------------------------------------------
-     - MJPEG stream provided by Python (Basler)
-     - Proxied via Node at /api/camera/stream
-     - No browser permissions required
-  ====================================================== */
+     ====================================================== */
 
-  if (livePreview) {
+  function initLivePreview() {
+    if (!livePreview) return;
+
     livePreview.src = "/api/camera/stream";
     livePreview.alt = "Basler Live Preview";
     livePreview.loading = "eager";
   }
 
   /* ======================================================
-     STILL IMAGE CAPTURE (BASLER)
-     ------------------------------------------------------
-     - Capture is executed SERVER‑SIDE
-     - Browser only sends trigger command
-     - Capture button is locked during operation
-  ====================================================== */
+     CAPTURE PHOTO (SERVER-SIDE TRIGGER)
+     ====================================================== */
 
-async function capturePhoto() {
-  captureBtn.disabled = true;
+  async function capturePhoto() {
+    captureBtn.disabled = true;
 
-  try {
-    const response = await fetch("/api/camera/capture", {
-      method: "POST"
-    });
+    try {
+      const response = await fetch("/api/camera/capture", {
+        method: "POST"
+      });
 
-    if (!response.ok) {
-      throw new Error("Basler capture failed");
+      if (!response.ok) {
+        throw new Error("Basler capture failed");
+      }
+
+      // Refresh latest images after successful capture
+      await loadLatestImages();
+
+    } catch (err) {
+      console.error("[Camera Capture Error]", err);
+    } finally {
+      captureBtn.disabled = false;
     }
-
-    await loadLatestImages();
-
-  } catch (err) {
-    console.error(err);
-  } finally {
-    captureBtn.disabled = false;
   }
-}
 
   /* ======================================================
-     LATEST IMAGES VIEW
-     ------------------------------------------------------
-     - Backend returns PUBLIC URLs only
-     - Frontend never touches filesystem
-  ====================================================== */
+     LOAD LATEST IMAGES
+     ====================================================== */
 
-async function loadLatestImages(limit = 2) {
-  const res = await fetch(`/api/photos?page=1&limit=${limit}`);
-  if (!res.ok) return;
+  async function loadLatestImages(limit = 2) {
+    try {
+      const res = await fetch(`/api/photos?page=1&limit=${limit}`);
+      if (!res.ok) return;
 
-  const data = await res.json();
-  const images = data.images || [];
+      const data = await res.json();
+      const images = data.images || [];
 
-  latestImagesContainer.innerHTML = "";
-  const frag = document.createDocumentFragment();
+      // Clear existing thumbnails
+      latestImagesContainer.innerHTML = "";
 
+      const fragment = document.createDocumentFragment();
 
-  images.forEach(src => {
-    const img = document.createElement("img");
+      images.forEach(src => {
+        const img = document.createElement("img");
 
-    img.src = `${src}?t=${Date.now()}`; 
+        // Cache-busting (force reload of latest image)
+        img.src = `${src}?t=${Date.now()}`;
 
-    img.onclick = () =>
-      window.open(src.replace("/thumbs/", "/"), "_blank");
+        // Open full image (replace thumbnail path)
+        img.onclick = () => {
+          window.open(src.replace("/thumbs/", "/"), "_blank");
+        };
 
-    img.onerror = () => {
-      console.warn("[Camera] Thumbnail removed (file missing):", src);
-      img.remove();
-    };
+        // Remove invalid / broken thumbnails
+        img.onerror = () => {
+          console.warn("[Camera] Thumbnail missing:", src);
+          img.remove();
+        };
 
-    frag.appendChild(img);
-  });
+        fragment.appendChild(img);
+      });
 
+      latestImagesContainer.appendChild(fragment);
 
-  latestImagesContainer.appendChild(frag);
-}
+    } catch (err) {
+      console.error("[Latest Images Error]", err);
+    }
+  }
 
   /* ======================================================
      EVENT BINDINGS
-  ====================================================== */
+     ====================================================== */
 
   captureBtn.addEventListener("click", capturePhoto);
 
   /* ======================================================
-     INITIAL LOAD
-  ====================================================== */
+     INITIALIZATION
+     ====================================================== */
 
+  initLivePreview();
   loadLatestImages();
+
 });

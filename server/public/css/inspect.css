@@ -1,12 +1,13 @@
 /* ======================================================
    GLOBAL RESET
-====================================================== */
+   ====================================================== */
 
 * {
   box-sizing: border-box;
 }
 
-html, body {
+html,
+body {
   height: 100%;
   margin: 0;
   overflow: hidden;
@@ -21,7 +22,7 @@ body {
 
 /* ======================================================
    APP LAYOUT
-====================================================== */
+   ====================================================== */
 
 .app-root {
   height: 100%;
@@ -40,60 +41,59 @@ body {
 
 /* ======================================================
    HEADER
-====================================================== */
-.header-right {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-
-.login-user {
-  font-size: 13px;
-  color: #ffffff;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  padding: 6px 12px;
-  border-radius: 999px;
-  white-space: nowrap;
-  height: 32px;
-  display: flex;
-  align-items: center;
-}
+   ====================================================== */
 
 .app-header {
   height: 48px;
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
   padding: 0 20px;
   gap: 12px;
 }
 
-.header-left {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-width: 0;
-}
-
+.header-left,
 .header-right {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-left: auto;
 }
 
+.header-left {
+  min-width: 0;
+}
+
+.header-right {
+  margin-left: auto;
+}
 
 .app-title {
   font-size: 14px;
   font-weight: 600;
 }
 
+.login-user {
+  display: flex;
+  align-items: center;
+
+  height: 32px;
+  padding: 6px 12px;
+
+  border-radius: 999px;
+
+  font-size: 13px;
+  color: #ffffff;
+
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+
+  white-space: nowrap;
+}
+
 
 /* ======================================================
-   TABS
-====================================================== */
+   NAV TABS
+   ====================================================== */
 
 .top-tabs {
   display: flex;
@@ -103,10 +103,13 @@ body {
 .top-tab {
   height: 24px;
   padding: 0 12px;
+
   border-radius: 999px;
   border: 1px solid #1f2937;
+
   background: #020617;
   color: #9ca3af;
+
   font-size: 12px;
   cursor: pointer;
 }
@@ -118,20 +121,21 @@ body {
 
 
 /* ======================================================
-   STATUS
-====================================================== */
-
+   STATUS INDICATORS
+   ====================================================== */
 
 .status-pill {
-  height: 32px;
-  padding: 0 12px;
-  border-radius: 999px;
   display: flex;
   align-items: center;
+
+  height: 32px;
+  padding: 0 12px;
+
+  border-radius: 999px;
+
   font-size: 12px;
   font-weight: 700;
 }
-
 
 .status-pass    { background: #14532d; }
 .status-fail    { background: #78350f; }
@@ -139,12 +143,14 @@ body {
 
 
 /* ======================================================
-   OPERATOR VIEW
-====================================================== */
+   OPERATOR VIEW (CAMERA)
+   ====================================================== */
+
 .camera-frame {
   position: relative;
   width: 100%;
   aspect-ratio: 16 / 9;
+
   background: #020617;
   border-radius: 14px;
   overflow: hidden;
@@ -156,32 +162,39 @@ body {
   object-fit: contain;
 }
 
+/* Overlay canvas for detections */
 #overlayCanvas {
   position: absolute;
   inset: 0;
 }
 
+/* Camera placeholder before stream loads */
 .cam-placeholder {
   position: absolute;
   inset: 0;
+
   display: grid;
   place-items: center;
+
   color: #6b7280;
 }
 
+/* Bottom-right result badge */
 .result-overlay {
   position: absolute;
   right: 16px;
   bottom: 16px;
+
   padding: 6px 14px;
   border-radius: 999px;
+
   font-weight: 700;
 }
 
 
 /* ======================================================
-   ENGINEER GRID
-====================================================== */
+   ENGINEER GRID LAYOUT
+   ====================================================== */
 
 .engineer-grid {
   display: grid;
@@ -196,18 +209,19 @@ body {
 
 
 /* ======================================================
-   PANEL BASE
-====================================================== */
+   PANEL SYSTEM
+   ====================================================== */
 
 .panel {
-  background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
-  border-radius: 12px;
-  border: 1px solid #1f2937;
-  padding: 10px 12px;
-
   display: flex;
   flex-direction: column;
   min-height: 0;
+
+  padding: 10px 12px;
+
+  border-radius: 12px;
+  border: 1px solid #1f2937;
+  background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
 }
 
 .panel h4 {
@@ -217,9 +231,7 @@ body {
 }
 
 
-/* ======================================================
-   PANEL POSITIONING
-====================================================== */
+/* Panel positioning in grid */
 
 .left-panel {
   grid-row: 1 / span 2;
@@ -246,8 +258,8 @@ body {
 
 
 /* ======================================================
-   FORM STRUCTURE
-====================================================== */
+   FORMS & INPUTS
+   ====================================================== */
 
 .form-block {
   display: flex;
@@ -260,21 +272,20 @@ label {
   margin: 4px 0 2px;
 }
 
-
-/* ======================================================
-   INPUTS
-====================================================== */
-
 .center-panel input {
   width: 100%;
   height: 32px;
+
+  padding: 0 8px;
+
   border-radius: 8px;
   border: 1px solid #1f2937;
+
   background: #020617;
   color: white;
-  padding: 0 8px;
 }
 
+/* Range slider styling */
 .center-panel input[type="range"] {
   accent-color: #2563eb;
 }
@@ -282,41 +293,42 @@ label {
 
 /* ======================================================
    FILE INPUT
-====================================================== */
+   ====================================================== */
 
 .file-input {
   display: flex;
   align-items: center;
   gap: 8px;
 
-  background: #020617;
-  border: 1px solid #1f2937;
-  border-radius: 8px;
-
   padding: 6px 8px;
+
+  border-radius: 8px;
+  border: 1px solid #1f2937;
+  background: #020617;
 }
 
 #fileBtn {
   height: 28px;
   padding: 0 10px;
-  border-radius: 6px;
   font-size: 12px;
+  border-radius: 6px;
 }
 
 #fileName {
+  max-width: 160px;
+
   font-size: 12px;
   color: #9ca3af;
 
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 160px;
 }
 
 
 /* ======================================================
    CONFIG LIST
-====================================================== */
+   ====================================================== */
 
 .config-list {
   flex: 1;
@@ -339,15 +351,15 @@ label {
 
 
 /* ======================================================
-   CONFIG ACTIONS (BOTTOM DISTRIBUTED)
-====================================================== */
+   CONFIG ACTIONS
+   ====================================================== */
 
 .config-actions {
   display: flex;
   flex-direction: column;
   gap: 6px;
 
-  margin-top: auto;   
+  margin-top: auto;
 }
 
 .config-actions button {
@@ -356,18 +368,19 @@ label {
 
 
 /* ======================================================
-   CLASSES PANEL
-====================================================== */
+   CLASS LIST PANEL
+   ====================================================== */
 
 .class-view {
   flex: 1;
   overflow-y: auto;
 
-  background: #020617;
-  border: 1px solid #1f2937;
-  border-radius: 8px;
-
   padding: 8px;
+
+  border-radius: 8px;
+  border: 1px solid #1f2937;
+
+  background: #020617;
 }
 
 .class-item {
@@ -381,8 +394,8 @@ label {
 
 
 /* ======================================================
-   STEPS HEADER (GRID ALIGNED)
-====================================================== */
+   STEPS SYSTEM (LAYOUT + EDITOR)
+   ====================================================== */
 
 .steps-header {
   display: grid;
@@ -412,9 +425,7 @@ label {
 }
 
 
-/* ======================================================
-   STEPS CONTENT
-====================================================== */
+/* Steps layout */
 
 .steps-container {
   display: grid;
@@ -470,8 +481,8 @@ label {
 
 
 /* ======================================================
-   REQUIRED / FORBIDDEN
-====================================================== */
+   REQUIRED / FORBIDDEN SECTIONS
+   ====================================================== */
 
 .step-column {
   display: flex;
@@ -489,11 +500,12 @@ label {
   flex: 1;
   overflow-y: auto;
 
-  background: #020617;
-  border: 1px solid #1f2937;
-  border-radius: 8px;
-
   padding: 6px;
+
+  border-radius: 8px;
+  border: 1px solid #1f2937;
+
+  background: #020617;
 }
 
 .class-box.error {
@@ -509,14 +521,17 @@ label {
 
 /* ======================================================
    BUTTONS
-====================================================== */
+   ====================================================== */
 
 button {
   height: 32px;
+
   border-radius: 8px;
   border: none;
+
   background: #2563eb;
   color: white;
+
   font-size: 12px;
   cursor: pointer;
 }
@@ -529,16 +544,26 @@ button.danger {
   background: #dc2626;
 }
 
+
+/* ======================================================
+   FORM STATES & HELPERS
+   ====================================================== */
+
 .hint {
+  margin-left: 6px;
   font-size: 11px;
   color: #9ca3af;
-  margin-left: 6px;
 }
 
 input.invalid {
-  border-color: #dc2626;
   background: rgba(220, 38, 38, 0.08);
+  border-color: #dc2626;
 }
+
+
+/* ======================================================
+   OPERATOR PANEL LAYOUT
+   ====================================================== */
 
 .operator-grid {
   display: grid;
@@ -561,16 +586,19 @@ input.invalid {
   font-size: 14px;
 }
 
-/* ======================================================
-   OPERATOR UI UPGRADE
-====================================================== */
 
-/* ✅ BIG STATUS */
+/* ======================================================
+   OPERATOR UI — VISUAL COMPONENTS
+   ====================================================== */
+
+/* Large status indicator */
 .big-status {
   margin: 10px 0 14px;
   padding: 18px;
+
   border-radius: 12px;
   text-align: center;
+
   font-size: 22px;
   font-weight: 800;
   letter-spacing: 1px;
@@ -592,26 +620,28 @@ input.invalid {
 }
 
 
-/* ✅ STEP CARD */
+/* Step card */
+
 .step-card {
-  background: #020617;
-  border: 1px solid #1f2937;
-  border-radius: 10px;
   padding: 10px;
+  border-radius: 10px;
+
+  border: 1px solid #1f2937;
+  background: #020617;
 }
 
 /* Step title */
 .step-title {
-  font-weight: 700;
-  font-size: 16px;
   margin-bottom: 10px;
+  font-size: 16px;
+  font-weight: 700;
 }
 
 /* Section label */
 .step-label {
+  margin-bottom: 4px;
   font-size: 12px;
   opacity: 0.7;
-  margin-bottom: 4px;
 }
 
 /* Group spacing */
@@ -620,7 +650,8 @@ input.invalid {
 }
 
 
-/* ✅ TAG STYLE (classes) */
+/* Tags */
+
 .tag-container {
   display: flex;
   flex-wrap: wrap;
@@ -628,11 +659,13 @@ input.invalid {
 }
 
 .tag {
-  background: #1e293b;
-  border: 1px solid #1f2937;
   padding: 4px 8px;
-  border-radius: 6px;
   font-size: 12px;
+
+  border-radius: 6px;
+  border: 1px solid #1f2937;
+
+  background: #1e293b;
 }
 
 /* Forbidden highlight */

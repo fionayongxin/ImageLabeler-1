@@ -1,16 +1,42 @@
+/**
+ * ======================================================
+ * thumbs.routes.js
+ * ======================================================
+ *
+ * Responsibilities:
+ * - Serve thumbnails for photos and datasets
+ * - Generate thumbnails on demand (lazy)
+ *
+ * Design:
+ * - No business logic here (only file + transform)
+ * - Uses Sharp for thumbnail generation
+ * - Centralized filesystem paths from paths.js
+ */
+
 const express = require("express");
+const router = express.Router();
+
 const fs = require("fs");
 const path = require("path");
 const sharp = require("sharp");
 
-const router = express.Router();
+const {
+  PHOTOS_DIR,
+  DATASET_ROOT
+} = require("../config/paths"); 
+
+/* ======================================================
+   CONSTANTS
+====================================================== */
+
 const THUMB_SIZE = 256;
 
 /* ======================================================
-   HELPER
+   HELPER: GENERATE THUMBNAIL IF NEEDED
 ====================================================== */
 
 async function ensureThumb(fullImagePath, thumbPath) {
+  // Full image missing → cleanup thumb if exists
   if (!fs.existsSync(fullImagePath)) {
     if (fs.existsSync(thumbPath)) {
       fs.unlinkSync(thumbPath);
@@ -18,14 +44,17 @@ async function ensureThumb(fullImagePath, thumbPath) {
     return false;
   }
 
+  // Thumbnail already exists
   if (fs.existsSync(thumbPath)) {
     return true;
   }
 
+  // Ensure directory exists
   fs.mkdirSync(path.dirname(thumbPath), { recursive: true });
 
+  // Generate thumbnail
   await sharp(fullImagePath)
-    .resize(256, 256, { fit: "inside" })
+    .resize(THUMB_SIZE, THUMB_SIZE, { fit: "inside" })
     .jpeg({ quality: 70 })
     .toFile(thumbPath);
 
@@ -40,32 +69,26 @@ async function ensureThumb(fullImagePath, thumbPath) {
 router.get("/photos/:image", async (req, res) => {
   const { image } = req.params;
 
-  const fullImagePath = path.join(
-    __dirname,
-    "..",
-    "..",
-    "server",
-    "photos",
-    image
-  );
+  const fullImagePath = path.join(PHOTOS_DIR, image);
 
   const thumbPath = path.join(
-    __dirname,
-    "..",
-    "..",
-    "server",
-    "photos",
+    PHOTOS_DIR,
     "thumbs",
     image
   );
 
   try {
     const ok = await ensureThumb(fullImagePath, thumbPath);
-    if (!ok) return res.status(404).send("Image not found");
+
+    if (!ok) {
+      return res.status(404).send("Image not found");
+    }
 
     res.sendFile(thumbPath);
+
   } catch (err) {
     console.error("[Thumbs][Photos]", err);
+
     res.status(500).send("Thumbnail error");
   }
 });
@@ -79,10 +102,7 @@ router.get("/datasets/:station/:process/:image", async (req, res) => {
   const { station, process, image } = req.params;
 
   const fullImagePath = path.join(
-    __dirname,
-    "..",
-    "..",
-    "datasets",
+    DATASET_ROOT,
     station,
     process,
     "images",
@@ -90,19 +110,28 @@ router.get("/datasets/:station/:process/:image", async (req, res) => {
   );
 
   const thumbPath = path.join(
-    __dirname,
-    "..",
-    "..",
-    "datasets",
+    DATASET_ROOT,
     station,
     process,
     "images",
     "thumbs",
     image
   );
-  const ok = await ensureThumb(fullImagePath, thumbPath);
-  if (!ok) return res.status(404).send("Image not found");
-  res.sendFile(thumbPath);
+
+  try {
+    const ok = await ensureThumb(fullImagePath, thumbPath);
+
+    if (!ok) {
+      return res.status(404).send("Image not found");
+    }
+
+    res.sendFile(thumbPath);
+
+  } catch (err) {
+    console.error("[Thumbs][Datasets]", err);
+
+    res.status(500).send("Thumbnail error");
+  }
 });
 
 module.exports = router;

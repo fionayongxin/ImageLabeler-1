@@ -1,20 +1,24 @@
 /**
  * ======================================================
- * file.safe.js
- * ------------------------------------------------------
- * Responsibility:
- * - Safe filesystem helpers
- * - Centralize common fs patterns
- *
- * Design rules:
- * - NO Express
- * - NO business logic
- * - Small, reusable, predictable helpers
+ * file.safe.js 
  * ======================================================
+ *
+ * Responsibilities:
+ * - Provide safe filesystem helper functions
+ * - Centralize common fs operations
+ *
+ * Design:
+ * - No Express usage
+ * - No business logic
+ * - Small, reusable, predictable helpers
  */
 
 const fs = require("fs");
 const path = require("path");
+
+/* ======================================================
+   ENSURE DIRECTORY
+====================================================== */
 
 /**
  * Ensure a directory exists (mkdir -p behavior).
@@ -27,8 +31,13 @@ function ensureDir(dirPath) {
   }
 }
 
+/* ======================================================
+   MOVE FILE (SAFE)
+====================================================== */
+
 /**
- * Safely move a file (rename).
+ * Move (rename) a file safely.
+ * Ensures destination directory exists.
  *
  * @param {string} from
  * @param {string} to
@@ -38,8 +47,12 @@ function moveFileSafe(from, to) {
   fs.renameSync(from, to);
 }
 
+/* ======================================================
+   DELETE FILE (SAFE)
+====================================================== */
+
 /**
- * Safely delete a file if it exists.
+ * Delete a file if it exists.
  *
  * @param {string} filePath
  */

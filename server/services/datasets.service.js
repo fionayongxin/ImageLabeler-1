@@ -1,14 +1,33 @@
 /**
  * ======================================================
- * datasets.service.js (FIXED - LOCAL ONLY)
+ * datasets.service.js
  * ======================================================
+ *
+ * Responsibilities:
+ * - Fetch dataset images from training server
+ * - Return paginated result with thumbnail URLs
+ *
+ * Design:
+ * - Training server is the source of truth
+ * - Backend acts as proxy/formatter only
  */
 
 const fetch = require("node-fetch");
+
 const { TRAINING_SERVER_BASE } = require("../config/env");
 
+/* ======================================================
+   LIST DATASET IMAGES (PAGINATED)
+====================================================== */
+
 /**
- * Paginated dataset images (via training server)
+ * Fetch paginated dataset images.
+ *
+ * @param {string} station
+ * @param {string} process
+ * @param {number} page
+ * @param {number} limit
+ * @returns {{ total: number, images: string[] }}
  */
 async function listDatasetImagesPaged(
   station,
@@ -16,7 +35,7 @@ async function listDatasetImagesPaged(
   page = 1,
   limit = 24
 ) {
-
+  // Defensive guard (no query if identity missing)
   if (!station || !process) {
     return { total: 0, images: [] };
   }
@@ -36,9 +55,9 @@ async function listDatasetImagesPaged(
 
   const data = await res.json();
 
-  const images = (data.images || []).map(
-    name =>
-      `${TRAINING_SERVER_BASE}/datasets/${station}/${process}/images/thumbs/${name}`
+  // Convert image names → thumbnail URLs
+  const images = (data.images || []).map(name =>
+    `${TRAINING_SERVER_BASE}/datasets/${station}/${process}/images/thumbs/${name}`
   );
 
   return {

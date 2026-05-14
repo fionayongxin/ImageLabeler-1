@@ -1,5 +1,6 @@
-/* =========================================================/* ========================================================= LABELER PAGE
-========================================================= */
+/* =========================================================
+   LABELER PAGE — ROOT CONTAINER
+   ========================================================= */
 
 .page-labeler {
   height: 100vh;
@@ -8,9 +9,10 @@
   color: #e5e7eb;
 }
 
+
 /* =========================================================
    MAIN LAYOUT
-========================================================= */
+   ========================================================= */
 
 .page-labeler .labeler-layout {
   display: grid;
@@ -18,15 +20,18 @@
   height: 100%;
 }
 
+
 /* =========================================================
-   LEFT PANEL: THUMBNAILS
-========================================================= */
+   LEFT PANEL — THUMBNAILS
+   ========================================================= */
 
 .page-labeler .thumb-panel {
-  background: #020617;
   padding: 12px;
   overflow-y: auto;
+  background: #020617;
 }
+
+/* Thumbnail grid */
 
 #thumbs {
   display: grid;
@@ -41,34 +46,44 @@
   cursor: pointer;
 }
 
+/* Active thumbnail highlight */
+
 #thumbs img.active {
   outline: 2px solid #2563eb;
   outline-offset: -2px;
 }
 
+
 /* =========================================================
-   RIGHT PANEL: WORK AREA
-========================================================= */
+   RIGHT PANEL — WORK AREA
+   ========================================================= */
 
 .page-labeler .work-panel {
   padding: 16px;
-  overflow: visible; /* Changed from hidden to prevent clipping */
+
+  /* Prevent clipping of overlays while maintaining layout */
+  overflow: visible;
 }
+
+
+/* Workspace grid: image + side controls */
 
 .page-labeler .label-workspace {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 300px;
   gap: 24px;
+
   height: calc(100vh - 64px);
 }
 
+
 /* =========================================================
    IMAGE + CANVAS CONTAINER
-   ✅ ONE STACKING CONTEXT
-========================================================= */
+   Single stacking context for alignment
+   ========================================================= */
 
 .page-labeler .label-container {
-  position: relative; /* Needed so the overlay canvas can align to the image */
+  position: relative;
   z-index: 0;
 
   width: 100%;
@@ -80,32 +95,36 @@
 
   background: black;
   overflow: visible;
-  
+
   user-select: none;
   -webkit-user-select: none;
 }
 
+
 /* =========================================================
-   IMAGE (STATIC, NON-INTERACTIVE)
-========================================================= */
+   IMAGE (STATIC LAYER)
+   ========================================================= */
 
 .page-labeler .label-container img#image {
   position: static;
   z-index: 1;
 
   display: block;
+
   max-width: 100%;
   max-height: 100%;
+
   width: auto;
   height: auto;
 
-  /* CRITICAL: image must NOT receive mouse events */
+  /* Critical: prevent mouse interaction (canvas handles events) */
   pointer-events: none;
 }
 
+
 /* =========================================================
-   CANVAS OVERLAY (INTERACTIVE)
-========================================================= */
+   CANVAS OVERLAY (INTERACTIVE LAYER)
+   ========================================================= */
 
 .page-labeler .label-container canvas#overlay {
   position: absolute;
@@ -114,16 +133,19 @@
 
   z-index: 10;
 
-  /* JS controls actual interactivity via mode */
-  pointer-events: auto;
   display: block;
+
+  /* Interaction controlled dynamically by JS */
+  pointer-events: auto;
+
   user-select: none;
   -webkit-user-select: none;
 }
 
+
 /* =========================================================
    CANVAS INTERACTION MODES
-========================================================= */
+   ========================================================= */
 
 canvas.read-mode {
   cursor: default;
@@ -135,20 +157,21 @@ canvas.draw-mode {
   pointer-events: auto;
 }
 
+
 /* =========================================================
-   CONTROLS PANEL
-========================================================= */
+   CONTROLS PANEL (RIGHT SIDE)
+   ========================================================= */
 
 .page-labeler .label-controls {
-  background: #020617;
-  border-left: 1px solid #334155;
-  padding: 20px;
-
   display: flex;
   flex-direction: column;
   gap: 20px;
 
   height: 100%;
+  padding: 20px;
+
+  background: #020617;
+  border-left: 1px solid #334155;
 }
 
 .page-labeler select,
@@ -161,13 +184,15 @@ canvas.draw-mode {
 .page-labeler label {
   display: block;
   margin-bottom: 8px;
-  font-weight: 500;
+
   font-size: 14px;
+  font-weight: 500;
 }
+
 
 /* =========================================================
    MODE TOGGLE
-========================================================= */
+   ========================================================= */
 
 .mode-toggle {
   display: flex;
@@ -178,18 +203,22 @@ canvas.draw-mode {
   flex: 1;
 }
 
+/* Active / disabled share same visual style */
+
 .mode-toggle button.active,
 .mode-toggle button:disabled {
   background: #2563eb;
   color: #fff;
   border: none;
+
   opacity: 0.6;
   cursor: not-allowed;
 }
 
+
 /* =========================================================
    SAVE BUTTON
-========================================================= */
+   ========================================================= */
 
 #saveYoloBtn {
   height: 44px;
@@ -202,9 +231,10 @@ canvas.draw-mode {
   cursor: not-allowed;
 }
 
+
 /* =========================================================
    STATUS OUTPUT
-========================================================= */
+   ========================================================= */
 
 #status {
   margin-top: auto;
@@ -212,14 +242,6 @@ canvas.draw-mode {
   color: #94a3b8;
 }
 
-.status-success {
-  color: #22c55e;
-}
-
-.status-warning {
-  color: #fbbf24;
-}
-
-.status-error {
-  color: #ef4444;
-}
+.status-success { color: #22c55e; }
+.status-warning { color: #fbbf24; }
+.status-error   { color: #ef4444; }

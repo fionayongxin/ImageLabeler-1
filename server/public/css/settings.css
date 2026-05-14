@@ -2,23 +2,35 @@
    SETTINGS PAGE LAYOUT (LOCAL ONLY)
    Purpose:
    - Prevent body-level scrolling
-   - Allow internal scrolling within settings content
-   - Hide scrollbar visually while preserving scroll behavior
+   - Enable internal scrolling within settings content
+   - Hide scrollbar visually while preserving functionality
    ========================================================= */
 
 /* Main scrollable container */
 .trainer-container {
-  height: calc(100vh - 56px); /* must match navbar height */
+  height: calc(100vh - 56px); /* Must match navbar height */
   overflow-y: auto;
 
-  /* Prevent layout shift from scrollbars */
+  /* Prevent layout shift when scrollbar appears */
   scrollbar-gutter: stable;
 
   padding: 24px;
   max-width: 1100px;
   margin: 0 auto;
   box-sizing: border-box;
+
+  /* Firefox: hide scrollbar but keep scrolling */
+  scrollbar-width: none;
 }
+
+
+/* WebKit-based browsers (Chrome, Edge, Safari) */
+.trainer-container::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  background: transparent;
+}
+
 
 /* =========================================================
    HEADINGS
@@ -26,9 +38,11 @@
 
 /* Page title */
 .trainer-container h1 {
+  margin-bottom: 20px;
+
   font-size: 28px;
   font-weight: 600;
-  margin-bottom: 20px;
+
   color: #e5e7eb;
 }
 
@@ -44,6 +58,7 @@
   border-bottom: 1px solid #1f2937;
 }
 
+
 /* =========================================================
    KEY / VALUE PANELS
    ========================================================= */
@@ -52,19 +67,21 @@
   margin-bottom: 16px;
   padding: 14px 16px;
 
-  background: #020617;
-  border: 1px solid #1f2937;
   border-radius: 8px;
+  border: 1px solid #1f2937;
+  background: #020617;
 
   font-family: monospace;
   font-size: 13px;
 }
+
 
 /* Individual key-value row */
 .settings-row {
   display: grid;
   grid-template-columns: minmax(140px, 200px) 1fr;
   gap: 12px;
+
   padding: 6px 0;
 }
 
@@ -81,23 +98,8 @@
 /* Value column */
 .settings-value {
   color: #e5e7eb;
+
+  /* Prevent long values from breaking layout */
   overflow-wrap: anywhere;
   word-break: break-word;
-}
-
-/* =========================================================
-   SCROLLBAR HANDLING
-   Keep scrolling functional but visually hidden
-   ========================================================= */
-
-/* Chromium-based browsers */
-.trainer-container::-webkit-scrollbar {
-  width: 0;
-  height: 0;
-  background: transparent;
-}
-
-/* Firefox */
-.trainer-container {
-  scrollbar-width: none;
 }

@@ -2,26 +2,28 @@
  * ======================================================
  * yolo.service.js
  * ======================================================
- * Responsibility:
- * - YOLO labeling business logic
- * - Build YOLO labels
- * - Upload labeled image + label to training server
- * - Delete local image ONLY after server ACK
- * - Provide class list for UI from dataset.yaml
  *
- * IMPORTANT:
- * - Dataset images are persisted on SERVER via HTTP
- * - dataset.yaml is still read locally for class names
- * ======================================================
+ * Responsibilities:
+ * - Handle YOLO labeling logic
+ * - Build YOLO label format
+ * - Upload labeled image + label to training server
+ * - Delete local image only after successful upload
+ * - Provide dataset classes for frontend
+ *
+ * Design:
+ * - Dataset images persist on training server
+ * - Local PC holds temporary captured images only
+ * - dataset.yaml (classes) retrieved via server API
  */
 
 const fs = require("fs");
 const path = require("path");
+
 const fetch = require("node-fetch");
 const FormData = require("form-data");
 const sharp = require("sharp");
 
-const { PHOTOS_DIR, DATASET_ROOT } = require("../config/paths");
+const { PHOTOS_DIR } = require("../config/paths");
 const { buildYoloFile } = require("../utils/yolo.format");
 const { deleteFileSafe } = require("../utils/file.safe");
 
@@ -31,6 +33,13 @@ const { TRAINING_SERVER_BASE } = require("../config/env");
    CLASS LOADING
 ====================================================== */
 
+/**
+ * Fetch class list from training server.
+ *
+ * @param {string} station
+ * @param {string} process
+ * @returns {Promise<string[]>}
+ */
 async function getClasses(station, process) {
   if (!station || !process) {
     throw new Error("Missing station or process");
@@ -52,9 +61,12 @@ async function getClasses(station, process) {
 }
 
 /* ======================================================
-   SERVER UPLOAD
+   UPLOAD TO TRAINING SERVER
 ====================================================== */
 
+/**
+ * Upload image + label + thumbnail to training server.
+ */
 async function uploadToTrainingServer({
   imagePath,
   imageName,
@@ -67,11 +79,15 @@ async function uploadToTrainingServer({
   form.append("station", station);
   form.append("process", process);
 
+  /* -------- full image -------- */
+
   form.append(
     "image",
     fs.createReadStream(imagePath),
     imageName
   );
+
+  /* -------- label file -------- */
 
   form.append(
     "label",
@@ -81,10 +97,12 @@ async function uploadToTrainingServer({
       contentType: "text/plain"
     }
   );
-  
+
+  /* -------- thumbnail -------- */
+
   const thumbBuffer = await sharp(imagePath)
-    .resize(320)          // width 320px (auto height)
-    .jpeg({ quality: 60 }) // compress
+    .resize(320)                // fixed width (auto height)
+    .jpeg({ quality: 60 })      // lightweight compression
     .toBuffer();
 
   form.append(
@@ -114,9 +132,12 @@ async function uploadToTrainingServer({
 }
 
 /* ======================================================
-   SAVE YOLO (HTTP‑BASED, FACTORY SAFE)
+   SAVE YOLO LABEL
 ====================================================== */
 
+/**
+ * Process and upload YOLO labeling payload.
+ */
 async function saveYolo(payload) {
   const {
     image,
@@ -128,6 +149,7 @@ async function saveYolo(payload) {
     process
   } = payload;
 
+  // Basic validation
   if (
     !image ||
     !width ||
@@ -140,9 +162,12 @@ async function saveYolo(payload) {
   }
 
   const srcImagePath = path.join(PHOTOS_DIR, image);
+
   if (!fs.existsSync(srcImagePath)) {
     throw new Error("Source image not found on PC");
   }
+
+  /* -------- build label text -------- */
 
   const labelText = buildYoloFile(
     boxes,
@@ -150,6 +175,8 @@ async function saveYolo(payload) {
     width,
     height
   ).join("\n");
+
+  /* -------- upload to server -------- */
 
   try {
     await uploadToTrainingServer({
@@ -159,22 +186,27 @@ async function saveYolo(payload) {
       station,
       process
     });
+
   } catch (err) {
-    console.error("[UPLOAD] Failed:", err.message);
+    console.error("[YOLO Upload Failed]", err.message);
 
     throw new Error("Upload failed, image kept on PC");
   }
 
-  // ---- delete ONLY after server ACK ----
+  /* -------- delete after server ACK -------- */
+
   deleteFileSafe(srcImagePath);
 
   return { status: "ok" };
 }
 
 /* ======================================================
-   UNDO (NOT SUPPORTED AFTER SERVER SAVE)
+   UNDO (NOT SUPPORTED)
 ====================================================== */
 
+/**
+ * Undo not supported due to server-side persistence.
+ */
 function undoLastSave() {
   throw new Error(
     "Undo is not supported after server persistence"

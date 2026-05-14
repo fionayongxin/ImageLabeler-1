@@ -1,26 +1,29 @@
 /**
  * ======================================================
- * settings.js
- * ------------------------------------------------------
- * Responsibility:
- * - Load system / environment diagnostics from backend
- * - Render key‑value information into settings panels
- *
- * Design rules:
- * - Frontend is read‑only
- * - Backend is single source of truth
- *
- * Aligned backend endpoint:
- * - GET /api/system
+ * settings.js 
  * ======================================================
+ * Responsibilities:
+ * - Fetch system / environment diagnostics
+ * - Render structured key-value panels
+ *
+ * Design:
+ * - Read-only frontend
+ * - Backend is the single source of truth
+ *
+ * Endpoint:
+ * - GET /api/system
  */
 
+
 /* ======================================================
-   RENDER KEY‑VALUE DATA
+   RENDER UTILITIES
 ====================================================== */
 
 /**
- * Render an object as key‑value rows into a container.
+ * Render a key-value object into a container.
+ *
+ * Each key becomes a row:
+ * [key] | [value]
  *
  * @param {string} containerId
  * @param {Object} data
@@ -29,45 +32,54 @@ function renderKeyValue(containerId, data) {
   const container = document.getElementById(containerId);
   if (!container) return;
 
+  // Clear existing content
   container.innerHTML = "";
 
+  // Validate input
   if (!data || typeof data !== "object") {
     container.textContent = "-";
     return;
   }
 
+  // Render each key-value pair
   Object.entries(data).forEach(([key, value]) => {
     const row = document.createElement("div");
     row.className = "settings-row";
 
-    const k = document.createElement("div");
-    k.className = "settings-key";
-    k.textContent = key;
+    const keyEl = document.createElement("div");
+    keyEl.className = "settings-key";
+    keyEl.textContent = key;
 
-    const v = document.createElement("div");
-    v.className = "settings-value";
-    v.textContent =
+    const valueEl = document.createElement("div");
+    valueEl.className = "settings-value";
+
+    valueEl.textContent =
       value === null || value === undefined
         ? "-"
         : String(value);
 
-    row.appendChild(k);
-    row.appendChild(v);
+    row.appendChild(keyEl);
+    row.appendChild(valueEl);
+
     container.appendChild(row);
   });
 }
 
+
 /* ======================================================
-   LOAD SETTINGS FROM BACKEND
+   DATA LOADING
 ====================================================== */
 
 /**
- * Load system diagnostics and populate settings panels.
+ * Fetch system diagnostics and populate UI panels.
  */
 async function loadSettings() {
   try {
     const res = await fetch("/api/system");
-    if (!res.ok) throw new Error("Request failed");
+
+    if (!res.ok) {
+      throw new Error("Request failed");
+    }
 
     const data = await res.json();
 
@@ -75,14 +87,16 @@ async function loadSettings() {
     renderKeyValue("envInfo", data.environment);
 
   } catch (err) {
-    console.error(err);
+    console.error("[Settings Load Error]", err);
 
     const systemInfo = document.getElementById("systemInfo");
+
     if (systemInfo) {
       systemInfo.textContent = "Failed to load system information.";
     }
   }
 }
+
 
 /* ======================================================
    INIT

@@ -1,15 +1,34 @@
 /**
  * ======================================================
- * photos.service.js  (UNIFIED – NO THUMB LOGIC)
+ * photos.service.js
  * ======================================================
+ *
+ * Responsibilities:
+ * - Store captured images
+ * - Provide paginated listing
+ * - Handle deletion (full + thumbnail)
+ *
+ * Design:
+ * - Filesystem is source of truth
+ * - No thumbnail generation here (handled elsewhere)
  */
 
 const fs = require("fs");
 const path = require("path");
+
 const { PHOTOS_DIR } = require("../config/paths");
+
+/* ======================================================
+   CONSTANTS
+====================================================== */
 
 const IMAGE_REGEX = /\.(png|jpg|jpeg)$/i;
 
+/* ======================================================
+   INITIALIZATION
+====================================================== */
+
+// Ensure photos directory exists at startup
 if (!fs.existsSync(PHOTOS_DIR)) {
   fs.mkdirSync(PHOTOS_DIR, { recursive: true });
 }
@@ -18,14 +37,22 @@ if (!fs.existsSync(PHOTOS_DIR)) {
    PAGINATED LISTING
 ====================================================== */
 
+/**
+ * List photos with pagination.
+ *
+ * @param {number} page
+ * @param {number} limit
+ * @returns {{ total: number, images: string[] }}
+ */
 function listPhotosPaged(page = 1, limit = 24) {
-  
+
   const files = fs
     .readdirSync(PHOTOS_DIR)
     .filter(name => IMAGE_REGEX.test(name))
-    .sort((a, b) => b.localeCompare(a)); 
+    .sort((a, b) => b.localeCompare(a)); // newest first
 
   const total = files.length;
+
   const start = (page - 1) * limit;
   const slice = files.slice(start, start + limit);
 
@@ -36,12 +63,21 @@ function listPhotosPaged(page = 1, limit = 24) {
 }
 
 /* ======================================================
-   SAVE PHOTO (FULL IMAGE ONLY)
+   SAVE PHOTO
 ====================================================== */
 
+/**
+ * Save base64 image to disk.
+ *
+ * @param {string} base64Image
+ * @returns {{ filename: string, url: string }}
+ */
 async function savePhoto(base64Image) {
   const match = base64Image.match(/^data:image\/\w+;base64,(.+)$/);
-  if (!match) throw new Error("Invalid image");
+
+  if (!match) {
+    throw new Error("Invalid image");
+  }
 
   const buffer = Buffer.from(match[1], "base64");
 
@@ -57,12 +93,23 @@ async function savePhoto(base64Image) {
 }
 
 /* ======================================================
-   DELETE
+   DELETE PHOTO
 ====================================================== */
 
+/**
+ * Delete photo and its corresponding thumbnail.
+ *
+ * @param {string} imageName
+ * @returns {{ success: boolean }}
+ */
 function deletePhoto(imageName) {
   const fullPath = path.join(PHOTOS_DIR, imageName);
-  const thumbPath = path.join(PHOTOS_DIR, "thumbs", imageName);
+
+  const thumbPath = path.join(
+    PHOTOS_DIR,
+    "thumbs",
+    imageName
+  );
 
   if (fs.existsSync(fullPath)) {
     fs.unlinkSync(fullPath);

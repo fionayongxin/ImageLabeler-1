@@ -1,27 +1,43 @@
 /**
  * ======================================================
- * system.service.js
- and environment diagnostics * ------------------------------------------------------
+ * system.service.js 
+ * ======================================================
+ *
+ * Responsibilities:
+ * - Provide system and environment diagnostics
  * - Read-only access to runtime information
  *
- * Design rules:
- * - NO Express / HTTP handling
- * - NO filesystem mutation
- * - NO business logic
+ * Design:
+ * - No Express / HTTP handling
+ * - No filesystem mutation
+ * - No business logic
  *
- * This service is used by system.routes.js.
- * ======================================================
+ * Used by:
+ * - system.routes.js
  */
 
 const os = require("os");
 const { execSync } = require("child_process");
 
+/* ======================================================
+   SYSTEM INFORMATION
+====================================================== */
+
 /**
  * Gather system and environment information.
  *
  * @returns {{
- *   system: { hostname, platform, arch, node },
- *   environment: { python, yolo, cuda }
+ *   system: {
+ *     hostname: string,
+ *     platform: string,
+ *     arch: string,
+ *     node: string
+ *   },
+ *   environment: {
+ *     python: string,
+ *     yolo: string,
+ *     cuda: boolean
+ *   }
  * }}
  */
 function getSystemInfo() {
@@ -29,18 +45,35 @@ function getSystemInfo() {
   let yolo = "unknown";
   let cuda = false;
 
-  try {
-    python = execSync("python --version").toString().trim();
-  } catch {}
+  /* -------- Python version -------- */
 
   try {
-    yolo = execSync("yolo version").toString().trim();
-  } catch {}
+    python = execSync("python --version")
+      .toString()
+      .trim();
+  } catch {
+    // keep default "unknown"
+  }
+
+  /* -------- YOLO version -------- */
 
   try {
+    yolo = execSync("yolo version")
+      .toString()
+      .trim();
+  } catch {
+    // keep default "unknown"
+  }
+
+  /* -------- CUDA availability -------- */
+
+  try {
+    // If command succeeds, CUDA (NVIDIA driver) is present
     execSync("nvidia-smi", { stdio: "ignore" });
     cuda = true;
-  } catch {}
+  } catch {
+    // GPU not available or not configured → false
+  }
 
   return {
     system: {

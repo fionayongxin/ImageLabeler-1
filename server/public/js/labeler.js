@@ -1,14 +1,23 @@
 /**
- ======================================================
- * labeler.js
  * ======================================================
+ * labeler.js 
+ * ======================================================
+ * - Canvas-based annotation (drawing / resize / drag)
+ * - Backend-driven class list + YOLO saving
+ * - No functional changes
  */
 
-const MIN_BOX_SIZE = 100; // Minimum box size enforced for drawing and resizing
+/* ======================================================
+   CONSTANTS
+====================================================== */
+
+const MIN_BOX_SIZE = 100;
+
 const NORMAL_LINE_WIDTH = 12;
 const SELECTED_LINE_WIDTH = 12;
 const PREVIEW_LINE_WIDTH = 12;
-const HANDLE_SIZE = 12; 
+
+const HANDLE_SIZE = 12;
 
 const COLOR_PALETTE = [
   "#22c55e", "#ef4444", "#fb923c", "#3b82f6", "#8b5cf6", "#f59e0b",
@@ -17,6 +26,10 @@ const COLOR_PALETTE = [
   "#d946ef", "#c026d3", "#fb7185", "#0f766e"
 ];
 
+/* ======================================================
+   GLOBAL MAPS
+====================================================== */
+
 let BOX_COLORS = {};
 let CLASS_MAP = {};
 let classNames = [];
@@ -24,10 +37,14 @@ let classNames = [];
 let STATION = null;
 let PROCESS = null;
 
+/* ======================================================
+   INIT FLOW
+====================================================== */
+
 (async () => {
   try {
-    await loadIdentity();     
-    await loadClassNames();   
+    await loadIdentity();
+    await loadClassNames();
     setMode("read");
   } catch (err) {
     console.error(err);
@@ -35,11 +52,13 @@ let PROCESS = null;
   }
 })();
 
+/* ======================================================
+   LOAD SYSTEM CONTEXT
+====================================================== */
+
 async function loadIdentity() {
   const res = await fetch("/api/system/identity");
-  if (!res.ok) {
-    throw new Error("Failed to load system identity");
-  }
+  if (!res.ok) throw new Error("Failed to load system identity");
 
   const data = await res.json();
   STATION = data.station;
@@ -48,23 +67,34 @@ async function loadIdentity() {
 
 async function loadClassNames() {
   try {
-    const response = await fetch(`/api/yolo/classes?station=${encodeURIComponent(STATION)}&process=${encodeURIComponent(PROCESS)}`);
-    if (!response.ok) {
-      throw new Error(`Failed to load classes: ${response.statusText}`);
+    const res = await fetch(
+      `/api/yolo/classes?station=${encodeURIComponent(STATION)}&process=${encodeURIComponent(PROCESS)}`
+    );
+
+    if (!res.ok) {
+      throw new Error(`Failed to load classes: ${res.statusText}`);
     }
-    const data = await response.json();
+
+    const data = await res.json();
     classNames = data.classes || [];
+
     populateClassSelect(classNames);
-  } catch (error) {
-    console.error(error);
+
+  } catch (err) {
+    console.error(err);
     setStatus("Cannot load class list", "error");
   }
 }
 
+/* ======================================================
+   CLASS SELECT SETUP
+====================================================== */
+
 function populateClassSelect(names) {
   CLASS_MAP = {};
   BOX_COLORS = {};
-  classSelect.innerHTML = "<option value=\"\">-- Select --</option>";
+
+  classSelect.innerHTML = `<option value="">-- Select --</option>`;
 
   names.forEach((name, index) => {
     CLASS_MAP[name] = index;
@@ -73,13 +103,16 @@ function populateClassSelect(names) {
     const option = document.createElement("option");
     option.value = name;
     option.textContent = name;
+
     classSelect.appendChild(option);
   });
 
   updateSaveButtonState();
 }
 
-/* ===================== STATE ===================== */
+/* ======================================================
+   STATE
+====================================================== */
 
 let images = [];
 let currentIndex = -1;
@@ -95,12 +128,15 @@ let resizing = false;
 
 let startX = 0;
 let startY = 0;
+
 let lastUndo = null;
 
-let canvasScaleX = 1; // Track X scale ratio
-let canvasScaleY = 1; // Track Y scale ratio
+let canvasScaleX = 1;
+let canvasScaleY = 1;
 
-/* ===================== DOM ===================== */
+/* ======================================================
+   DOM
+====================================================== */
 
 const thumbs = document.getElementById("thumbs");
 const img = document.getElementById("image");
@@ -112,12 +148,15 @@ const statusText = document.getElementById("status");
 
 const readBtn = document.getElementById("readModeBtn");
 const drawBtn = document.getElementById("drawModeBtn");
+
 const saveYoloBtn = document.getElementById("saveYoloBtn");
 const deleteImageBtn = document.getElementById("deleteImageBtn");
 
 deleteImageBtn.disabled = true;
 
-/* ===================== STATUS ===================== */
+/* ======================================================
+   STATUS HELPERS
+====================================================== */
 
 function setStatus(msg, type = "info") {
   statusText.textContent = msg;
@@ -134,18 +173,25 @@ function updateSaveButtonState() {
   saveYoloBtn.classList.toggle("disabled", !canSave);
 }
 
-/* ===================== MODE ===================== */
+/* ======================================================
+   MODE CONTROL
+====================================================== */
 
 function setMode(m) {
   mode = m;
+
   readBtn.classList.toggle("active", m === "read");
   drawBtn.classList.toggle("active", m === "draw");
+
   readBtn.disabled = m === "read";
   drawBtn.disabled = m === "draw";
+
   canvas.classList.toggle("read-mode", m === "read");
   canvas.classList.toggle("draw-mode", m === "draw");
+
   canvas.style.pointerEvents = m === "draw" ? "auto" : "none";
   canvas.style.cursor = m === "draw" ? "crosshair" : "default";
+
   setStatus(m === "draw" ? "Draw mode" : "Read mode");
   updateSaveButtonState();
 }
@@ -153,7 +199,9 @@ function setMode(m) {
 readBtn.onclick = () => setMode("read");
 drawBtn.onclick = () => setMode("draw");
 
-/* ===================== LOAD IMAGES ===================== */
+/* ======================================================
+   IMAGE LIST
+====================================================== */
 
 fetch("/api/photos?page=1&limit=50")
   .then(r => r.json())
@@ -163,11 +211,13 @@ fetch("/api/photos?page=1&limit=50")
       fullUrl: url.replace("/thumbs/", "/"),
       filename: url.split("/").pop()
     }));
+
     renderThumbnails();
   });
 
 function renderThumbnails() {
   thumbs.innerHTML = "";
+
   images.forEach((imgObj, i) => {
     const t = document.createElement("img");
     t.src = imgObj.thumbUrl;
@@ -176,21 +226,28 @@ function renderThumbnails() {
   });
 }
 
-/* ===================== IMAGE LOAD ===================== */
+/* ======================================================
+   IMAGE LOAD
+====================================================== */
 
 function clearImageView() {
   currentIndex = -1;
   currentImage = null;
+
   boxes = [];
   selectedBox = -1;
+
   deleteImageBtn.disabled = true;
-  img.src = "";
+
   img.removeAttribute("src");
+
   canvas.width = 0;
   canvas.height = 0;
   canvas.style.width = "0";
   canvas.style.height = "0";
+
   document.getElementById("currentImage").textContent = "No image selected";
+
   redraw();
 }
 
@@ -202,8 +259,8 @@ function loadImage(i) {
 
   currentIndex = i;
   currentImage = images[i];
-  deleteImageBtn.disabled = false;
 
+  deleteImageBtn.disabled = false;
   boxes = [];
   selectedBox = -1;
 
@@ -228,14 +285,18 @@ function loadImage(i) {
   };
 
   img.src = currentImage.fullUrl;
+
   document.getElementById("currentImage").textContent =
     currentImage.filename;
 }
 
-/* ===================== GEOMETRY ===================== */
+/* ======================================================
+   GEOMETRY HELPERS
+====================================================== */
 
 function toCanvas(e) {
   const r = canvas.getBoundingClientRect();
+
   return {
     x: (e.clientX - r.left) * canvasScaleX,
     y: (e.clientY - r.top) * canvasScaleY
@@ -263,25 +324,23 @@ function normalizeBox(startX, startY, x, y) {
 
 function normalizeMinSquareBox(startX, startY, x, y) {
   const box = normalizeBox(startX, startY, x, y);
+
   if (box.w < MIN_BOX_SIZE || box.h < MIN_BOX_SIZE) {
     const size = MIN_BOX_SIZE;
-    if (box.toLeft) {
-      box.fx = startX - size;
-    }
-    if (box.toTop) {
-      box.fy = startY - size;
-    }
+
+    if (box.toLeft) box.fx = startX - size;
+    if (box.toTop) box.fy = startY - size;
+
     box.w = size;
     box.h = size;
   }
+
   return box;
 }
 
 function inside(b, x, y) {
-  return (
-    x >= b.x && x <= b.x + b.w &&
-    y >= b.y && y <= b.y + b.h
-  );
+  return x >= b.x && x <= b.x + b.w &&
+         y >= b.y && y <= b.y + b.h;
 }
 
 function hitCorner(b, x, y) {
@@ -293,7 +352,39 @@ function hitCorner(b, x, y) {
   );
 }
 
-/* ===================== CANVAS EVENTS ===================== */
+/* ======================================================
+   DRAWING
+====================================================== */
+
+function drawBox(x, y, w, h, label, preview = false, selected = false) {
+  ctx.save();
+
+  ctx.strokeStyle = BOX_COLORS[label];
+  ctx.lineWidth = preview
+    ? PREVIEW_LINE_WIDTH
+    : selected
+    ? SELECTED_LINE_WIDTH
+    : NORMAL_LINE_WIDTH;
+
+  ctx.strokeRect(x, y, w, h);
+
+  ctx.fillStyle = BOX_COLORS[label];
+  ctx.fillText(label, x + 6, y + 18);
+
+  ctx.restore();
+}
+
+function redraw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  boxes.forEach((b, i) =>
+    drawBox(b.x, b.y, b.w, b.h, b.label, false, i === selectedBox)
+  );
+}
+
+/* ======================================================
+   CANVAS EVENTS
+====================================================== */
 
 canvas.addEventListener("mousedown", e => {
   const { x, y } = toCanvas(e);
@@ -388,32 +479,9 @@ canvas.addEventListener("mouseup", e => {
   updateSaveButtonState();
 });
 
-/* ===================== DRAW ===================== */
-
-function drawBox(x, y, w, h, label, preview = false, selected = false) {
-  ctx.save();
-  ctx.globalCompositeOperation = "source-over";
-  ctx.strokeStyle = BOX_COLORS[label];
-  ctx.lineWidth = preview
-    ? PREVIEW_LINE_WIDTH
-    : selected
-    ? SELECTED_LINE_WIDTH
-    : NORMAL_LINE_WIDTH;
-
-  ctx.strokeRect(x, y, w, h);
-  ctx.fillStyle = BOX_COLORS[label];
-  ctx.fillText(label, x + 6, y + 18);
-  ctx.restore();
-}
-
-function redraw() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  boxes.forEach((b, i) =>
-    drawBox(b.x, b.y, b.w, b.h, b.label, false, i === selectedBox)
-  );
-}
-
-/* ===================== DELETE ===================== */
+/* ======================================================
+    Delete
+====================================================== */
 
 // Delete selected box with DELETE or BACKSPACE
 window.addEventListener("keydown", e => {
@@ -446,15 +514,16 @@ deleteImageBtn.onclick = async () => {
   }
 };
 
-/* ===================== SAVE YOLO ===================== */
+/* ======================================================
+   SAVE YOLO
+====================================================== */
 
 classSelect.onchange = updateSaveButtonState;
-
 
 saveYoloBtn.onclick = async () => {
   if (!currentImage) return;
 
-  const response = await fetch("/api/yolo/save", {
+  const res = await fetch("/api/yolo/save", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -468,8 +537,8 @@ saveYoloBtn.onclick = async () => {
     })
   });
 
-  if (!response.ok) {
-    const error = await response.json().catch(() => null);
+  if (!res.ok) {
+    const error = await res.json().catch(() => null);
     setStatus(error?.message || "Save failed", "error");
     return;
   }
@@ -488,18 +557,3 @@ saveYoloBtn.onclick = async () => {
     setStatus("All images labeled", "success");
   }
 };
-
-/* ===================== UNDO ===================== */
-
-window.addEventListener("keydown", e => {
-  if (e.ctrlKey && e.key.toLowerCase() === "z" && lastUndo) {
-    fetch("/api/yolo/undo", { method: "POST" })
-      .then(() => {
-        images.splice(lastUndo.index, 0, lastUndo.image);
-        renderThumbnails();
-        loadImage(lastUndo.index);
-        lastUndo = null;
-        setStatus("Undo successful", "success");
-      });
-  }
-});

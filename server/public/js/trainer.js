@@ -1,24 +1,14 @@
 /**
  * ======================================================
  * trainer.js
- * ------------------------------------------------------
- * Responsibility:
+ * ======================================================
+ * Responsibilities:
  * - Configure and start training
  * - Poll training progress
  * - Render loss and mAP charts
  * - Stop training gracefully
  *
- * Design rules:
- * - Frontend never spawns processes
- * - Backend owns training lifecycle
- * - Frontend polls status only
- *
- * Aligned backend endpoints:
- * - POST /api/train/start
- * - POST /api/train/stop
- * - GET  /api/train/progress
- * - GET  /api/train/metrics
- * ======================================================
+ * Backend owns training lifecycle — frontend only polls
  */
 
 /* ======================================================
@@ -48,28 +38,25 @@ let mapChart  = null;
 let STATION = null;
 let PROCESS = null;
 
-
 /* ======================================================
    HELPERS
 ====================================================== */
 
 /**
- * Generate a unique experiment name using user inputs.
- *
- * @returns {string}
+ * Generate a unique experiment name.
  */
-
 function generateExperimentName() {
   const model = modelSelect.value.replace(".pt", "");
-  const ts = new Date().toISOString().slice(0,19).replace(/[:T]/g, "-");
+  const ts = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
   return `${model}_${ts}`;
 }
 
+/**
+ * Load system identity (station / process).
+ */
 async function loadIdentity() {
   const res = await fetch("/api/system/identity");
-  if (!res.ok) {
-    throw new Error("Failed to load system identity");
-  }
+  if (!res.ok) throw new Error("Failed to load system identity");
 
   const data = await res.json();
 
@@ -87,16 +74,17 @@ async function loadIdentity() {
    INITIALIZATION
 ====================================================== */
 
-// Pre‑fill run name on page load
+// Generate initial run name
 runNameInput.value = generateExperimentName();
 
-// Regenerate run name when model changes (only if idle)
+// Regenerate name when model changes (only when idle)
 modelSelect.addEventListener("change", () => {
   if (!currentRunName) {
     runNameInput.value = generateExperimentName();
   }
 });
 
+// Load system context
 (async () => {
   try {
     await loadIdentity();
@@ -106,9 +94,8 @@ modelSelect.addEventListener("change", () => {
   }
 })();
 
-
 /* ======================================================
-   LOSS CHART
+   CHART INITIALIZATION
 ====================================================== */
 
 function initLossChart() {
@@ -141,10 +128,6 @@ function initLossChart() {
     }
   });
 }
-
-/* ======================================================
-   MAP CHART
-====================================================== */
 
 function initMapChart() {
   const canvas = document.getElementById("mapChart");
@@ -198,9 +181,8 @@ function stopProgressPolling() {
 }
 
 /**
- * Poll backend for training progress and update UI.
+ * Poll training progress and update UI.
  */
-
 async function updateProgress() {
   let res;
 
@@ -214,13 +196,14 @@ async function updateProgress() {
 
   const data = await res.json();
 
-  /* ---------------- Idle ---------------- */
+  /* ---------- IDLE ---------- */
   if (data.status === "idle") {
     progressBar.style.width = "0%";
     progressText.textContent = "Idle";
     if (progressFile) progressFile.textContent = "–";
 
     stopProgressPolling();
+
     startBtn.disabled = false;
     stopBtn.disabled = true;
 
@@ -229,24 +212,25 @@ async function updateProgress() {
     return;
   }
 
-  /* ---------------- Starting ---------------- */
+  /* ---------- STARTING ---------- */
   if (data.status === "starting") {
     progressBar.style.width = "1%";
     progressText.textContent = "Starting training…";
+
     if (progressFile) {
       progressFile.textContent = "Preparing training files…";
     }
     return;
   }
 
-  /* ---------------- Stopping ---------------- */
+  /* ---------- STOPPING ---------- */
   if (data.status === "stopping") {
     progressText.textContent = "Stopping training…";
     stopBtn.disabled = true;
     return;
   }
 
-  /* ---------------- Running ---------------- */
+  /* ---------- RUNNING ---------- */
   if (data.status === "running") {
     await updateCharts();
 
@@ -262,6 +246,7 @@ async function updateProgress() {
       progressText.textContent = "Training completed";
 
       stopProgressPolling();
+
       startBtn.disabled = false;
       stopBtn.disabled = true;
 
@@ -270,7 +255,6 @@ async function updateProgress() {
     }
   }
 }
-
 
 /* ======================================================
    START TRAINING
@@ -285,10 +269,12 @@ startBtn.onclick = async () => {
   startBtn.disabled = true;
   stopBtn.disabled = false;
 
+  // Reset UI
   progressBar.style.width = "1%";
   progressText.textContent = "Starting training…";
   if (progressFile) progressFile.textContent = "–";
-  
+
+  // Reset charts
   if (lossChart) {
     lossChart.destroy();
     lossChart = null;
@@ -306,12 +292,12 @@ startBtn.onclick = async () => {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      station: STATION,         
-      process: PROCESS,      
+      station: STATION,
+      process: PROCESS,
       model: modelSelect.value,
       epochs: Number(document.getElementById("epochs").value),
-      imgsz:  Number(document.getElementById("imgsz").value),
-      batch:  Number(document.getElementById("batch").value),
+      imgsz: Number(document.getElementById("imgsz").value),
+      batch: Number(document.getElementById("batch").value),
       runName: currentRunName
     })
   });
@@ -324,19 +310,18 @@ startBtn.onclick = async () => {
 ====================================================== */
 
 stopBtn.onclick = async () => {
-
   stopBtn.disabled = true;
   progressText.textContent = "Stopping training…";
 
   try {
-    const res = await fetch("/api/train/stop", { method: "POST" });
+    await fetch("/api/train/stop", { method: "POST" });
   } catch (err) {
     console.error("Stop fetch failed", err);
   }
 };
 
 /* ======================================================
-   METRICS UPDATE (LOSS + MAP)
+   METRICS UPDATE
 ====================================================== */
 
 async function updateCharts() {
@@ -390,6 +375,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       startProgressPolling();
     }
+
   } catch (err) {
     console.error("Failed to restore training state", err);
   }

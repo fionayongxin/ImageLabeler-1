@@ -1,19 +1,22 @@
 /**
- *=====
- * yolo.format.js
- * ------------------------------------------------------
- * Responsibility:
- * - Pure utilities for YOLO bounding box formatting
- * - Convert absolute pixel boxes to YOLO normalized format
- * - Build YOLO label file lines
- *
- * Design rules:
- * - NO filesystem
- * - NO Express
- * - NO side effects
- * - Deterministic input → output
  * ======================================================
+ * yolo.format.js
+ * ======================================================
+ *
+ * Responsibilities:
+ * - Convert pixel-based bounding boxes to YOLO format
+ * - Build YOLO label lines and files
+ *
+ * Design:
+ * - No filesystem access
+ * - No Express usage
+ * - No side effects
+ * - Deterministic input → output
  */
+
+/* ======================================================
+   NORMALIZATION
+====================================================== */
 
 /**
  * Convert absolute bounding box to YOLO normalized values.
@@ -32,8 +35,15 @@ function toYoloNormalized(box, imgW, imgH) {
   };
 }
 
+/* ======================================================
+   SINGLE LINE BUILDER
+====================================================== */
+
 /**
- * Build a single YOLO label line.
+ * Build a YOLO label line.
+ *
+ * Format:
+ * classId xc yc w h
  *
  * @param {number} classId
  * @param {{ x:number, y:number, w:number, h:number }} box
@@ -42,7 +52,13 @@ function toYoloNormalized(box, imgW, imgH) {
  * @param {number} precision
  * @returns {string}
  */
-function buildYoloLine(classId, box, imgW, imgH, precision = 6) {
+function buildYoloLine(
+  classId,
+  box,
+  imgW,
+  imgH,
+  precision = 6
+) {
   const { xc, yc, w, h } = toYoloNormalized(box, imgW, imgH);
 
   return [
@@ -54,8 +70,12 @@ function buildYoloLine(classId, box, imgW, imgH, precision = 6) {
   ].join(" ");
 }
 
+/* ======================================================
+   FILE BUILDER
+====================================================== */
+
 /**
- * Build YOLO label file content from boxes.
+ * Build YOLO label file lines.
  *
  * @param {Array<{ x:number, y:number, w:number, h:number, label:string }>} boxes
  * @param {{ [label:string]: number }} classMap
@@ -67,8 +87,18 @@ function buildYoloFile(boxes, classMap, imgW, imgH) {
   return boxes
     .map(box => {
       const classId = classMap[box.label];
-      if (classId === undefined) return null;
-      return buildYoloLine(classId, box, imgW, imgH);
+
+      // Skip unknown labels
+      if (classId === undefined) {
+        return null;
+      }
+
+      return buildYoloLine(
+        classId,
+        box,
+        imgW,
+        imgH
+      );
     })
     .filter(Boolean);
 }

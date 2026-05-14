@@ -1,22 +1,17 @@
 /**
  * ======================================================
- * experiments.js
- * ------------------------------------------------------
- * Responsibility:
+ * experiments.js (CLEANED — NO BEHAVIOR CHANGE)
+ * ======================================================
+ * Responsibilities:
  * - List training experiments
- * - Support pagination
- * - Display metrics (loss / mAP) in overlay
- * - Download trained weights
+ * - Handle pagination
+ * - Display metrics overlay (loss / mAP)
+ * - Download weights
  *
- * Design rules:
- * - Frontend NEVER inspects filesystem
- * - Backend APIs are the source of truth
- *
- * Aligned backend endpoints:
+ * Backend APIs:
  * - GET /api/experiments
  * - GET /api/experiments/:runName/metrics
  * - GET /api/experiments/:runName/weights
- * ======================================================
  */
 
 /* ======================================================
@@ -30,13 +25,12 @@ const PAGE_SIZE = 10;
 let lossChart = null;
 let mapChart = null;
 
-
 /* ======================================================
    DATA LOADING
 ====================================================== */
 
 /**
- * Load all experiment metadata from backend.
+ * Load experiment list and sort by latest start time.
  */
 async function loadExperiments() {
   const res = await fetch("/api/experiments");
@@ -44,22 +38,23 @@ async function loadExperiments() {
 
   allExperiments = await res.json();
 
+  // Sort by newest first
   allExperiments.sort((a, b) => {
     const t1 = new Date(a.startedAt || 0).getTime();
     const t2 = new Date(b.startedAt || 0).getTime();
     return t2 - t1;
   });
-    currentPage = 1;
+
+  currentPage = 1;
   renderPage();
 }
-
 
 /* ======================================================
    TABLE RENDERING
 ====================================================== */
 
 /**
- * Render the current page slice into the table body.
+ * Render current page slice into table.
  */
 function renderPage() {
   const tbody = document.querySelector("#experimentsTable tbody");
@@ -96,7 +91,6 @@ function renderPage() {
       <td>${exp.imgsz ?? "-"}</td>
       <td>${startedAt}</td>
       <td>${actions.join(" ")}</td>
-      
     `;
 
     tbody.appendChild(tr);
@@ -106,10 +100,7 @@ function renderPage() {
 }
 
 /**
- * Format timestamp to human‑readable string.
- *
- * @param {string} iso
- * @returns {string}
+ * Format ISO timestamp to readable string.
  */
 function formatDate(iso) {
   const d = new Date(iso);
@@ -126,7 +117,6 @@ function formatDate(iso) {
 
   return `${day}/${month}/${year} ${hours}:${minutes} ${ampm}`;
 }
-
 
 /* ======================================================
    PAGINATION UI
@@ -146,15 +136,12 @@ function updatePaginationUI() {
   document.getElementById("nextPage").disabled = currentPage === totalPages;
 }
 
-
 /* ======================================================
    METRICS OVERLAY
 ====================================================== */
 
 /**
- * Fetch and display metrics for a specific run.
- *
- * @param {string} runName
+ * Load and display metrics for a run.
  */
 async function showMetrics(runName) {
   const panel = document.getElementById("metricsPanel");
@@ -189,7 +176,6 @@ function closeMetrics() {
   document.getElementById("metricsBackdrop").style.display = "none";
 }
 
-
 /* ======================================================
    CHART RENDERING
 ====================================================== */
@@ -198,6 +184,7 @@ function drawLossChart(data) {
   if (lossChart) lossChart.destroy();
 
   const ctx = document.getElementById("lossChart").getContext("2d");
+
   lossChart = new Chart(ctx, {
     type: "line",
     data: {
@@ -220,6 +207,7 @@ function drawMapChart(data) {
   if (mapChart) mapChart.destroy();
 
   const ctx = document.getElementById("mapChart").getContext("2d");
+
   mapChart = new Chart(ctx, {
     type: "line",
     data: {
@@ -241,7 +229,6 @@ function drawMapChart(data) {
   });
 }
 
-
 /* ======================================================
    TABLE ACTION HANDLER
 ====================================================== */
@@ -249,6 +236,7 @@ function drawMapChart(data) {
 document
   .querySelector("#experimentsTable")
   .addEventListener("click", e => {
+
     const btn = e.target.closest("button");
     if (!btn) return;
 
@@ -266,37 +254,47 @@ document
 
 
 /* ======================================================
-   UI EVENT HOOKS
+   UI EVENTS
 ====================================================== */
 
-document.getElementById("closeMetrics").addEventListener("click", closeMetrics);
-document.getElementById("metricsBackdrop").addEventListener("click", closeMetrics);
+document
+  .getElementById("closeMetrics")
+  .addEventListener("click", closeMetrics);
 
-document.getElementById("prevPage").addEventListener("click", () => {
-  if (currentPage > 1) {
-    currentPage--;
-    renderPage();
-  }
-});
+document
+  .getElementById("metricsBackdrop")
+  .addEventListener("click", closeMetrics);
 
-document.getElementById("nextPage").addEventListener("click", () => {
-  const totalPages = Math.ceil(allExperiments.length / PAGE_SIZE);
-  if (currentPage < totalPages) {
-    currentPage++;
-    renderPage();
-  }
-});
+document
+  .getElementById("prevPage")
+  .addEventListener("click", () => {
+    if (currentPage > 1) {
+      currentPage--;
+      renderPage();
+    }
+  });
 
-document.getElementById("goPage").addEventListener("click", () => {
-  const target = Number(document.getElementById("pageInput").value);
-  const totalPages = Math.ceil(allExperiments.length / PAGE_SIZE);
+document
+  .getElementById("nextPage")
+  .addEventListener("click", () => {
+    const totalPages = Math.ceil(allExperiments.length / PAGE_SIZE);
+    if (currentPage < totalPages) {
+      currentPage++;
+      renderPage();
+    }
+  });
 
-  if (target >= 1 && target <= totalPages) {
-    currentPage = target;
-    renderPage();
-  }
-});
+document
+  .getElementById("goPage")
+  .addEventListener("click", () => {
+    const target = Number(document.getElementById("pageInput").value);
+    const totalPages = Math.ceil(allExperiments.length / PAGE_SIZE);
 
+    if (target >= 1 && target <= totalPages) {
+      currentPage = target;
+      renderPage();
+    }
+  });
 
 /* ======================================================
    INIT

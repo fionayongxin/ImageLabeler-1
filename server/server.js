@@ -1,30 +1,70 @@
-const NodeSSPI = require("node-sspi");
+/**
+ * ======================================================
+ * server.js
+ * ======================================================
+ *
+ * Responsibilities:
+ * - Initialize Express server
+ * - Handle authentication (SSPI + custom middleware)
+ * - Serve static assets
+ * - Mount API and UI routes
+ * - Auto-start Basler camera service
+ */
+
 const express = require("express");
 const path = require("path");
 const { spawn } = require("child_process");
+
+const NodeSSPI = require("node-sspi");
+
 const { SERVER_PORT } = require("./config/env");
-const { PHOTOS_DIR } = require("./config/paths");
+const {
+  PHOTOS_DIR,
+  DATASET_ROOT,
+  TRAINING_ROOT,
+  SERVER_ROOT
+} = require("./config/paths");
+
 const authMiddleware = require("./middleware/auth");
+
+/* ======================================================
+   ROUTES
+====================================================== */
 
 const thumbsRoutes = require("./routes/thumbs.routes");
 
+/* ======================================================
+   APP INIT
+====================================================== */
+
 const app = express();
+
 const nodeSSPI = new NodeSSPI({
   retrieveGroups: true
 });
 
+/* ======================================================
+   WINDOWS AUTH (SSPI)
+====================================================== */
 
 app.use((req, res, next) => {
-  nodeSSPI.authenticate(req, res, (err) => {
+  nodeSSPI.authenticate(req, res, err => {
     if (err) {
-      console.error("SSPI error:", err);
+      console.error("[SSPI Error]", err);
       return res.status(500).send("Windows authentication failed.");
     }
 
+    // response may already be completed by SSPI
     if (res.finished) return;
+
     next();
   });
 });
+
+/* ======================================================
+   DEBUG ROUTES (AUTH)
+====================================================== */
+
 app.get("/whoami", (req, res) => {
   res.json({
     user: req.connection.user || null,
@@ -39,6 +79,10 @@ app.get("/whoami", (req, res) => {
 
 app.use(express.json({ limit: "10mb" }));
 app.use(authMiddleware);
+
+/**
+ * Test auth middleware / identity
+ */
 app.get("/api/test-db", (req, res) => {
   res.json({
     ok: true,
@@ -46,6 +90,9 @@ app.get("/api/test-db", (req, res) => {
   });
 });
 
+/**
+ * Current authenticated user
+ */
 app.get("/api/me", (req, res) => {
   res.json({
     userId: req.user?.userId || null,
@@ -59,9 +106,9 @@ app.get("/api/me", (req, res) => {
    AUTO-START BASLER CAMERA SERVICE
 ====================================================== */
 
-const pythonScript = path.join(__dirname, "../basler_stream.py");
+const BASLER_SCRIPT = path.join(SERVER_ROOT, "..", "basler_stream.py"); // ✅ improved
 
-const baslerProcess = spawn("python", [pythonScript], {
+const baslerProcess = spawn("python", [BASLER_SCRIPT], {
   stdio: "inherit"
 });
 
@@ -75,12 +122,13 @@ process.on("exit", () => {
 });
 
 /* ======================================================
-   STATIC ASSETS (FAST PATH)
+   STATIC ASSETS
 ====================================================== */
 
 // UI assets
-app.use(express.static(path.join(__dirname, "public")));
+app.use(express.static(path.join(SERVER_ROOT, "public")));
 
+// Captured photos
 app.use(
   "/photos",
   express.static(PHOTOS_DIR, {
@@ -89,16 +137,18 @@ app.use(
   })
 );
 
+// Dataset images
 app.use(
   "/datasets",
-  express.static(path.join(__dirname, "..", "datasets"), {
+  express.static(DATASET_ROOT, {
     maxAge: "7d"
   })
 );
 
+// Training outputs
 app.use(
   "/training",
-  express.static(path.join(__dirname, "training"))
+  express.static(TRAINING_ROOT)
 );
 
 /* ======================================================

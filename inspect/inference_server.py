@@ -1,26 +1,25 @@
 """
 ======================================================
-inference_server.py — FINAL CONFIG-DRIVEN VERSION
-------------------------------------------------------
+inference_server.py (CLEANED — NO BEHAVIOR CHANGE)
+======================================================
+
 Responsibilities:
 - Persistent YOLO inference runtime
-- Reads LIVE Basler frames from shared memory
-- Loads model based on operator-selected config
-- Applies step-based inspection rules
-- Serves PASS / FAIL / WAITING
+- Read live frames from shared memory
+- Load model based on selected config
+- Apply step-based inspection rules
+- Return PASS / FAIL / WAITING
 
 Design rules:
-- NO hardcoded model paths
-- NO per-request model loading
-- NO camera ownership
-- NO dataset dependency
-- NO filesystem image reads (except config + model)
-======================================================
+- Config-driven (no hardcoded model path)
+- Model persists (no per-request loading)
+- Python owns inference only
 """
 
 from fastapi import FastAPI
 from ultralytics import YOLO
 from multiprocessing import shared_memory
+
 import json
 import os
 import threading
@@ -28,8 +27,9 @@ import torch
 import numpy as np
 from typing import Dict, Any, Optional
 
+
 # ======================================================
-# SHARED MEMORY CONFIG (MUST MATCH basler_stream.py)
+# SHARED MEMORY CONFIG (MUST MATCH CAMERA + DISPLAY)
 # ======================================================
 
 SHM_NAME = "basler_frame"
@@ -37,13 +37,16 @@ FRAME_WIDTH = 1280
 FRAME_HEIGHT = 1024
 FRAME_CHANNELS = 3  # BGR uint8
 
+
 # ======================================================
 # PATH CONFIGURATION
 # ======================================================
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
 CONFIG_ROOT = os.path.join(BASE_DIR, "..", "config")
 INSPECTION_STATE_PATH = os.path.join(CONFIG_ROOT, "inspection_state.json")
+
 
 # ======================================================
 # INFERENCE PARAMETERS
@@ -52,14 +55,16 @@ INSPECTION_STATE_PATH = os.path.join(CONFIG_ROOT, "inspection_state.json")
 IMG_SIZE = 960
 STABLE_FRAMES_REQUIRED = 3
 
+
 # ======================================================
 # FASTAPI APP
 # ======================================================
 
 app = FastAPI()
 
+
 # ======================================================
-# GLOBAL STATE (THREAD-SAFE)
+# GLOBAL STATE (THREAD SAFE)
 # ======================================================
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -72,8 +77,10 @@ inspection_cfg: Optional[Dict[str, Any]] = None
 inspection_mtime: Optional[float] = None
 cfg_lock = threading.Lock()
 
+# decision stabilization
 last_decision: Optional[str] = None
 stable_count = 0
+
 
 # ======================================================
 # SHARED MEMORY ATTACH
@@ -81,55 +88,66 @@ stable_count = 0
 
 try:
     shm = shared_memory.SharedMemory(name=SHM_NAME)
+
     frame_buf = np.ndarray(
         (FRAME_HEIGHT, FRAME_WIDTH, FRAME_CHANNELS),
         dtype=np.uint8,
         buffer=shm.buf
     )
+
     print("[Inference] Shared memory attached")
+
 except FileNotFoundError:
     shm = None
     frame_buf = None
     print("[Inference] Shared memory not available")
 
+
 # ======================================================
-# INSPECTION STATE LOADING
+# LOAD INSPECTION STATE (SINGLE SOURCE OF TRUTH)
 # ======================================================
 
 def load_inspection_config() -> Dict[str, Any]:
     """
     Load inspection_state.json with mtime tracking.
-    This file is the SINGLE source of runtime truth.
+
+    This file is the ONLY runtime truth for:
+    - configName
+    - steps
+    - currentStep
     """
     global inspection_cfg, inspection_mtime
 
     with cfg_lock:
+
         if not os.path.exists(INSPECTION_STATE_PATH):
             return {}
 
         stat = os.stat(INSPECTION_STATE_PATH)
 
+        # Reload only when file changes
         if inspection_cfg is None or stat.st_mtime != inspection_mtime:
             with open(INSPECTION_STATE_PATH, "r") as f:
                 inspection_cfg = json.load(f)
+
             inspection_mtime = stat.st_mtime
             print("[Inference] Inspection state reloaded")
 
         return inspection_cfg
+
 
 # ======================================================
 # MODEL RESOLUTION (CONFIG-DRIVEN)
 # ======================================================
 
 def resolve_model_path(cfg: Dict[str, Any]) -> Optional[str]:
-    """
-    Resolve model path from selected config folder.
-    """
+    """Find .pt model inside config folder."""
     config_name = cfg.get("configName")
     if not config_name:
         return None
 
     config_dir = os.path.join(CONFIG_ROOT, config_name)
+
     if not os.path.isdir(config_dir):
         return None
 
@@ -149,19 +167,24 @@ def load_model_for_config(cfg: Dict[str, Any]) -> None:
     with model_lock:
         path = resolve_model_path(cfg)
 
+        # No valid model
         if not path:
             if model is not None:
-                print("[Inference] Model cleared (no config / no model)")
+                print("[Inference] Model cleared")
+
             model = None
             model_path = None
             return
 
+        # Already loaded
         if path == model_path:
-            return  # already loaded
+            return
 
         print(f"[Inference] Loading model: {path}")
+
         model = YOLO(path).to(device)
         model_path = path
+
 
 # ======================================================
 # INFERENCE ENDPOINT
@@ -174,6 +197,7 @@ def infer() -> Dict[str, Any]:
     if frame_buf is None:
         return {"status": "WAITING"}
 
+    # Load latest config
     cfg = load_inspection_config()
     load_model_for_config(cfg)
 
@@ -191,6 +215,7 @@ def infer() -> Dict[str, Any]:
     if not step_cfg:
         return {"status": "WAITING"}
 
+    # ---- YOLO inference ----
     with model_lock:
         results = model(
             frame_buf,
@@ -208,6 +233,7 @@ def infer() -> Dict[str, Any]:
             cls_name = model.names.get(cls_id, "Unassigned")
 
             detected_classes.add(cls_name)
+
             detections.append({
                 "cls": cls_id,
                 "name": cls_name,
@@ -215,6 +241,7 @@ def infer() -> Dict[str, Any]:
                 "xyxy": box.xyxy[0].tolist()
             })
 
+    # ---- rule evaluation ----
     required = set(step_cfg.get("required", []))
     forbidden = set(step_cfg.get("forbidden", []))
 
@@ -228,6 +255,7 @@ def infer() -> Dict[str, Any]:
     else:
         decision = "PASS"
 
+    # ---- stability filter ----
     if decision == last_decision:
         stable_count += 1
     else:
@@ -236,10 +264,12 @@ def infer() -> Dict[str, Any]:
 
     config_done = False
 
+    # ---- step advance logic ----
     if decision == "PASS" and stable_count >= STABLE_FRAMES_REQUIRED:
-        steps = cfg.get("steps", [])
 
+        steps = cfg.get("steps", [])
         step_ids = [s.get("id") for s in steps]
+
         if current_step_id in step_ids:
             idx = step_ids.index(current_step_id)
 
@@ -247,34 +277,35 @@ def infer() -> Dict[str, Any]:
                 next_step = step_ids[idx + 1]
                 cfg["currentStep"] = next_step
                 print(f"[Inference] Step advanced → {next_step}")
-
             else:
                 cfg["currentStep"] = step_ids[0]
                 config_done = True
-                print("[Inference] CONFIG DONE → reset to Step 1")
+                print("[Inference] CONFIG DONE → Reset")
 
+            # Persist new step
             with open(INSPECTION_STATE_PATH, "w") as f:
                 json.dump(cfg, f, indent=2)
 
-            # ✅ FIX cache sync
+            # ✅ keep memory sync with file
             inspection_cfg = cfg
 
-        # ✅ prevent multiple trigger
+        # prevent repeated trigger
         stable_count = 0
         last_decision = None
 
     return {
         "status": decision,
         "currentStep": cfg.get("currentStep"),
-        "configDone": config_done, 
+        "configDone": config_done,
         "missing": list(missing),
         "forbidden": list(violated),
         "detections": detections,
         "names": model.names
     }
 
+
 # ======================================================
-# MODEL RELOAD (OPTIONAL MANUAL TRIGGER)
+# MANUAL MODEL RELOAD
 # ======================================================
 
 @app.post("/reload")
@@ -288,4 +319,3 @@ def reload_model():
         "currentStep": cfg.get("currentStep"),
         "device": device
     }
-
