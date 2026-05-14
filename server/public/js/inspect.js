@@ -231,7 +231,6 @@ function renderOperatorStepInfo() {
   const step = activeConfig.steps.find(s => s.id === activeConfig.currentStep);
   if (!step) return;
 
-  // ✅ Step number
   const stepIndex = activeConfig.steps.findIndex(s => s.id === step.id);
 
   const stepDisplay = document.getElementById("currentStepDisplay");
@@ -239,21 +238,38 @@ function renderOperatorStepInfo() {
     stepDisplay.textContent = `Step ${stepIndex + 1}`;
   }
 
-  // ✅ Required classes
-  const reqEl = document.getElementById("requiredDisplay");
-  if (reqEl) {
-    reqEl.textContent = step.required?.length
-      ? step.required.join(", ")
-      : "-";
+const reqEl = document.getElementById("requiredDisplay");
+if (reqEl) {
+  reqEl.innerHTML = "";
+
+  if (step.required?.length) {
+    step.required.forEach(c => {
+      const span = document.createElement("span");
+      span.className = "tag";
+      span.textContent = c;
+      reqEl.appendChild(span);
+    });
+  } else {
+    reqEl.textContent = "None";
+  }
+}
+
+const forbEl = document.getElementById("forbiddenDisplay");
+  if (forbEl) {
+    forbEl.innerHTML = "";
+
+    if (step.forbidden?.length) {
+      step.forbidden.forEach(c => {
+        const span = document.createElement("span");
+        span.className = "tag forbidden";
+        span.textContent = c;
+        forbEl.appendChild(span);
+      });
+    } else {
+      forbEl.textContent = "None";
+    }
   }
 
-  // ✅ Forbidden classes
-  const forbEl = document.getElementById("forbiddenDisplay");
-  if (forbEl) {
-    forbEl.textContent = step.forbidden?.length
-      ? step.forbidden.join(", ")
-      : "-";
-  }
 }
 
 function renderStepClassCheckboxes() {
@@ -582,6 +598,11 @@ async function pollStatus() {
 function setStatus(status, text) {
   if (headerStatus) headerStatus.textContent = text;
   if (cameraResult) cameraResult.textContent = text;
+  const bigStatus = document.getElementById("bigStatus");
+  if (bigStatus) {
+    bigStatus.className = `big-status status-${status}`;
+    bigStatus.textContent = text;
+  }
 }
 
 if (camImg) {

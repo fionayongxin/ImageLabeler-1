@@ -560,3 +560,83 @@ input.invalid {
   margin-top: 10px;
   font-size: 14px;
 }
+
+/* ======================================================
+   OPERATOR UI UPGRADE
+====================================================== */
+
+/* ✅ BIG STATUS */
+.big-status {
+  margin: 10px 0 14px;
+  padding: 18px;
+  border-radius: 12px;
+  text-align: center;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: 1px;
+}
+
+.big-status.status-pass {
+  background: #166534;
+  color: #bbf7d0;
+}
+
+.big-status.status-fail {
+  background: #7f1d1d;
+  color: #fecaca;
+}
+
+.big-status.status-unknown {
+  background: #374151;
+  color: #e5e7eb;
+}
+
+
+/* ✅ STEP CARD */
+.step-card {
+  background: #020617;
+  border: 1px solid #1f2937;
+  border-radius: 10px;
+  padding: 10px;
+}
+
+/* Step title */
+.step-title {
+  font-weight: 700;
+  font-size: 16px;
+  margin-bottom: 10px;
+}
+
+/* Section label */
+.step-label {
+  font-size: 12px;
+  opacity: 0.7;
+  margin-bottom: 4px;
+}
+
+/* Group spacing */
+.step-group {
+  margin-bottom: 10px;
+}
+
+
+/* ✅ TAG STYLE (classes) */
+.tag-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tag {
+  background: #1e293b;
+  border: 1px solid #1f2937;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+/* Forbidden highlight */
+.tag.forbidden {
+  border-color: #dc2626;
+  color: #fca5a5;
+}
