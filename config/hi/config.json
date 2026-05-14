@@ -1,0 +1,28 @@
+{
+  "id": "cfg_1778748473670",
+  "name": "hi",
+  "confidence": 0.5,
+  "currentStep": "1778748473670",
+  "steps": [
+    {
+      "id": "1778748473670",
+      "required": [],
+      "forbidden": []
+    }
+  ],
+  "classes": [
+    "T_2_label",
+    "T_Body",
+    "T_Bushing",
+    "T_Hole_Plug",
+    "T_Inner_opening",
+    "T_Missing_2_label",
+    "T_Missing_Hole_Plug",
+    "T_Missing_SN_label",
+    "T_SN_label",
+    "T_Top_view",
+    "T_Without_Bushing",
+    "T_rear_side",
+    "Unassigned"
+  ]
+}

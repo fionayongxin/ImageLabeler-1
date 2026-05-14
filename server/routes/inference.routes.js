@@ -165,4 +165,43 @@ router.post("/state", (req, res) => {
   }
 });
 
+/* ======================================================
+   RELOAD MODEL (NODE → PYTHON)
+   POST /api/inference/reload
+====================================================== */
+
+router.post("/reload", async (_req, res) => {
+  try {
+    const response = await fetch(
+      `${INFERENCE_SERVER_BASE}/reload`,
+      { method: "POST" }
+    );
+
+    if (!response.ok) {
+      const text = await response.text();
+      console.error("[Reload Proxy Error]", text);
+
+      return res.status(500).json({
+        status: "ERROR",
+        error: "Inference reload failed"
+      });
+    }
+
+    const data = await response.json();
+
+    res.json({
+      status: "ok",
+      data
+    });
+
+  } catch (err) {
+    console.error("[Reload Failed]", err);
+
+    res.status(500).json({
+      status: "ERROR",
+      error: "Inference server unavailable"
+    });
+  }
+});
+
 module.exports = router;
