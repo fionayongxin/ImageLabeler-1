@@ -209,10 +209,8 @@ router.post("/save", upload.single("model"), (req, res) => {
 
     if (req.file) {
 
-      // ✅ ONLY affect this folder
       const models = getModelFiles(folder);
 
-      // ✅ remove old model (only inside this folder)
       models.forEach(file => {
         fs.unlinkSync(path.join(folder, file));
       });
@@ -230,6 +228,39 @@ router.post("/save", upload.single("model"), (req, res) => {
   } catch (err) {
     console.error("[SAVE CONFIG ERROR]", err);
     res.status(500).json({ error: "Failed to save config" });
+  }
+});
+
+/* ======================================================
+   GET MODEL FILE NAME
+   GET /api/configs/model-file
+====================================================== */
+
+router.get("/model-file", (req, res) => {
+  try {
+    const { name } = req.query;
+
+    const folder = getSafeConfigPath(name);
+
+    if (!fs.existsSync(folder)) {
+      return res.status(404).json({ error: "Config not found" });
+    }
+
+    const modelFiles = getModelFiles(folder);
+
+    if (modelFiles.length === 0) {
+      return res.json({ modelFile: null });
+    }
+
+    const modelFile = modelFiles[0];
+
+    res.json({
+      modelFile
+    });
+
+  } catch (err) {
+    console.error("[MODEL FILE ERROR]", err);
+    res.status(500).json({ error: "Failed to get model file" });
   }
 });
 
