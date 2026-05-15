@@ -1,12 +1,32 @@
 {
-  "configName": "savesave",
+  "configName": "save_test2",
   "confidence": 0.5,
-  "currentStep": "1778746315742",
+  "currentStep": "1778653423871",
   "steps": [
     {
-      "id": "1778746315742",
+      "id": "1778490478018",
       "required": [],
       "forbidden": []
+    },
+    {
+      "id": "1778653423586",
+      "required": [
+        "T_Bushing"
+      ],
+      "forbidden": [
+        "T_Body"
+      ]
+    },
+    {
+      "id": "1778653423871",
+      "required": [
+        "T_2_label",
+        "T_Bushing"
+      ],
+      "forbidden": [
+        "T_Body",
+        "T_Hole_Plug"
+      ]
     }
   ]
 }

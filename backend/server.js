@@ -106,7 +106,7 @@ app.get("/api/me", (req, res) => {
    AUTO-START BASLER CAMERA SERVICE
 ====================================================== */
 
-const BASLER_SCRIPT = path.join(SERVER_ROOT, "..", "basler_stream.py"); // ✅ improved
+const BASLER_SCRIPT = path.join(SERVER_ROOT, "..", "python", "basler_stream.py"); 
 
 const baslerProcess = spawn("python", [BASLER_SCRIPT], {
   stdio: "inherit"
@@ -121,12 +121,21 @@ process.on("exit", () => {
   baslerProcess.kill();
 });
 
-/* ======================================================
-   STATIC ASSETS
-====================================================== */
+/* ==============================
+   MULTI-APP STATIC SERVING
+============================== */
 
-// UI assets
-app.use(express.static(path.join(SERVER_ROOT, "public")));
+app.use("/capture", express.static(
+  path.join(__dirname, "..", "apps", "capture", "public")
+));
+
+app.use("/training", express.static(
+  path.join(__dirname, "..", "apps", "training", "public")
+));
+
+app.use("/inspect", express.static(
+  path.join(__dirname, "..", "apps", "inspect", "public")
+));
 
 // Captured photos
 app.use(
@@ -147,9 +156,13 @@ app.use(
 
 // Training outputs
 app.use(
-  "/training",
+  "/training-files",
   express.static(TRAINING_ROOT)
 );
+
+app.use("/shared", express.static(
+  path.join(__dirname, "public")
+));
 
 /* ======================================================
    API ROUTES

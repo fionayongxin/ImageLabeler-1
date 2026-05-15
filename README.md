@@ -27,13 +27,11 @@ This system consists of 3 core layers:
 ### 1. Python Services (Compute Layer)
 Located at:
 
-- **inspect/basler_infer_stream.py**
-- **inspect/inference_server.py**
-- **basler_stream.py**
+```python/```
 
 #### **a. Basler Inference Camera**
 
-**File**: ```inspect/basler_infer_stream.py```
+**File**: ```python/basler_infer_stream.py```
 
 **Role**: 
 
@@ -43,7 +41,7 @@ Located at:
 
 #### **b. Inference Server (YOLO)**
 
-**File**: ```inspect/inference_server.py```
+**File**: ```python/inference_server.py```
 
 **Role**:
 
@@ -54,7 +52,7 @@ Located at:
 
 #### **c. Display / MJPEG Server**
 
-**File**: ```basler_stream.py```
+**File**: ```python/basler_stream.py```
 
 **Role**:
 
@@ -68,11 +66,7 @@ Located at:
 
 Located at:
 
-- ```server/```
-
-- ```server/services```
-
-- ```server/routes```
+- ```backend/```
 
 **Responsibilities**:
 
@@ -99,7 +93,7 @@ Located at:
 
 ### 3. Frontend (Web UI)
 Located at:
-```server/public/```
+```apps/```
 
 #### **Inspection**
 - Live camera + inference results
@@ -118,20 +112,29 @@ Located at:
 ### **📂 Key Folders**
 
 ```
-project-root/t
+project-root/
 │
-├── inspect/                # Python inference + camera
-├── server/                 # Node backend
-│   ├── public/             # Frontend (HTML, CSS, JS)
-│   ├── routes/             # API routes
-│   ├── services/           # Business logic
-│   ├── config/             # Paths + env config
-│   └── photos/             # Captured images
+├── apps/                  # Frontend applications
+│   ├── capture/
+│   ├── training/
+│   └── inspect/
 │
-├── config/                 # Runtime configs (IMPORTANT)
+├── backend/               # Node.js backend
+│   ├── routes/
+│   ├── services/
+│   ├── config/
+│   ├── utils/
+│   └── photos/
+│
+├── python/                # Python services
+│   ├── basler_infer_stream.py
+│   ├── inference_server.py
+│   └── basler_stream.py
+│
+├── config/                # Runtime configs
 │   └── inspection_state.json
 │
-├── start_inspection.bat    # System startup script
+├── start_system.bat       # 🔑 Main startup script
 └── README.md
 ```
 ---
@@ -154,23 +157,24 @@ This will:
 🔧 Manual Start (for debugging)
 1. Camera (shared memory writer) 
 ```
-python inspect/basler_infer_stream.py
+python python/basler_infer_stream.py
 ```
 
 2. Inference server
 ``` 
-cd inspect
+cd python
 python -m uvicorn inference_server:app --host 127.0.0.1 --port 8005
 ```
 
 3. Display (MJPEG)
 ```
-python basler_stream.py
+python python/basler_stream.py
 ```
 
 4. Backend
 ```
-node server/server.js
+cd backend
+node server.js
 ```
 
 5. Open UI
