@@ -341,12 +341,15 @@ label {
   cursor: pointer;
 }
 
+/* hover */
 .config-list div:hover {
   background: #1e293b;
 }
 
-.config-list .active {
+.config-list .active,
+.config-list .active:hover {
   background: #2563eb;
+  color: #fff;
 }
 
 
@@ -455,10 +458,18 @@ label {
   padding: 5px;
   border-radius: 5px;
   cursor: pointer;
+  transition: background 0.15s ease;
 }
 
-#stepsList .active {
+/* hover */
+#stepsList div:hover {
+  background: #1e293b;
+}
+
+#stepsList .active,
+#stepsList .active:hover {
   background: #2563eb;
+  color: #fff;
 }
 
 

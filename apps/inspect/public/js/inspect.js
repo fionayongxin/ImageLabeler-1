@@ -510,6 +510,10 @@ document.getElementById("deleteConfigBtn").onclick = async () => {
     return;
   }
 
+  const ok = confirm(`Are you sure you want to delete "${activeConfig.name}"?`);
+
+  if (!ok) return;
+
   await fetch("/api/configs/delete", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
