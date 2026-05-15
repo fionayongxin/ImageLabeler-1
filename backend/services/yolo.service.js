@@ -46,7 +46,7 @@ async function getClasses(station, process) {
   }
 
   const res = await fetch(
-    `${TRAINING_SERVER_BASE}/dataset/classes` +
+    `${TRAINING_SERVER_BASE}/datasets/classes` +
     `?station=${encodeURIComponent(station)}` +
     `&process=${encodeURIComponent(process)}`
   );
@@ -115,7 +115,7 @@ async function uploadToTrainingServer({
   );
 
   const res = await fetch(
-    `${TRAINING_SERVER_BASE}/dataset/upload`,
+    `${TRAINING_SERVER_BASE}/datasets/upload`,
     {
       method: "POST",
       body: form,
