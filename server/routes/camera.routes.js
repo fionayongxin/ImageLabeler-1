@@ -19,7 +19,7 @@ const http = require("http");
 const fetch = require("node-fetch"); // kept explicit
 const photosService = require("../services/photos.service");
 
-const { CAMERA_SERVER_BASE } = require("../config/env"); // ✅ NEW
+const { CAMERA_SERVER_BASE } = require("../config/env");
 
 const router = express.Router();
 

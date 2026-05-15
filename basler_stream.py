@@ -1,6 +1,6 @@
 """
 ======================================================
-basler_stream.py (CLEANED — DISPLAY ONLY)
+basler_stream.py
 ======================================================
 
 Responsibilities:
